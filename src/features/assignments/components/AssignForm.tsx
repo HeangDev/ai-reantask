@@ -7,6 +7,7 @@ import { CloseIcon, PlusIcon } from '@/components/ui/icons'
 import Modal from '@/components/ui/Modal'
 import { phases } from '@/features/assignments/components/PhaseBadge'
 import { assignmentClasses } from '@/features/assignments/data/sampleAssignments'
+import { planRepository } from '@/features/assignments/lib/repoNames'
 import { validateAssignment } from '@/features/assignments/lib/assignValidation'
 import type { AssignFormErrors, AssignFormValues } from '@/features/assignments/lib/assignValidation'
 import type { Assignment, FileType } from '@/features/assignments/types'
@@ -55,6 +56,12 @@ export default function AssignForm({ assignment, onSave, onClose }: Props) {
     if (Object.keys(found).length > 0) return
     onSave(values)
   }
+
+  // The repository and branch names that will be created, updated as the teacher fills the form in.
+  const plan = useMemo(
+    () => planRepository(values.className, values.title, values.assignees, assignment?.repo),
+    [values.className, values.title, values.assignees, assignment?.repo],
+  )
 
   const students = useMemo(() => {
     const q = studentQuery.trim().toLowerCase()
@@ -236,6 +243,23 @@ export default function AssignForm({ assignment, onSave, onClose }: Props) {
               </ul>
             </div>
             {groupError('assignees')}
+
+            <div className="mt-3 rounded-lg border border-line bg-sunken p-3 text-xs">
+              <p className="text-muted">{t('asg.repoNote')}</p>
+              <p className="mt-2">
+                <span className="text-muted">{t('asg.repoName')}: </span>
+                <span className="break-all font-mono font-medium">{plan.name}</span>
+              </p>
+              {plan.branches.length > 0 && (
+                <p className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <span className="text-muted">{t('asg.repoBranches')}:</span>
+                  {plan.branches.slice(0, 6).map((b) => (
+                    <span key={b.student} className="rounded bg-surface px-1.5 py-0.5 font-mono">{b.branch}</span>
+                  ))}
+                  {plan.branches.length > 6 && <span className="text-muted">+{plan.branches.length - 6}</span>}
+                </p>
+              )}
+            </div>
           </fieldset>
         </div>
 

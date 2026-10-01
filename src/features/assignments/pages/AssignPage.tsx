@@ -8,6 +8,8 @@ import AssignForm from '@/features/assignments/components/AssignForm'
 import AssignTable from '@/features/assignments/components/AssignTable'
 import { assignmentClasses } from '@/features/assignments/data/sampleAssignments'
 import type { AssignFormValues } from '@/features/assignments/lib/assignValidation'
+import { planRepository } from '@/features/assignments/lib/repoNames'
+import { setUpRepository } from '@/features/assignments/services/setUpRepository'
 import { assignmentsActions, useAssignments } from '@/features/assignments/store/assignmentsStore'
 import type { Assignment, AssignmentTask } from '@/features/assignments/types'
 import { useI18n } from '@/lib/i18n'
@@ -55,7 +57,7 @@ export default function AssignPage() {
   const [className, setClassName] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [dialog, setDialog] = useState<Dialog>(NO_DIALOG)
-  const [notice, setNotice] = useState<TranslationKey | null>(null)
+  const [notice, setNotice] = useState<{ key: TranslationKey; vars?: Record<string, string> } | null>(null)
 
   // Success feedback disappears on its own.
   useEffect(() => {
@@ -76,11 +78,18 @@ export default function AssignPage() {
 
   const save = (values: AssignFormValues) => {
     if (target && dialog.type === 'edit') {
-      assignmentsActions.update(target.id, fromForm(values, target))
-      setNotice('asg.updated')
+      const fields = fromForm(values, target)
+      assignmentsActions.update(target.id, fields)
+      // Students added to the assignment get their own branch; existing branches are left alone.
+      if (target.repo) void setUpRepository(target.id, planRepository(fields.className, fields.title, fields.assignees, target.repo))
+      setNotice({ key: 'asg.updated' })
     } else {
-      assignmentsActions.add({ id: crypto.randomUUID(), status: 'pending', ...fromForm(values) })
-      setNotice('asg.added')
+      const id = crypto.randomUUID()
+      const fields = fromForm(values)
+      assignmentsActions.add({ id, status: 'pending', ...fields })
+      const plan = planRepository(fields.className, fields.title, fields.assignees)
+      void setUpRepository(id, plan)
+      setNotice({ key: 'asg.addedRepo', vars: { name: plan.name, count: String(plan.branches.length) } })
     }
     close()
   }
@@ -88,7 +97,7 @@ export default function AssignPage() {
   const removeIds = (ids: ReadonlySet<string>) => {
     assignmentsActions.remove(ids)
     setSelected((current) => new Set([...current].filter((id) => !ids.has(id))))
-    setNotice('asg.deleted')
+    setNotice({ key: 'asg.deleted' })
     close()
   }
 
@@ -110,7 +119,7 @@ export default function AssignPage() {
       <div role="status" aria-live="polite" className="mt-3 empty:hidden">
         {notice && (
           <p className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-            {t(notice)}
+            {t(notice.key, notice.vars)}
           </p>
         )}
       </div>

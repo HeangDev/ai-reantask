@@ -40,6 +40,22 @@ export interface Submission {
   verifiedAt?: string
 }
 
+/** A student's branch in the assignment's repository. */
+export interface RepoBranch {
+  student: string
+  branch: string
+}
+
+/** creating: being set up. simulated: names are planned but nothing exists on GitHub yet. failed: setup did not finish. */
+export type RepoStatus = 'creating' | 'simulated' | 'failed'
+
+export interface AssignmentRepo {
+  name: string
+  defaultBranch: string
+  branches: RepoBranch[]
+  status: RepoStatus
+}
+
 export interface Assignment {
   id: string
   title: string
@@ -61,6 +77,8 @@ export interface Assignment {
   assignees?: string[]
   /** Largest file a student may upload, in megabytes. */
   maxFileSizeMb?: number
+  /** The GitHub repository for this assignment, with a branch per assigned student. */
+  repo?: AssignmentRepo
   /** Work handed in by the assigned students. */
   submissions?: Submission[]
   /** What the student has to do, each checked separately by the teacher. */

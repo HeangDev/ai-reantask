@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import Avatar from '@/components/ui/Avatar'
 import AvatarGroup from '@/components/ui/AvatarGroup'
 import { ArrowLeftIcon, CodeIcon, EyeIcon } from '@/components/ui/icons'
+import RepositoryCard from '@/features/assignments/components/RepositoryCard'
 import PhaseBadge from '@/features/assignments/components/PhaseBadge'
 import { useAssignments } from '@/features/assignments/store/assignmentsStore'
 import { formatDate } from '@/lib/dates'
@@ -90,6 +91,10 @@ export default function AssignDetailPage() {
             {assignment.tasks?.map((task) => <li key={task.id}>{task.title}</li>)}
           </ol>
         </section>
+      </div>
+
+      <div className="mt-4">
+        <RepositoryCard assignment={assignment} />
       </div>
 
       <section className="mt-4 overflow-hidden rounded-xl border border-line bg-surface">
