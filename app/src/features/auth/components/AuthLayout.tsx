@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import RouteTitle from '@/app/RouteTitle'
 import Dropdown from '@/components/ui/Dropdown'
+import LogoMark from '@/components/ui/LogoMark'
 import { AssignmentsIcon, CheckIcon, GlobeIcon, TasksIcon } from '@/components/ui/icons'
 import { languageNames, useI18n } from '@/lib/i18n'
 import type { Language } from '@/lib/i18n'
@@ -28,7 +29,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             aria-hidden="true"
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-lg font-bold backdrop-blur-sm"
           >
-            R
+            <LogoMark className="h-6 w-6" />
           </span>
           <span className="text-xl font-semibold">ReanTask</span>
         </div>

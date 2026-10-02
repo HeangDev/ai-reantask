@@ -17,19 +17,41 @@ interface Props {
   /** Shown instead of the select when there is nothing to choose from. */
   emptyText: string
   removeLabel: (name: string) => string
+  /** When set, a button beside the label picks every option still available. */
+  selectAllLabel?: string
 }
 
 /** Choose several options: a select adds one at a time, and each choice shows as a chip that can be removed. */
-export default function MultiSelect({ label, placeholder, options, value, onChange, emptyText, removeLabel }: Props) {
+export default function MultiSelect({
+  label,
+  placeholder,
+  options,
+  value,
+  onChange,
+  emptyText,
+  removeLabel,
+  selectAllLabel,
+}: Props) {
   const id = useId()
   const chosen = options.filter((o) => value.includes(o.value))
   const available = options.filter((o) => !value.includes(o.value))
 
   return (
     <div>
-      <label htmlFor={id} className="text-sm font-medium">
-        {label}
-      </label>
+      <div className="flex items-center justify-between gap-2">
+        <label htmlFor={id} className="text-sm font-medium">
+          {label}
+        </label>
+        {selectAllLabel && available.length > 0 && (
+          <button
+            type="button"
+            onClick={() => onChange([...value, ...available.map((o) => o.value)])}
+            className="rounded-md px-1.5 py-0.5 text-xs font-medium text-accent-fg transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            {selectAllLabel}
+          </button>
+        )}
+      </div>
       <div className="mt-1">
         {options.length === 0 ? (
           <p className="rounded-lg border border-line bg-sunken px-3 py-2 text-sm text-muted">{emptyText}</p>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import Button from '@/components/ui/Button'
+import DateField from '@/components/ui/DateField'
 import Dropdown from '@/components/ui/Dropdown'
 import FormDialog from '@/components/ui/FormDialog'
 import GradientBanner from '@/components/ui/GradientBanner'
@@ -84,16 +85,14 @@ export default function ClassForm({ schoolClass, classes, onSave, onClose }: Pro
             maxLength={MAX_DESCRIPTION_LENGTH}
           />
           <div className="grid gap-4 sm:grid-cols-2">
-            <TextField
+            <DateField
               label={t('cls.startDate')}
-              type="date"
               value={values.startDate}
               onChange={(v) => set('startDate', v)}
               error={errors.startDate}
             />
-            <TextField
+            <DateField
               label={t('cls.endDate')}
-              type="date"
               min={values.startDate || undefined}
               value={values.endDate}
               onChange={(v) => set('endDate', v)}

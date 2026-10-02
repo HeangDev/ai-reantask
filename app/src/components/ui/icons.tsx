@@ -258,6 +258,12 @@ export const PlusIcon = () => (
   </Icon>
 )
 
+export const MinusIcon = () => (
+  <Icon>
+    <path d="M5 12h14" />
+  </Icon>
+)
+
 export const TrashIcon = () => (
   <Icon>
     <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
@@ -274,6 +280,18 @@ export const EditIcon = () => (
 export const ChevronDownIcon = () => (
   <Icon>
     <path d="M6 9l6 6 6-6" />
+  </Icon>
+)
+
+export const ChevronLeftIcon = () => (
+  <Icon>
+    <path d="M15 6l-6 6 6 6" />
+  </Icon>
+)
+
+export const ChevronRightIcon = () => (
+  <Icon>
+    <path d="M9 6l6 6-6 6" />
   </Icon>
 )
 

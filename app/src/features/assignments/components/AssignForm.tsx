@@ -2,13 +2,20 @@ import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import Button from '@/components/ui/Button'
 import Checkbox from '@/components/ui/Checkbox'
+import DatePicker from '@/components/ui/DatePicker'
 import Dropdown from '@/components/ui/Dropdown'
 import { CloseIcon, PlusIcon } from '@/components/ui/icons'
 import Modal from '@/components/ui/Modal'
+import MultiSelect from '@/components/ui/MultiSelect'
+import NumberInput from '@/components/ui/NumberInput'
 import { phases } from '@/features/assignments/components/PhaseBadge'
 import { useAssignableClassNames } from '@/features/classes/hooks/useAssignableClassNames'
 import { planRepository } from '@/features/assignments/lib/repoNames'
-import { validateAssignment } from '@/features/assignments/lib/assignValidation'
+import {
+  MAX_FILE_SIZE_LIMIT_MB,
+  MAX_SCORE_LIMIT,
+  validateAssignment,
+} from '@/features/assignments/lib/assignValidation'
 import type { AssignFormErrors, AssignFormValues } from '@/features/assignments/lib/assignValidation'
 import type { Assignment, FileType } from '@/features/assignments/types'
 import { sampleStudents } from '@/features/students/data/sampleStudents'
@@ -43,7 +50,6 @@ export default function AssignForm({ assignment, onSave, onClose }: Props) {
     assignees: assignment?.assignees ?? [],
   })
   const [errors, setErrors] = useState<AssignFormErrors>({})
-  const [studentQuery, setStudentQuery] = useState('')
 
   const set = <K extends keyof AssignFormValues>(field: K, value: AssignFormValues[K]) => {
     setValues((v) => ({ ...v, [field]: value }))
@@ -63,27 +69,6 @@ export default function AssignForm({ assignment, onSave, onClose }: Props) {
     () => planRepository(values.className, values.title, values.assignees, assignment?.repo),
     [values.className, values.title, values.assignees, assignment?.repo],
   )
-
-  const students = useMemo(() => {
-    const q = studentQuery.trim().toLowerCase()
-    return sampleStudents.filter((s) => s.fullName.toLowerCase().includes(q))
-  }, [studentQuery])
-
-  const allShownSelected = students.length > 0 && students.every((s) => values.assignees.includes(s.fullName))
-  const someShownSelected = students.some((s) => values.assignees.includes(s.fullName))
-
-  const toggleStudent = (name: string) =>
-    set('assignees', values.assignees.includes(name) ? values.assignees.filter((n) => n !== name) : [...values.assignees, name])
-
-  const toggleShown = () => {
-    const shown = students.map((s) => s.fullName)
-    set(
-      'assignees',
-      allShownSelected
-        ? values.assignees.filter((n) => !shown.includes(n))
-        : [...new Set([...values.assignees, ...shown])],
-    )
-  }
 
   const toggleType = (type: FileType) =>
     set('fileTypes', values.fileTypes.includes(type) ? values.fileTypes.filter((x) => x !== type) : [...values.fileTypes, type])
@@ -137,7 +122,15 @@ export default function AssignForm({ assignment, onSave, onClose }: Props) {
             />
           ))}
           {field('deadline', t('asg.fieldDeadline'), (props) => (
-            <input {...props} type="date" min={todayIso()} value={values.deadline} onChange={(e) => set('deadline', e.target.value)} />
+            <DatePicker
+              {...props}
+              className="py-2"
+              invalid={Boolean(errors.deadline)}
+              wrapperClassName="block w-full"
+              min={todayIso()}
+              value={values.deadline}
+              onChange={(v) => set('deadline', v)}
+            />
           ))}
           {field('phase', t('asg.fieldStatus'), (props) => (
             <Dropdown
@@ -150,7 +143,15 @@ export default function AssignForm({ assignment, onSave, onClose }: Props) {
             />
           ))}
           {field('maxScore', t('asg.fieldScore'), (props) => (
-            <input {...props} type="number" inputMode="numeric" min={1} value={values.maxScore} onChange={(e) => set('maxScore', e.target.value)} />
+            <NumberInput
+              {...props}
+              invalid={Boolean(errors.maxScore)}
+              min={1}
+              max={MAX_SCORE_LIMIT}
+              step={5}
+              value={values.maxScore}
+              onChange={(v) => set('maxScore', v)}
+            />
           ))}
           {field('description', t('asg.fieldDescription'), (props) => (
             <textarea {...props} rows={3} value={values.description} onChange={(e) => set('description', e.target.value)} />
@@ -171,7 +172,15 @@ export default function AssignForm({ assignment, onSave, onClose }: Props) {
             {groupError('fileTypes')}
           </fieldset>
           {field('maxFileSizeMb', t('asg.fieldSize'), (props) => (
-            <input {...props} type="number" inputMode="numeric" min={1} value={values.maxFileSizeMb} onChange={(e) => set('maxFileSizeMb', e.target.value)} />
+            <NumberInput
+              {...props}
+              invalid={Boolean(errors.maxFileSizeMb)}
+              min={1}
+              max={MAX_FILE_SIZE_LIMIT_MB}
+              suffix="MB"
+              value={values.maxFileSizeMb}
+              onChange={(v) => set('maxFileSizeMb', v)}
+            />
           ))}
 
           <fieldset className="sm:col-span-2">
@@ -208,41 +217,17 @@ export default function AssignForm({ assignment, onSave, onClose }: Props) {
             </button>
           </fieldset>
 
-          <fieldset className="sm:col-span-2">
-            <legend className="text-sm font-medium">
-              {t('asg.fieldStudents')}{' '}
-              <span className="font-normal text-muted">· {t('asg.selectedCount', { count: String(values.assignees.length) })}</span>
-            </legend>
-            <div className={`mt-2 overflow-hidden rounded-lg border ${errors.assignees ? 'border-red-500' : 'border-line'}`}>
-              <div className="flex items-center gap-3 border-b border-line bg-sunken px-3 py-2">
-                <Checkbox
-                  checked={allShownSelected}
-                  indeterminate={someShownSelected && !allShownSelected}
-                  onChange={toggleShown}
-                  aria-label={t('asg.selectAll')}
-                />
-                <input
-                  type="search"
-                  value={studentQuery}
-                  onChange={(e) => setStudentQuery(e.target.value)}
-                  placeholder={t('asg.searchStudents')}
-                  aria-label={t('asg.searchStudents')}
-                  className={`min-w-0 flex-1 bg-transparent text-sm ${focusRing}`}
-                />
-              </div>
-              <ul className="max-h-48 divide-y divide-line overflow-y-auto">
-                {students.length === 0 && <li className="p-4 text-center text-sm text-muted">{t('asg.noStudents')}</li>}
-                {students.map((s) => (
-                  <li key={s.id}>
-                    <label className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-hover">
-                      <Checkbox checked={values.assignees.includes(s.fullName)} onChange={() => toggleStudent(s.fullName)} />
-                      <span className="min-w-0 flex-1 truncate">{s.fullName}</span>
-                      <span className="truncate text-xs text-muted">{s.email}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="sm:col-span-2">
+            <MultiSelect
+              label={`${t('asg.fieldStudents')} · ${t('asg.selectedCount', { count: String(values.assignees.length) })}`}
+              placeholder={t('asg.chooseStudents')}
+              options={sampleStudents.map((s) => ({ value: s.fullName, label: s.fullName }))}
+              value={values.assignees}
+              onChange={(next) => set('assignees', next)}
+              emptyText={t('asg.noStudents')}
+              removeLabel={(name) => t('cls.removeStudent', { name })}
+              selectAllLabel={t('asg.selectAll')}
+            />
             {groupError('assignees')}
 
             <div className="mt-3 rounded-lg border border-line bg-sunken p-3 text-xs">
@@ -261,7 +246,7 @@ export default function AssignForm({ assignment, onSave, onClose }: Props) {
                 </p>
               )}
             </div>
-          </fieldset>
+          </div>
         </div>
 
         <div className="flex shrink-0 justify-end gap-2 border-t border-line px-5 py-4">

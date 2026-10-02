@@ -2,9 +2,9 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import Avatar from '@/components/ui/Avatar'
 import Button from '@/components/ui/Button'
+import DateField from '@/components/ui/DateField'
 import Dropdown from '@/components/ui/Dropdown'
 import FormDialog from '@/components/ui/FormDialog'
-import TextField from '@/components/ui/TextField'
 import type { Sex } from '@/features/students/types'
 import { pickableSubjectNames, useSubjects } from '@/features/subjects/store/subjectsStore'
 import { validateTeacher } from '@/features/teachers/lib/validation'
@@ -189,9 +189,8 @@ export default function UserForm({ user, users, onSave, onClose }: Props) {
                 </div>
                 {teacherErrors.sex && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{t(teacherErrors.sex)}</p>}
               </div>
-              <TextField
+              <DateField
                 label={t('stu.fieldDob')}
-                type="date"
                 max={todayIso()}
                 value={teacher.dateOfBirth}
                 onChange={(v) => setTeacherField('dateOfBirth', v)}

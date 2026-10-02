@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import LogoutDialog from '@/components/layout/LogoutDialog'
 import { integrationNavItem, navItemsFor } from '@/components/layout/navItems'
 import { CloseIcon, LogoutIcon, SettingsIcon } from '@/components/ui/icons'
+import LogoMark from '@/components/ui/LogoMark'
 import { useSession } from '@/features/auth/store/authStore'
 import { useI18n } from '@/lib/i18n'
 
@@ -93,7 +94,7 @@ export default function MobileNav({ open, onClose }: Props) {
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-accent-strong to-violet-500 text-sm font-bold text-white shadow-sm"
                       aria-hidden="true"
                     >
-                      R
+                      <LogoMark className="h-4 w-4" />
                     </span>
                     <span className="text-base font-semibold">ReanTask</span>
                   </span>

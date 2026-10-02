@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import Button from '@/components/ui/Button'
+import DatePicker from '@/components/ui/DatePicker'
 import Dropdown from '@/components/ui/Dropdown'
 import Avatar from '@/components/ui/Avatar'
 import FormDialog from '@/components/ui/FormDialog'
@@ -114,7 +115,15 @@ export default function StudentForm({ student, students, onSave, onClose }: Prop
             <input {...props} type="text" autoComplete="off" value={values.fullName} onChange={(e) => set('fullName', e.target.value)} />
           ), undefined, 'full')}
           {field('dateOfBirth', t('stu.fieldDob'), (props) => (
-            <input {...props} type="date" max={todayIso()} value={values.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
+            <DatePicker
+              {...props}
+              className="py-2"
+              invalid={Boolean(errors.dateOfBirth)}
+              wrapperClassName="block w-full"
+              max={todayIso()}
+              value={values.dateOfBirth}
+              onChange={(v) => set('dateOfBirth', v)}
+            />
           ), age !== null ? `${t('stu.colAge')}: ${age}` : undefined)}
           {field('sex', t('stu.fieldSex'), (props) => (
             <Dropdown
