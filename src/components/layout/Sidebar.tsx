@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
-import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import { navItems } from '@/components/layout/navItems'
+import { NavLink } from 'react-router-dom'
+import LogoutDialog from '@/components/layout/LogoutDialog'
+import { integrationNavItem, navItemsFor } from '@/components/layout/navItems'
 import { LogoutIcon, SettingsIcon } from '@/components/ui/icons'
-import { currentUser } from '@/lib/currentUser'
+import { useSession } from '@/features/auth/store/authStore'
 import { useI18n } from '@/lib/i18n'
 
 const railLink = ({ isActive }: { isActive: boolean }) =>
@@ -27,7 +27,7 @@ function RailLabel({ children }: { children: string }) {
 
 export default function Sidebar() {
   const { t } = useI18n()
-  const navigate = useNavigate()
+  const role = useSession()?.role
   const [confirmingLogout, setConfirmingLogout] = useState(false)
 
   return (
@@ -40,7 +40,7 @@ export default function Sidebar() {
       </span>
 
       <nav aria-label={t('nav.main')} className="flex flex-1 flex-col items-center gap-1">
-        {navItems.map((item) => (
+        {navItemsFor(role).map((item) => (
           <NavLink key={item.to} to={item.to} className={railLink} aria-label={t(item.labelKey)}>
             {item.icon}
             <RailLabel>{t(item.labelKey)}</RailLabel>
@@ -48,7 +48,22 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <NavLink to="/settings" className={railLink} aria-label={t('nav.settings')}>
+      {role && integrationNavItem.roles.includes(role) && (
+        <NavLink
+          to={integrationNavItem.to}
+          className={railLink}
+          aria-label={t(integrationNavItem.labelKey)}
+        >
+          {integrationNavItem.icon}
+          <RailLabel>{t(integrationNavItem.labelKey)}</RailLabel>
+        </NavLink>
+      )}
+
+      <NavLink
+        to="/settings"
+        className={(state) => `${railLink(state)} mt-1`}
+        aria-label={t('nav.settings')}
+      >
         <SettingsIcon />
         <RailLabel>{t('nav.settings')}</RailLabel>
       </NavLink>
@@ -64,26 +79,7 @@ export default function Sidebar() {
         <RailLabel>{t('nav.logout')}</RailLabel>
       </button>
 
-      <ConfirmDialog
-        open={confirmingLogout}
-        icon={<LogoutIcon />}
-        title={t('logout.title')}
-        message={t('logout.message')}
-        confirmLabel={t('nav.logout')}
-        onCancel={() => setConfirmingLogout(false)}
-        onConfirm={() => {
-          setConfirmingLogout(false)
-          navigate('/login')
-        }}
-      >
-        <div className="flex items-center gap-3 rounded-lg border border-line bg-sunken p-3">
-          <img src={currentUser.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
-          <div className="min-w-0 leading-tight">
-            <p className="truncate text-sm font-medium">{currentUser.fullName}</p>
-            <p className="truncate text-xs text-muted">{currentUser.email}</p>
-          </div>
-        </div>
-      </ConfirmDialog>
+      <LogoutDialog open={confirmingLogout} onClose={() => setConfirmingLogout(false)} />
     </aside>
   )
 }

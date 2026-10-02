@@ -1,5 +1,8 @@
 import { todayIso } from '@/lib/dates'
 
+/** Longest description a class or subject may have. */
+export const MAX_DESCRIPTION_LENGTH = 120
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PHONE_PATTERN = /^\+?[\d\s-]+$/
 

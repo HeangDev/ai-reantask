@@ -4,7 +4,9 @@ import Avatar from '@/components/ui/Avatar'
 import Button from '@/components/ui/Button'
 import Dropdown from '@/components/ui/Dropdown'
 import FormDialog from '@/components/ui/FormDialog'
-import { teacherSubjects } from '@/features/teachers/data/sampleTeachers'
+import MultiSelect from '@/components/ui/MultiSelect'
+import { pickableClasses, useClasses } from '@/features/classes/store/classesStore'
+import { pickableSubjectNames, useSubjects } from '@/features/subjects/store/subjectsStore'
 import { validateTeacher } from '@/features/teachers/lib/validation'
 import type { Teacher, TeacherFormErrors, TeacherInput } from '@/features/teachers/types'
 import type { Sex } from '@/features/students/types'
@@ -25,6 +27,8 @@ const fieldClass =
 
 export default function TeacherForm({ teacher, teachers, onSave, onClose }: Props) {
   const { t } = useI18n()
+  const subjects = useSubjects()
+  const classes = useClasses()
   const [values, setValues] = useState<TeacherInput>({
     fullName: teacher?.fullName ?? '',
     email: teacher?.email ?? '',
@@ -33,6 +37,7 @@ export default function TeacherForm({ teacher, teachers, onSave, onClose }: Prop
     sex: teacher?.sex ?? ('' as Sex),
     dateOfBirth: teacher?.dateOfBirth ?? '',
     subject: teacher?.subject ?? '',
+    classes: teacher?.classes ?? [],
   })
   const [errors, setErrors] = useState<TeacherFormErrors>({})
 
@@ -89,6 +94,7 @@ export default function TeacherForm({ teacher, teachers, onSave, onClose }: Prop
         {[
           values.subject,
           age !== null ? t('stu.age', { age: String(age) }) : '',
+          values.classes.length > 0 ? t('tch.classesCount', { count: String(values.classes.length) }) : '',
           values.sex ? t(values.sex === 'male' ? 'stu.sexMale' : 'stu.sexFemale') : '',
         ]
           .filter(Boolean)
@@ -143,10 +149,21 @@ export default function TeacherForm({ teacher, teachers, onSave, onClose }: Prop
               wrapperClassName="block w-full"
               value={values.subject}
               placeholder={t('tch.chooseSubject')}
-              options={teacherSubjects.map((s) => ({ value: s, label: s }))}
+              options={pickableSubjectNames(subjects, teacher?.subject).map((s) => ({ value: s, label: s }))}
               onChange={(v) => set('subject', v)}
             />
           ), undefined, 'full')}
+          <div className="sm:col-span-2">
+            <MultiSelect
+              label={t('tch.classes')}
+              placeholder={t('tch.addClass')}
+              emptyText={t('tch.noClasses')}
+              removeLabel={(name) => t('tch.removeClass', { name })}
+              options={pickableClasses(classes, teacher?.classes).map((c) => ({ value: c.id, label: c.name }))}
+              value={values.classes}
+              onChange={(v) => set('classes', v)}
+            />
+          </div>
         </div>
         <div className="flex justify-end gap-2 border-t border-line px-6 py-4">
           <button

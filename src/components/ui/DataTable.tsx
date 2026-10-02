@@ -41,11 +41,13 @@ interface Props<T extends { id: string }> {
   /** Key of the column the table is sorted by at first. */
   initialSort: string
   labels: TableLabels
-  selected: ReadonlySet<string>
-  onSelectedChange: (ids: Set<string>) => void
-  onOpen: (id: string) => void
-  onEdit: (id: string) => void
-  onDelete: (id: string) => void
+  selected?: ReadonlySet<string>
+  onSelectedChange?: (ids: Set<string>) => void
+  onOpen?: (id: string) => void
+  onEdit?: (id: string) => void
+  onDelete?: (id: string) => void
+  /** A plain list: no selection boxes, no row actions, and rows do not open. */
+  readOnly?: boolean
   /** Below this width the table scrolls sideways. */
   minWidth?: string
   /** Same, as classes, for tables whose minimum changes with the window (columns that hide on small screens). Wins over minWidth. */
@@ -55,6 +57,9 @@ interface Props<T extends { id: string }> {
   /** Extra buttons shown before Edit and Delete in each row. */
   renderActions?: (row: T) => ReactNode
 }
+
+const NO_SELECTION: ReadonlySet<string> = new Set()
+const noop = () => {}
 
 type Direction = 'asc' | 'desc'
 
@@ -76,11 +81,12 @@ export default function DataTable<T extends { id: string }>({
   getSubtitle,
   initialSort,
   labels,
-  selected,
-  onSelectedChange,
-  onOpen,
-  onEdit,
-  onDelete,
+  selected = NO_SELECTION,
+  onSelectedChange = noop,
+  onOpen = noop,
+  onEdit = noop,
+  onDelete = noop,
+  readOnly = false,
   minWidth = '64rem',
   minWidthClass,
   showAvatar = true,
@@ -138,11 +144,11 @@ export default function DataTable<T extends { id: string }>({
 
   const colGroup = (
     <colgroup>
-      <col style={{ width: SELECT_WIDTH }} />
+      {!readOnly && <col style={{ width: SELECT_WIDTH }} />}
       {columns.map((c) => (
         <col key={c.key} className={c.hideBelow ? hideCol[c.hideBelow] : undefined} style={c.width ? { width: c.width } : undefined} />
       ))}
-      <col style={{ width: renderActions ? ACTIONS_WIDTH_WITH_EXTRA : ACTIONS_WIDTH }} />
+      {!readOnly && <col style={{ width: renderActions ? ACTIONS_WIDTH_WITH_EXTRA : ACTIONS_WIDTH }} />}
     </colgroup>
   )
 
@@ -156,14 +162,16 @@ export default function DataTable<T extends { id: string }>({
               {colGroup}
               <thead>
                 <tr className="text-[11px] font-medium text-muted">
-                  <th scope="col" className="py-2.5 pl-4 pr-0">
-                    <Checkbox
-                      checked={allOnPage}
-                      indeterminate={selectedOnPage > 0 && !allOnPage}
-                      onChange={togglePage}
-                      aria-label={labels.selectAll}
-                    />
-                  </th>
+                  {!readOnly && (
+                    <th scope="col" className="py-2.5 pl-4 pr-0">
+                      <Checkbox
+                        checked={allOnPage}
+                        indeterminate={selectedOnPage > 0 && !allOnPage}
+                        onChange={togglePage}
+                        aria-label={labels.selectAll}
+                      />
+                    </th>
+                  )}
                   {columns.map((c) => {
                     if (!c.sortValue) {
                       return (
@@ -196,9 +204,11 @@ export default function DataTable<T extends { id: string }>({
                       </th>
                     )
                   })}
-                  <th scope="col" className="py-2.5 pl-3 pr-4">
-                    <span className="sr-only">{labels.actions}</span>
-                  </th>
+                  {!readOnly && (
+                    <th scope="col" className="py-2.5 pl-3 pr-4">
+                      <span className="sr-only">{labels.actions}</span>
+                    </th>
+                  )}
                 </tr>
               </thead>
             </table>
@@ -214,29 +224,35 @@ export default function DataTable<T extends { id: string }>({
                   return (
                     <tr
                       key={row.id}
-                      onClick={() => onOpen(row.id)}
+                      onClick={readOnly ? undefined : () => onOpen(row.id)}
                       aria-selected={isSelected}
-                      className={`group cursor-pointer border-b border-line/60 transition-colors last:border-b-0 ${isSelected ? 'bg-accent-soft' : 'hover:bg-hover'}`}
+                      className={`group ${readOnly ? '' : 'cursor-pointer'} border-b border-line/60 transition-colors last:border-b-0 ${isSelected ? 'bg-accent-soft' : 'hover:bg-hover'}`}
                     >
-                      <td className="py-3 pl-4 pr-0" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox checked={isSelected} onChange={() => toggle(row.id)} aria-label={labels.selectRow(name)} />
-                      </td>
+                      {!readOnly && (
+                        <td className="py-3 pl-4 pr-0" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox checked={isSelected} onChange={() => toggle(row.id)} aria-label={labels.selectRow(name)} />
+                        </td>
+                      )}
                       {columns.map((c) =>
                         c.primary ? (
                           <td key={c.key} className="px-3 py-3">
                             <div className="flex items-center gap-3">
                               {showAvatar && <Avatar name={name} />}
                               <div className="min-w-0">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    onOpen(row.id)
-                                  }}
-                                  className={`block max-w-full truncate rounded font-medium hover:underline ${focusRing}`}
-                                >
-                                  {name}
-                                </button>
+                                {readOnly ? (
+                                  <p className="truncate font-medium">{name}</p>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      onOpen(row.id)
+                                    }}
+                                    className={`block max-w-full truncate rounded font-medium hover:underline ${focusRing}`}
+                                  >
+                                    {name}
+                                  </button>
+                                )}
                                 <p className="truncate text-[11px] text-muted">{getSubtitle(row)}</p>
                               </div>
                             </div>
@@ -247,22 +263,24 @@ export default function DataTable<T extends { id: string }>({
                           </td>
                         ),
                       )}
-                      <td className="py-3 pl-3 pr-4" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end gap-0.5 transition-opacity md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100">
-                          {renderActions?.(row)}
-                          <button type="button" onClick={() => onEdit(row.id)} aria-label={`${labels.edit}: ${name}`} className={iconButton}>
-                            <EditIcon />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onDelete(row.id)}
-                            aria-label={`${labels.delete}: ${name}`}
-                            className={`${iconButton} hover:text-red-600 dark:hover:text-red-400`}
-                          >
-                            <TrashIcon />
-                          </button>
-                        </div>
-                      </td>
+                      {!readOnly && (
+                        <td className="py-3 pl-3 pr-4" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex justify-end gap-0.5 transition-opacity md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100">
+                            {renderActions?.(row)}
+                            <button type="button" onClick={() => onEdit(row.id)} aria-label={`${labels.edit}: ${name}`} className={iconButton}>
+                              <EditIcon />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onDelete(row.id)}
+                              aria-label={`${labels.delete}: ${name}`}
+                              className={`${iconButton} hover:text-red-600 dark:hover:text-red-400`}
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   )
                 })}

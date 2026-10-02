@@ -14,7 +14,7 @@ interface CardProps {
   detail: ReactNode
 }
 
-function StatCard({ label, value, icon, detail }: CardProps) {
+export function StatCard({ label, value, icon, detail }: CardProps) {
   return (
     <div className="flex flex-col rounded-xl border border-line bg-surface p-4">
       <div className="flex items-start justify-between gap-3">

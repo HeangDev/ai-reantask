@@ -4,6 +4,7 @@ import Dropdown from '@/components/ui/Dropdown'
 import Modal from '@/components/ui/Modal'
 import AssignmentCard from '@/features/assignments/components/AssignmentCard'
 import AssignmentDetail from '@/features/assignments/components/AssignmentDetail'
+import MyClasses from '@/features/classes/components/MyClasses'
 import { assignmentsActions, useAssignments } from '@/features/assignments/store/assignmentsStore'
 import { needsAction } from '@/features/assignments/lib/status'
 import type { Assignment } from '@/features/assignments/types'
@@ -80,6 +81,8 @@ export default function AssignmentsPage() {
           </label>
         </div>
       </div>
+
+      <MyClasses />
 
       {matches.length === 0 ? (
         <p className="mt-6 rounded-xl border border-line bg-surface p-10 text-center text-sm text-muted">{t('list.empty')}</p>

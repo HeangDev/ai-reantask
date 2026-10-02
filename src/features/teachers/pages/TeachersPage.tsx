@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Button from '@/components/ui/Button'
 import DeleteDialog from '@/components/ui/DeleteDialog'
 import Dropdown from '@/components/ui/Dropdown'
 import { PlusIcon, SearchIcon, TrashIcon } from '@/components/ui/icons'
+import { useToast } from '@/components/ui/Toast'
 import { sampleStudents } from '@/features/students/data/sampleStudents'
 import TeacherDetail from '@/features/teachers/components/TeacherDetail'
 import TeacherForm from '@/features/teachers/components/TeacherForm'
 import TeachersTable from '@/features/teachers/components/TeachersTable'
-import { sampleTeachers, teacherSubjects } from '@/features/teachers/data/sampleTeachers'
-import type { Teacher, TeacherInput } from '@/features/teachers/types'
+import { useClasses } from '@/features/classes/store/classesStore'
+import { useSubjects } from '@/features/subjects/store/subjectsStore'
+import { teachersActions, useTeachers } from '@/features/teachers/store/teachersStore'
+import type { TeacherInput } from '@/features/teachers/types'
 import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
 
 type Dialog =
   | { type: 'none' }
@@ -23,19 +25,14 @@ const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
 
 export default function TeachersPage() {
   const { t } = useI18n()
-  const [teachers, setTeachers] = useState<Teacher[]>(sampleTeachers)
+  const subjects = useSubjects()
+  const classes = useClasses()
+  const { notify } = useToast()
+  const teachers = useTeachers()
   const [query, setQuery] = useState('')
   const [subject, setSubject] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [dialog, setDialog] = useState<Dialog>(NO_DIALOG)
-  const [notice, setNotice] = useState<TranslationKey | null>(null)
-
-  // Success feedback disappears on its own.
-  useEffect(() => {
-    if (!notice) return
-    const timer = setTimeout(() => setNotice(null), 4000)
-    return () => clearTimeout(timer)
-  }, [notice])
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -53,31 +50,36 @@ export default function TeachersPage() {
     [teachers],
   )
 
+  const classNames = useMemo(() => Object.fromEntries(classes.map((c) => [c.id, c.name])), [classes])
+
   const target = 'id' in dialog ? teachers.find((x) => x.id === dialog.id) ?? null : null
   const close = () => setDialog(NO_DIALOG)
 
   const save = (input: TeacherInput) => {
     if (target && dialog.type === 'edit') {
-      setTeachers((list) => list.map((x) => (x.id === target.id ? { ...x, ...input } : x)))
-      setNotice('tch.updated')
+      teachersActions.update(target.id, input)
+      notify({ variant: 'info', title: t('tch.updated'), subtitle: t('toast.saved', { name: input.fullName }) })
     } else {
-      setTeachers((list) => [...list, { id: crypto.randomUUID(), ...input }])
-      setNotice('tch.added')
+      teachersActions.add(input)
+      notify({ title: t('tch.added'), subtitle: t('toast.added', { name: input.fullName }) })
     }
     close()
   }
 
   const removeIds = (ids: ReadonlySet<string>) => {
-    setTeachers((list) => list.filter((x) => !ids.has(x.id)))
+    teachersActions.remove(ids)
     setSelected((current) => new Set([...current].filter((id) => !ids.has(id))))
-    setNotice('tch.deleted')
+    notify({ variant: 'danger', title: t('tch.deleted'), subtitle: t('toast.removed', { count: String(ids.size) }) })
     close()
   }
 
   return (
     <section className="p-4 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">{t('nav.teachers')}</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">{t('nav.teachers')}</h1>
+          <p className="mt-1 text-sm text-muted">{t('tch.pageDesc')}</p>
+        </div>
         <Button
           type="button"
           onClick={() => setDialog({ type: 'create' })}
@@ -87,14 +89,6 @@ export default function TeachersPage() {
           <PlusIcon />
           {t('tch.add')}
         </Button>
-      </div>
-
-      <div role="status" aria-live="polite" className="mt-3 empty:hidden">
-        {notice && (
-          <p className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-            {t(notice)}
-          </p>
-        )}
       </div>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-line bg-surface">
@@ -138,7 +132,7 @@ export default function TeachersPage() {
                 <Dropdown
                   value={subject}
                   onChange={setSubject}
-                  options={[{ value: '', label: t('tch.allSubjects') }, ...teacherSubjects.map((s) => ({ value: s, label: s }))]}
+                  options={[{ value: '', label: t('tch.allSubjects') }, ...subjects.map((s) => ({ value: s.name, label: s.name }))]}
                   wrapperClassName="min-w-0 flex-1 sm:w-48 sm:flex-none"
                 />
               </label>
@@ -157,6 +151,7 @@ export default function TeachersPage() {
           <TeachersTable
             teachers={visible}
             studentCounts={studentCounts}
+            classNames={classNames}
             selected={selected}
             onSelectedChange={setSelected}
             onOpen={(id) => setDialog({ type: 'detail', id })}
@@ -172,6 +167,7 @@ export default function TeachersPage() {
         <TeacherDetail
           teacher={target}
           studentCount={studentCounts[target.id] ?? 0}
+          classNames={target.classes.map((id) => classNames[id]).filter(Boolean)}
           onEdit={() => setDialog({ type: 'edit', id: target.id })}
           onDelete={() => setDialog({ type: 'delete', id: target.id })}
           onClose={close}

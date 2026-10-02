@@ -23,6 +23,11 @@
   --accent-strong: color-mix(in srgb, var(--accent-base) var(--accent-strong-amount), black);
   --accent-soft: color-mix(in srgb, var(--accent-base) 10%, white);
   --accent-fg: color-mix(in srgb, var(--accent-base) 70%, black);
+
+  /* Assignment phases: one hue, light to dark as work nears done. */
+  --phase-1: #86b6ef;
+  --phase-2: #3987e5;
+  --phase-3: #184f95;
 }
 
 .dark {
@@ -40,6 +45,10 @@
   --accent-strong: color-mix(in srgb, var(--accent-base) var(--accent-strong-amount), black);
   --accent-soft: color-mix(in srgb, var(--accent-base) 16%, #0a0c11);
   --accent-fg: color-mix(in srgb, var(--accent-base) 45%, white);
+
+  --phase-1: #184f95;
+  --phase-2: #3987e5;
+  --phase-3: #86b6ef;
 }
 
 @theme inline {

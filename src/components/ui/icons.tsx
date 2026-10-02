@@ -82,6 +82,83 @@ export const RolesIcon = () => (
   </Icon>
 )
 
+export const IntegrationIcon = () => (
+  <Icon>
+    <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5" />
+    <path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5" />
+  </Icon>
+)
+
+export const BellIcon = () => (
+  <Icon>
+    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+  </Icon>
+)
+
+export const ClassIcon = () => (
+  <Icon>
+    <rect x="3" y="4" width="18" height="12" rx="1" />
+    <path d="M7 9h6M7 12h4M8 20h8M12 16v4" />
+  </Icon>
+)
+
+export const SubjectIcon = () => (
+  <Icon>
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z" />
+    <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5M9 7h6" />
+  </Icon>
+)
+
+export const GridIcon = () => (
+  <Icon>
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
+  </Icon>
+)
+
+export const ListIcon = () => (
+  <Icon>
+    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+  </Icon>
+)
+
+export const UserIcon = () => (
+  <Icon>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21a8 8 0 0 1 16 0" />
+  </Icon>
+)
+
+export const LockIcon = () => (
+  <Icon>
+    <rect x="5" y="11" width="14" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+  </Icon>
+)
+
+export const MonitorIcon = () => (
+  <Icon>
+    <rect x="2" y="4" width="20" height="13" rx="2" />
+    <path d="M8 21h8M12 17v4" />
+  </Icon>
+)
+
+export const PhoneIcon = () => (
+  <Icon>
+    <rect x="7" y="2" width="10" height="20" rx="2" />
+    <path d="M11 18h2" />
+  </Icon>
+)
+
+export const CameraIcon = () => (
+  <Icon>
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </Icon>
+)
+
 export const LogoutIcon = () => (
   <Icon>
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
@@ -191,6 +268,13 @@ export const EyeIcon = () => (
   <Icon>
     <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
     <circle cx="12" cy="12" r="3" />
+  </Icon>
+)
+
+export const EyeOffIcon = () => (
+  <Icon>
+    <path d="M17.94 17.94A10.1 10.1 0 0 1 12 19c-6.4 0-10-7-10-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.1 9.1 0 0 1 12 4c6.4 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22" />
+    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
   </Icon>
 )
 

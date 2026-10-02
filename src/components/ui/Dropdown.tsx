@@ -32,7 +32,11 @@ interface Position {
 }
 
 const GAP = 4
-const MAX_LIST_HEIGHT = 256
+// The list shows this many options before it scrolls; with fewer there is no scrollbar.
+const MAX_VISIBLE_OPTIONS = 5
+const OPTION_HEIGHT = 32 // py-1.5 + one text-sm line
+const LIST_PADDING = 10 // p-1 plus the border
+const MAX_LIST_HEIGHT = MAX_VISIBLE_OPTIONS * OPTION_HEIGHT + LIST_PADDING
 // Wide enough for an option plus its tick even when the trigger is narrow.
 const MIN_LIST_WIDTH = 96
 

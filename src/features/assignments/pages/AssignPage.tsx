@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '@/components/ui/Button'
 import DeleteDialog from '@/components/ui/DeleteDialog'
 import Dropdown from '@/components/ui/Dropdown'
 import { PlusIcon, SearchIcon, TrashIcon } from '@/components/ui/icons'
+import { useToast } from '@/components/ui/Toast'
 import AssignForm from '@/features/assignments/components/AssignForm'
 import AssignTable from '@/features/assignments/components/AssignTable'
 import { assignmentClasses } from '@/features/assignments/data/sampleAssignments'
@@ -13,7 +14,6 @@ import { setUpRepository } from '@/features/assignments/services/setUpRepository
 import { assignmentsActions, useAssignments } from '@/features/assignments/store/assignmentsStore'
 import type { Assignment, AssignmentTask } from '@/features/assignments/types'
 import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
 
 type Dialog =
   | { type: 'none' }
@@ -51,20 +51,13 @@ function fromForm(values: AssignFormValues, previous?: Assignment) {
 /** The teacher's side: create assignments and choose which students receive them. */
 export default function AssignPage() {
   const { t } = useI18n()
+  const { notify } = useToast()
   const assignments = useAssignments()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [className, setClassName] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [dialog, setDialog] = useState<Dialog>(NO_DIALOG)
-  const [notice, setNotice] = useState<{ key: TranslationKey; vars?: Record<string, string> } | null>(null)
-
-  // Success feedback disappears on its own.
-  useEffect(() => {
-    if (!notice) return
-    const timer = setTimeout(() => setNotice(null), 4000)
-    return () => clearTimeout(timer)
-  }, [notice])
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -82,14 +75,14 @@ export default function AssignPage() {
       assignmentsActions.update(target.id, fields)
       // Students added to the assignment get their own branch; existing branches are left alone.
       if (target.repo) void setUpRepository(target.id, planRepository(fields.className, fields.title, fields.assignees, target.repo))
-      setNotice({ key: 'asg.updated' })
+      notify({ variant: 'info', title: t('asg.updated'), subtitle: t('toast.saved', { name: fields.title }) })
     } else {
       const id = crypto.randomUUID()
       const fields = fromForm(values)
       assignmentsActions.add({ id, status: 'pending', ...fields })
       const plan = planRepository(fields.className, fields.title, fields.assignees)
       void setUpRepository(id, plan)
-      setNotice({ key: 'asg.addedRepo', vars: { name: plan.name, count: String(plan.branches.length) } })
+      notify({ title: t('asg.added'), subtitle: t('asg.repoSetup', { name: plan.name, count: String(plan.branches.length) }) })
     }
     close()
   }
@@ -97,14 +90,17 @@ export default function AssignPage() {
   const removeIds = (ids: ReadonlySet<string>) => {
     assignmentsActions.remove(ids)
     setSelected((current) => new Set([...current].filter((id) => !ids.has(id))))
-    setNotice({ key: 'asg.deleted' })
+    notify({ variant: 'danger', title: t('asg.deleted'), subtitle: t('toast.removed', { count: String(ids.size) }) })
     close()
   }
 
   return (
     <section className="p-4 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">{t('nav.assign')}</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">{t('nav.assign')}</h1>
+          <p className="mt-1 text-sm text-muted">{t('asg.pageDesc')}</p>
+        </div>
         <Button
           type="button"
           onClick={() => setDialog({ type: 'create' })}
@@ -114,14 +110,6 @@ export default function AssignPage() {
           <PlusIcon />
           {t('asg.add')}
         </Button>
-      </div>
-
-      <div role="status" aria-live="polite" className="mt-3 empty:hidden">
-        {notice && (
-          <p className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-            {t(notice.key, notice.vars)}
-          </p>
-        )}
       </div>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-line bg-surface">

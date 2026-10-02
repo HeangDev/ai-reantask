@@ -10,6 +10,8 @@ interface Props {
   teachers: Teacher[]
   /** Student count per teacher id. */
   studentCounts: Record<string, number>
+  /** Class name per class id. */
+  classNames: Record<string, string>
   selected: ReadonlySet<string>
   onSelectedChange: (ids: Set<string>) => void
   onOpen: (id: string) => void
@@ -17,7 +19,7 @@ interface Props {
   onDelete: (id: string) => void
 }
 
-export default function TeachersTable({ teachers, studentCounts, ...handlers }: Props) {
+export default function TeachersTable({ teachers, studentCounts, classNames, ...handlers }: Props) {
   const { t, locale } = useI18n()
 
   const columns = useMemo<Column<Teacher>[]>(
@@ -53,6 +55,18 @@ export default function TeachersTable({ teachers, studentCounts, ...handlers }: 
         cell: (x) => x.subject,
       },
       {
+        key: 'classes',
+        header: t('tch.classes'),
+        width: '11rem',
+        hideBelow: 'xl',
+        cellClassName: 'truncate text-muted',
+        cell: (x) => {
+          const names = x.classes.map((id) => classNames[id]).filter(Boolean)
+          if (names.length === 0) return '—'
+          return <span title={names.join(', ')}>{names.slice(0, 2).join(', ')}{names.length > 2 ? ` +${names.length - 2}` : ''}</span>
+        },
+      },
+      {
         key: 'students',
         header: t('tch.colStudents'),
         width: '6rem',
@@ -60,7 +74,7 @@ export default function TeachersTable({ teachers, studentCounts, ...handlers }: 
         cell: (x) => studentCounts[x.id] ?? 0,
       },
     ],
-    [t, locale, studentCounts],
+    [t, locale, studentCounts, classNames],
   )
 
   const labels = useMemo(
@@ -86,7 +100,7 @@ export default function TeachersTable({ teachers, studentCounts, ...handlers }: 
       getName={(x) => x.fullName}
       getSubtitle={(x) => x.email}
       initialSort="fullName"
-      minWidthClass="min-w-[53rem] xl:min-w-[62rem]"
+      minWidthClass="min-w-[53rem] xl:min-w-[73rem]"
       labels={labels}
       {...handlers}
     />

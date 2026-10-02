@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { navItems } from '@/components/layout/navItems'
+import { integrationNavItem, navItemsFor } from '@/components/layout/navItems'
 import { AssignmentsIcon, GlobeIcon, MoonIcon, SettingsIcon, SunIcon, TasksIcon } from '@/components/ui/icons'
 import { useAssignments } from '@/features/assignments/store/assignmentsStore'
+import { useSession } from '@/features/auth/store/authStore'
 import type { SearchItem } from '@/features/search/types'
 import { sampleTasks } from '@/features/tasks/data/sampleTasks'
 import { useTheme } from '@/hooks/useTheme'
@@ -15,6 +16,7 @@ export function useSearchItems(close: () => void): SearchItem[] {
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const assignmentList = useAssignments()
+  const role = useSession()?.role
 
   return useMemo(() => {
     const go = (to: string) => () => {
@@ -27,7 +29,7 @@ export function useSearchItems(close: () => void): SearchItem[] {
     }
 
     const pages: SearchItem[] = [
-      ...navItems.map((n) => ({
+      ...[...navItemsFor(role), ...(role && integrationNavItem.roles.includes(role) ? [integrationNavItem] : [])].map((n) => ({
         id: `page:${n.to}`,
         group: 'pages' as const,
         label: t(n.labelKey),
@@ -52,7 +54,7 @@ export function useSearchItems(close: () => void): SearchItem[] {
       description: `${a.className} · ${t(`status.${a.status}` as const)}`,
       icon: <AssignmentsIcon />,
       keywords: [a.description, a.feedback, a.submittedFile, a.allowedFileTypes.join(' ')].filter(Boolean).join(' '),
-      onSelect: go(`/assignments?q=${encodeURIComponent(a.title)}`),
+      onSelect: go(role === 'teacher' ? '/assign' : `/assignments?q=${encodeURIComponent(a.title)}`),
     }))
 
     const tasks: SearchItem[] = sampleTasks.map((task) => ({
@@ -88,5 +90,5 @@ export function useSearchItems(close: () => void): SearchItem[] {
     ]
 
     return [...pages, ...assignments, ...tasks, ...actions]
-  }, [t, language, setLanguage, theme, toggleTheme, navigate, close, assignmentList])
+  }, [t, language, setLanguage, theme, toggleTheme, navigate, close, assignmentList, role])
 }

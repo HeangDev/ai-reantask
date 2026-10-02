@@ -9,6 +9,8 @@ interface Props {
   teacher: Teacher
   /** How many students this teacher has. */
   studentCount: number
+  /** Names of the classes this teacher teaches. */
+  classNames: string[]
   onEdit: () => void
   onDelete: () => void
   onClose: () => void
@@ -17,7 +19,7 @@ interface Props {
 const actionClass =
   'flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4'
 
-export default function TeacherDetail({ teacher, studentCount, onEdit, onDelete, onClose }: Props) {
+export default function TeacherDetail({ teacher, studentCount, classNames, onEdit, onDelete, onClose }: Props) {
   const { t, locale } = useI18n()
 
   return (
@@ -36,6 +38,7 @@ export default function TeacherDetail({ teacher, studentCount, onEdit, onDelete,
             [t('stu.fieldDob'), `${formatDate(teacher.dateOfBirth, locale)} · ${t('stu.age', { age: String(ageFrom(teacher.dateOfBirth)) })}`],
             [t('stu.fieldSex'), t(teacher.sex === 'male' ? 'stu.sexMale' : 'stu.sexFemale')],
             [t('stu.fieldPhone'), teacher.phone],
+            [t('tch.classes'), classNames.join(', ') || '—'],
             [t('tch.colStudents'), String(studentCount)],
           ].map(([label, value]) => (
             <div key={label} className="flex justify-between gap-4 px-3 py-2">

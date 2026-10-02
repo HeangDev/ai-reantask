@@ -9,6 +9,8 @@ export interface Teacher {
   /** ISO date (YYYY-MM-DD). */
   dateOfBirth: string
   subject: string
+  /** Ids of the classes this teacher teaches. */
+  classes: string[]
 }
 
 export type TeacherInput = Omit<Teacher, 'id'>

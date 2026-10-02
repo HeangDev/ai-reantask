@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Button from '@/components/ui/Button'
 import { PlusIcon, SearchIcon, TrashIcon } from '@/components/ui/icons'
+import { useToast } from '@/components/ui/Toast'
 import Dropdown from '@/components/ui/Dropdown'
 import DeleteDialog from '@/components/ui/DeleteDialog'
 import StudentDetail from '@/features/students/components/StudentDetail'
@@ -9,7 +10,6 @@ import StudentsTable from '@/features/students/components/StudentsTable'
 import { sampleStudents, studentTeachers } from '@/features/students/data/sampleStudents'
 import type { Student, StudentInput } from '@/features/students/types'
 import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
 
 type Dialog =
   | { type: 'none' }
@@ -22,19 +22,12 @@ const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
 
 export default function StudentsPage() {
   const { t } = useI18n()
+  const { notify } = useToast()
   const [students, setStudents] = useState<Student[]>(sampleStudents)
   const [query, setQuery] = useState('')
   const [teacher, setTeacher] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [dialog, setDialog] = useState<Dialog>(NO_DIALOG)
-  const [notice, setNotice] = useState<TranslationKey | null>(null)
-
-  // Success feedback disappears on its own.
-  useEffect(() => {
-    if (!notice) return
-    const timer = setTimeout(() => setNotice(null), 4000)
-    return () => clearTimeout(timer)
-  }, [notice])
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -49,10 +42,10 @@ export default function StudentsPage() {
   const save = (input: StudentInput) => {
     if (target && dialog.type === 'edit') {
       setStudents((list) => list.map((s) => (s.id === target.id ? { ...s, ...input } : s)))
-      setNotice('stu.updated')
+      notify({ variant: 'info', title: t('stu.updated'), subtitle: t('toast.saved', { name: input.fullName }) })
     } else {
       setStudents((list) => [...list, { id: crypto.randomUUID(), ...input }])
-      setNotice('stu.added')
+      notify({ title: t('stu.added'), subtitle: t('toast.added', { name: input.fullName }) })
     }
     close()
   }
@@ -60,14 +53,17 @@ export default function StudentsPage() {
   const removeIds = (ids: ReadonlySet<string>) => {
     setStudents((list) => list.filter((s) => !ids.has(s.id)))
     setSelected((current) => new Set([...current].filter((id) => !ids.has(id))))
-    setNotice('stu.deleted')
+    notify({ variant: 'danger', title: t('stu.deleted'), subtitle: t('toast.removed', { count: String(ids.size) }) })
     close()
   }
 
   return (
     <section className="p-4 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">{t('nav.students')}</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">{t('nav.students')}</h1>
+          <p className="mt-1 text-sm text-muted">{t('stu.pageDesc')}</p>
+        </div>
         <Button
           type="button"
           onClick={() => setDialog({ type: 'create' })}
@@ -77,14 +73,6 @@ export default function StudentsPage() {
           <PlusIcon />
           {t('stu.add')}
         </Button>
-      </div>
-
-      <div role="status" aria-live="polite" className="mt-3 empty:hidden">
-        {notice && (
-          <p className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-            {t(notice)}
-          </p>
-        )}
       </div>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-line bg-surface">
