@@ -1,7 +1,7 @@
 import { useI18n } from '@/lib/i18n'
 import type { TranslationKey } from '@/lib/i18n'
 
-const greetingKey = (hour: number): TranslationKey =>
+export const greetingKey =(hour: number): TranslationKey =>
   hour < 12 ? 'dash.greetingMorning' : hour < 18 ? 'dash.greetingAfternoon' : 'dash.greetingEvening'
 
 /** Today's date, a time-of-day greeting for the person, and a one-line summary under it. */
