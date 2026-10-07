@@ -1,5 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import type { ReactNode } from 'react'
+import i18n from 'i18next'
+import { I18nextProvider, initReactI18next, useTranslation } from 'react-i18next'
 
 const en = {
   'app.workspace': 'Workspace',
@@ -2346,9 +2348,49 @@ const ko: Record<TranslationKey, string> = {
   'dash.activity.graded': '{score}/{max} 채점됨',
 }
 
-const dictionaries: Record<Language, Record<TranslationKey, string>> = { en, km, ko }
 const locales: Record<Language, string> = { en: 'en-US', km: 'km-KH', ko: 'ko-KR' }
 const STORAGE_KEY = 'language'
+const DEFAULT_LANGUAGE: Language = 'en'
+
+function isLanguage(value: unknown): value is Language {
+  return value === 'en' || value === 'km' || value === 'ko'
+}
+
+function initialLanguage(): Language {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (isLanguage(saved)) return saved
+  } catch {
+    // storage unavailable — fall back to the default language
+  }
+  return DEFAULT_LANGUAGE
+}
+
+void i18n.use(initReactI18next).init({
+  resources: {
+    en: { translation: en },
+    km: { translation: km },
+    ko: { translation: ko },
+  },
+  lng: initialLanguage(),
+  fallbackLng: DEFAULT_LANGUAGE,
+  supportedLngs: ['en', 'km', 'ko'],
+  // Keys look like "nav.main", and strings use {name} placeholders.
+  keySeparator: false,
+  nsSeparator: false,
+  interpolation: { prefix: '{', suffix: '}', escapeValue: false },
+  returnNull: false,
+})
+
+i18n.on('languageChanged', (lng) => {
+  document.documentElement.lang = lng
+  try {
+    localStorage.setItem(STORAGE_KEY, lng)
+  } catch {
+    // ignore
+  }
+})
+document.documentElement.lang = i18n.language
 
 interface I18nValue {
   language: Language
@@ -2357,49 +2399,23 @@ interface I18nValue {
   t: (key: TranslationKey, vars?: Record<string, string>) => string
 }
 
-const I18nContext = createContext<I18nValue | null>(null)
-
-function initialLanguage(): Language {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved === 'en' || saved === 'km' || saved === 'ko') return saved
-  } catch {
-    // storage unavailable — fall back to English
-  }
-  return 'en'
-}
-
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>(initialLanguage)
-
-  useEffect(() => {
-    document.documentElement.lang = language
-    try {
-      localStorage.setItem(STORAGE_KEY, language)
-    } catch {
-      // ignore
-    }
-  }, [language])
-
-  const value = useMemo<I18nValue>(
-    () => ({
-      language,
-      locale: locales[language],
-      setLanguage,
-      t: (key, vars) =>
-        Object.entries(vars ?? {}).reduce(
-          (text, [name, val]) => text.replace(`{${name}}`, val),
-          dictionaries[language][key],
-        ),
-    }),
-    [language],
-  )
-
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
+  return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
 }
 
 export function useI18n(): I18nValue {
-  const ctx = useContext(I18nContext)
-  if (!ctx) throw new Error('useI18n must be used inside I18nProvider')
-  return ctx
+  const { t, i18n: instance } = useTranslation()
+  const language: Language = isLanguage(instance.language) ? instance.language : DEFAULT_LANGUAGE
+
+  return useMemo<I18nValue>(
+    () => ({
+      language,
+      locale: locales[language],
+      setLanguage: (next) => {
+        void instance.changeLanguage(next)
+      },
+      t: (key, vars) => t(key, vars),
+    }),
+    [language, instance, t],
+  )
 }
