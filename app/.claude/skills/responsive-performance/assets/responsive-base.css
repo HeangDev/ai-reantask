@@ -1,0 +1,101 @@
+/* responsive-base.css — mobile-first base. Write base styles for ~360px, add min-width queries upward. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;      /* fallback */
+  min-height: 100dvh;     /* correct on mobile when browser bars move */
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.125rem); /* never below 16px */
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+/* Media never overflows its container; reserve space via width/height attrs. */
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Inputs >= 16px so iOS doesn't zoom on focus. */
+input, textarea, select, button { font: inherit; }
+input, textarea, select { font-size: max(16px, 1em); }
+
+/* Touch targets */
+button, [role="button"], a.btn, .tap-target {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation; /* removes double-tap-zoom delay */
+}
+
+/* Readable line length */
+.prose { max-width: 65ch; }
+.prose:lang(km) { max-width: 42em; }
+
+/* Layout helpers */
+.container {
+  width: min(100% - 2rem, 75rem);
+  margin-inline: auto;
+}
+.grid-auto {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+}
+.cq { container-type: inline-size; }
+
+/* Wide content scrolls inside itself, never the page. */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* Fixed bars respect notches / home indicator (needs viewport-fit=cover). */
+.fixed-bottom {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+.fixed-top {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Long pages: skip rendering off-screen sections until needed. */
+.defer-render {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}
+
+/* Skeleton placeholders sized like real content. */
+.skeleton {
+  background: linear-gradient(90deg, #0000000d 25%, #0000001a 50%, #0000000d 75%);
+  background-size: 200% 100%;
+  animation: skeleton 1.2s ease-in-out infinite;
+  border-radius: 0.375rem;
+}
+@keyframes skeleton { to { background-position: -200% 0; } }
+
+/* Hover effects only on devices that can hover. */
+@media (hover: none) {
+  .hover-only { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

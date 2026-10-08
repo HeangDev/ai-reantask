@@ -103,7 +103,7 @@ export default function StudentsTable({ students, showTeacher = true, ...handler
       getName={(s) => s.fullName}
       getSubtitle={(s) => s.email}
       initialSort="fullName"
-      minWidthClass="min-w-[46rem] xl:min-w-[60rem]"
+      minWidthClass="min-w-[52rem] xl:min-w-[60rem]"
       labels={labels}
       {...handlers}
     />

@@ -1,0 +1,89 @@
+/*
+ * khmer-base.css — drop-in base styles for Khmer (km) text.
+ *
+ * Load the fonts first, e.g. in <head>:
+ * <link rel="preconnect" href="https://fonts.googleapis.com">
+ * <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ * <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+ * (Optional display font for headings: &family=Moul)
+ *
+ * Then set <html lang="km"> (or lang="km" on Khmer elements).
+ */
+
+:root {
+  --font-khmer: "Kantumruy Pro", "Noto Sans Khmer", "Khmer UI", "Khmer Sangam MN",
+    "Khmer OS System", "Khmer OS", sans-serif;
+  --font-khmer-display: "Moul", "Kantumruy Pro", "Noto Sans Khmer", serif;
+
+  --lh-khmer-body: 1.7;
+  --lh-khmer-heading: 1.45;
+  /* Scale Khmer slightly so it looks the same size as Latin. Set to 1 to disable. */
+  --khmer-scale: 1.0625;
+}
+
+:lang(km) {
+  font-family: var(--font-khmer);
+  line-height: var(--lh-khmer-body);
+  letter-spacing: 0;          /* spacing breaks Khmer clusters */
+  font-style: normal;         /* no real Khmer italics; avoid faux slant */
+  font-synthesis: none;       /* no faux bold/italic */
+  overflow-wrap: anywhere;    /* safety net: never overflow when no break is found */
+  word-break: normal;         /* never keep-all on Khmer */
+  text-align: start;          /* justify creates gaps: no spaces to stretch */
+}
+
+/* Scale only the outermost Khmer element so nested lang="km" doesn't compound. */
+:lang(km):not(:lang(km) *) {
+  font-size: calc(1em * var(--khmer-scale));
+}
+
+:lang(km) :is(h1, h2, h3, h4, h5, h6),
+:is(h1, h2, h3, h4, h5, h6):lang(km) {
+  line-height: var(--lh-khmer-heading);
+}
+
+/* Optional decorative headings — add class="km-display" */
+.km-display:lang(km) {
+  font-family: var(--font-khmer-display);
+  font-weight: 400; /* display fonts usually ship one weight */
+}
+
+/* Interactive controls: size from padding, never a fixed height + overflow hidden. */
+:lang(km) :is(button, .btn, [role="button"], .badge, .tab, .chip),
+:is(button, .btn, [role="button"], .badge, .tab, .chip):lang(km) {
+  /* If your buttons are flex containers, keep align-items: center. */
+  min-height: 2.5rem;
+  height: auto;
+  padding-block: 0.4em;
+  line-height: 1.5;
+  overflow: visible;
+}
+
+:lang(km) :is(input, textarea, select),
+:is(input, textarea, select):lang(km) {
+  font-family: var(--font-khmer);
+  line-height: 1.6;
+  padding-block: 0.5em;
+  height: auto;
+}
+
+/* Truncation that is grapheme-safe (CSS never cuts inside a cluster). */
+.km-truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding-block: 0.15em; /* keeps subscripts/above-vowels from being clipped */
+}
+.km-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  padding-block: 0.15em;
+}
+
+/* Khmer digits look best with tabular alignment in tables. */
+:lang(km) :is(td, th).num {
+  font-variant-numeric: tabular-nums;
+}

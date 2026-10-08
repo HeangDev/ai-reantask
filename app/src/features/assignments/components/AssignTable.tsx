@@ -109,7 +109,7 @@ export default function AssignTable({ assignments, ...handlers }: Props) {
           <EyeIcon />
         </Link>
       )}
-      minWidthClass="min-w-[48rem] xl:min-w-[56rem]"
+      minWidthClass="min-w-[58rem] xl:min-w-[68rem]"
       {...handlers}
     />
   )
