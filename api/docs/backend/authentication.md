@@ -140,8 +140,10 @@ POST /api/v1/auth/register
 
 ```json
 {
-  "name": "Chan Sreyneang",
+  "fullname": "Chan Sreyneang",
+  "username": "sreyneang",
   "email": "student@example.com",
+  "phone": "+855 12 000 111",
   "password": "a-strong-password",
   "password_confirmation": "a-strong-password"
 }
@@ -149,33 +151,21 @@ POST /api/v1/auth/register
 
 ### 5.2 Validation
 
-| Field      | Rules                                                                                            |
-|------------|--------------------------------------------------------------------------------------------------|
-| `name`     | Required, string, maximum 255 characters                                                         |
-| `email`    | Required, valid email, maximum 255 characters, unique among users (including soft-deleted users) |
-| `password` | Required, confirmed, follows the password policy in section 9                                    |
+`username`, `email`, and `phone` are required and unique because `docs/database/database.md` defines them as `NOT NULL` and `UNIQUE`.
 
-Any `role_id`, `role`, or audit field sent in the request is ignored.
+| Field      | Rules                                                                                                       |
+|------------|-------------------------------------------------------------------------------------------------------------|
+| `fullname` | Required, string, maximum 255 characters                                                                    |
+| `username` | Required, maximum 255 characters, only letters, digits, `.`, `_`, `-`, unique (including soft-deleted users) |
+| `email`    | Required, valid email, maximum 150 characters, unique among users (including soft-deleted users)            |
+| `phone`    | Required, digits with an optional leading `+`, spaces, or hyphens, maximum 20 characters, unique            |
+| `password` | Required, confirmed, follows the password policy in section 9                                               |
+
+Any `role_id`, `role`, `status`, or audit field sent in the request is ignored. New accounts are `ACTIVE` students.
 
 ### 5.3 Response `201 Created`
 
-```json
-{
-  "data": {
-    "token": "1|abcdef123456...",
-    "token_type": "Bearer",
-    "user": {
-      "id": 3,
-      "name": "Chan Sreyneang",
-      "email": "student@example.com",
-      "role": {
-        "id": 3,
-        "name": "student"
-      }
-    }
-  }
-}
-```
+The body is the same as the login response in section 6.2. The token is named after the request's `User-Agent` header (truncated to 255 characters), or `api` when the header is empty.
 
 **Rules**
 
@@ -213,16 +203,24 @@ POST /api/v1/auth/login
     "expires_at": "2026-10-21T08:30:00Z",
     "user": {
       "id": 1,
-      "name": "Sok Dara",
+      "fullname": "Sok Dara",
+      "username": "sok_dara",
       "email": "teacher@example.com",
+      "phone": "+855 12 345 678",
+      "avatar": null,
+      "status": "ACTIVE",
       "role": {
         "id": 2,
         "name": "teacher"
-      }
+      },
+      "created_at": "2026-09-01T02:00:00Z",
+      "updated_at": "2026-09-01T02:00:00Z"
     }
   }
 }
 ```
+
+`expires_at` is `null` when `SANCTUM_TOKEN_EXPIRATION` is not set.
 
 ### 6.3 Failed Login `401`
 
@@ -308,6 +306,10 @@ class AuthController extends Controller
 
 `InvalidCredentialsException` extends `ApplicationException` from `docs/backend/error-handling.md` and returns status `401` with code `INVALID_CREDENTIALS`. Registration logic that creates the user and assigns the student role belongs in a Service, such as `App\Services\Auth\RegistrationService`.
 
+**In the code:** the controller above is a simplified example. The implemented controller is thin; credential checking, token issuing, logout, and password changes are in `App\Services\Auth\AuthService`, and registration is in `App\Services\Auth\RegistrationService`.
+
+**Account status:** only soft-deleted users are blocked from logging in (`BR-USR-06`). Whether `INACTIVE` and `SUSPENDED` users may log in is not defined in the business rules yet, so the API currently allows it.
+
 ---
 
 ## 7. Using the Token
@@ -341,13 +343,18 @@ GET /api/v1/auth/me
 {
   "data": {
     "id": 1,
-    "name": "Sok Dara",
+    "fullname": "Sok Dara",
+    "username": "sok_dara",
     "email": "teacher@example.com",
+    "phone": "+855 12 345 678",
+    "avatar": null,
+    "status": "ACTIVE",
     "role": {
       "id": 2,
       "name": "teacher"
     },
-    "created_at": "2026-09-01T02:00:00Z"
+    "created_at": "2026-09-01T02:00:00Z",
+    "updated_at": "2026-09-01T02:00:00Z"
   }
 }
 ```
@@ -507,6 +514,8 @@ POST /api/v1/auth/reset-password
 }
 ```
 
+- On success the API returns `200 OK` with `{ "message": "Your password has been reset." }`. An invalid or expired token returns `422` with an error on the `email` field.
+- Soft-deleted users never receive a reset link; the response is still the same as for any other email.
 - Use Laravel's `Password` broker and the `password_reset_tokens` table.
 - Reset tokens expire according to `config/auth.php` (default 60 minutes).
 - The reset link points to the frontend URL, configured with `ResetPassword::createUrlUsing()`.

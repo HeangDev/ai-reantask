@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Http\Resources\Api\V1;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * Never exposes the password, remember_token, or tokens.
+ *
+ * @mixin User
+ */
+class UserResource extends JsonResource
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'fullname' => $this->fullname,
+            'username' => $this->username,
+            'email' => $this->email,
+            'phone' => $this->phone,
+            'avatar' => $this->avatar,
+            'status' => $this->status,
+            'role' => $this->whenLoaded('role', fn () => [
+                'id' => $this->role->id,
+                'name' => $this->role->name,
+            ]),
+            'created_at' => $this->created_at?->toIso8601ZuluString(),
+            'updated_at' => $this->updated_at?->toIso8601ZuluString(),
+        ];
+    }
+}

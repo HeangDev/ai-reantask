@@ -319,15 +319,12 @@ For Laravel 11 and later, configure exception rendering in `bootstrap/app.php`. 
 // bootstrap/app.php
 
 use App\Exceptions\ApplicationException;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 ->withExceptions(function (Exceptions $exceptions) {
 
@@ -358,24 +355,26 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
         }
     });
 
-    // Authorization.
-    $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
-        if ($request->is('api/*')) {
-            return response()->json([
+    // Authorization and not found, including Model binding and denyAsNotFound().
+    // Match on the status code: Response::denyAsNotFound() becomes a plain HttpException
+    // with status 404, not a NotFoundHttpException, so a NotFoundHttpException handler
+    // alone would miss it.
+    $exceptions->render(function (HttpExceptionInterface $e, Request $request) {
+        if (! $request->is('api/*')) {
+            return null;
+        }
+
+        return match ($e->getStatusCode()) {
+            403 => response()->json([
                 'message' => 'You do not have permission to perform this action.',
                 'code' => 'FORBIDDEN',
-            ], 403);
-        }
-    });
-
-    // Not found, including Model binding and denyAsNotFound().
-    $exceptions->render(function (NotFoundHttpException $e, Request $request) {
-        if ($request->is('api/*')) {
-            return response()->json([
+            ], 403),
+            404 => response()->json([
                 'message' => 'Resource not found.',
                 'code' => 'NOT_FOUND',
-            ], 404);
-        }
+            ], 404),
+            default => null,
+        };
     });
 
     $exceptions->render(function (MethodNotAllowedHttpException $e, Request $request) {
@@ -405,7 +404,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 **Notes:**
 
-- Laravel converts `AuthorizationException` to `AccessDeniedHttpException` and `ModelNotFoundException` to `NotFoundHttpException` before rendering, so the handlers above cover both.
+- Laravel converts `AuthorizationException` and `ModelNotFoundException` into HTTP exceptions before these callbacks run (a plain denial becomes `AccessDeniedHttpException`, a missing model becomes `NotFoundHttpException`, and `denyAsNotFound()` becomes a generic `HttpException` with status `404`). The status-based handler above covers all of them.
 - `ValidationException` already renders the format in section 3.2 and needs no custom handler.
 - Unhandled exceptions fall through to Laravel's default JSON rendering. With `APP_DEBUG=false`, this returns only a generic message. If you add a `Throwable` handler for `500` responses, add the `code` field and never include `$e->getMessage()`.
 

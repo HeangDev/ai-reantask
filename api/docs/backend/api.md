@@ -101,14 +101,39 @@ The server sets `created_by_user`, `updated_by_user`, and `deleted_by_user` from
 
 Authentication uses the system configured in the project. The examples in this document assume Laravel Sanctum token authentication (`auth:sanctum`).
 
-| Method | Endpoint         | Description                | Access        |
-|--------|------------------|----------------------------|---------------|
-| `POST` | `/auth/register` | Register a new user        | Public        |
-| `POST` | `/auth/login`    | Log in and receive a token | Public        |
-| `POST` | `/auth/logout`   | Revoke the current token   | Authenticated |
-| `GET`  | `/auth/me`       | Get the authenticated user | Authenticated |
+| Method | Endpoint                | Description                            | Access        |
+|--------|-------------------------|----------------------------------------|---------------|
+| `POST` | `/auth/register`        | Register a student account             | Public        |
+| `POST` | `/auth/login`           | Log in and receive a token             | Public        |
+| `POST` | `/auth/logout`          | Revoke the current token               | Authenticated |
+| `POST` | `/auth/logout-all`      | Revoke all of the user's tokens        | Authenticated |
+| `GET`  | `/auth/me`              | Get the authenticated user             | Authenticated |
+| `PUT`  | `/auth/password`        | Change the current user's password     | Authenticated |
+| `POST` | `/auth/forgot-password` | Send a password reset link             | Public        |
+| `POST` | `/auth/reset-password`  | Reset the password using a reset token | Public        |
 
-### 4.1 Login
+Request and response details for each endpoint are in `docs/backend/authentication.md`.
+
+### 4.1 Register
+
+```http
+POST /api/v1/auth/register
+```
+
+```json
+{
+  "fullname": "Chan Sreyneang",
+  "username": "sreyneang",
+  "email": "student@example.com",
+  "phone": "+855 12 000 111",
+  "password": "a-strong-password",
+  "password_confirmation": "a-strong-password"
+}
+```
+
+Returns `201 Created` with the same body as login. The account always has the `student` role; `role_id`, `status`, and audit fields in the request are ignored (`BR-USR-02`).
+
+### 4.2 Login
 
 **Request**
 
@@ -130,14 +155,21 @@ POST /api/v1/auth/login
   "data": {
     "token": "1|abcdef123456...",
     "token_type": "Bearer",
+    "expires_at": "2026-10-21T08:30:00Z",
     "user": {
       "id": 1,
-      "name": "Sok Dara",
+      "fullname": "Sok Dara",
+      "username": "sok_dara",
       "email": "teacher@example.com",
+      "phone": "+855 12 345 678",
+      "avatar": null,
+      "status": "ACTIVE",
       "role": {
         "id": 2,
         "name": "teacher"
-      }
+      },
+      "created_at": "2026-10-01T02:15:00Z",
+      "updated_at": "2026-10-01T02:15:00Z"
     }
   }
 }
@@ -304,17 +336,27 @@ Use the actual role names stored in the database. Authorization is enforced by L
 
 **Rules**
 
-- Users cannot change their own `role_id`.
-- Only admins can assign or change roles.
-- Password changes require the current password unless performed by an admin flow defined in `docs/backend/authentication.md`.
+- Users cannot change their own `role_id` (`BR-USR-04`). Sending `role_id` or `status` without permission returns `403`.
+- Only admins can assign or change roles (`BR-USR-03`) and a user's `status`. Admins cannot do either for their own account.
+- Only admins can change a user's `email`. For everyone else `email` is ignored.
+- `PATCH /users/{user}` never changes the password. Password changes go through `PUT /auth/password` (see `docs/backend/authentication.md`).
+- Users who cannot see a user get `404` for `GET`, `PATCH`, and `DELETE`. Users who can see themselves but cannot delete their own account get `403`.
+- `POST /users` and `PATCH /users/{user}` check authorization before validation, so a `403` or `404` is returned instead of validation errors.
+- Changing a user's role or deleting a user revokes all of that user's tokens.
+- `DELETE` soft-deletes only the user (`BR-USR-07`) and returns `204`.
+- The roles listed by `GET /roles` and assignable through `role_id` must have `ACTIVE` status.
 
 ### 8.1 User Resource
 
 ```json
 {
   "id": 3,
-  "name": "Chan Sreyneang",
+  "fullname": "Chan Sreyneang",
+  "username": "sreyneang",
   "email": "student@example.com",
+  "phone": "+855 12 000 111",
+  "avatar": null,
+  "status": "ACTIVE",
   "role": {
     "id": 3,
     "name": "student"
@@ -323,6 +365,77 @@ Use the actual role names stored in the database. Authorization is enforced by L
   "updated_at": "2026-10-01T02:15:00Z"
 }
 ```
+
+### 8.2 List Users
+
+```http
+GET /api/v1/users?role=student&status=ACTIVE&search=sreyneang&sort=-created_at&per_page=25
+```
+
+| Parameter  | Values                                         | Notes                                              |
+|------------|------------------------------------------------|----------------------------------------------------|
+| `role`     | `admin`, `teacher`, `student`                  | Filter by role name                                |
+| `status`   | `ACTIVE`, `INACTIVE`, `SUSPENDED`, `DELETED`   | Filter by status                                   |
+| `search`   | any text, up to 255 characters                 | Matches `fullname`, `username`, and `email`        |
+| `sort`     | `created_at`, `fullname`, `username`, `email`  | Prefix `-` for descending; default `-created_at`   |
+| `page`     | integer                                        |                                                    |
+| `per_page` | `1`–`100`                                      | Default `15`                                       |
+
+The role is always included in each user. Soft-deleted users are never listed.
+
+### 8.3 Create User
+
+```http
+POST /api/v1/users
+```
+
+```json
+{
+  "fullname": "Sok Dara",
+  "username": "sok_dara",
+  "email": "teacher@example.com",
+  "phone": "+855 12 345 678",
+  "password": "a-strong-password",
+  "password_confirmation": "a-strong-password",
+  "role_id": 2,
+  "status": "ACTIVE"
+}
+```
+
+`status` is optional (default `ACTIVE`; `DELETED` is not accepted). Returns `201 Created` with the user resource. `created_by_user` is set from the authenticated admin.
+
+**Validation**
+
+| Field      | Rules                                                                                                  |
+|------------|--------------------------------------------------------------------------------------------------------|
+| `fullname` | Required, string, maximum 255 characters                                                               |
+| `username` | Required, maximum 255 characters, only letters, digits, `.`, `_`, `-`, unique (including deleted users) |
+| `email`    | Required, valid email, maximum 150 characters, unique (including deleted users); stored lowercase      |
+| `phone`    | Required, digits with an optional leading `+`, spaces, or hyphens, maximum 20 characters, unique      |
+| `password` | Required, confirmed, follows the password policy in `authentication.md`                               |
+| `role_id`  | Required, must be an existing `ACTIVE` role                                                            |
+
+### 8.4 Update User
+
+```http
+PATCH /api/v1/users/{user}
+```
+
+| Field                                         | Who can send it                                   |
+|-----------------------------------------------|---------------------------------------------------|
+| `fullname`, `username`, `phone`               | Admin, or the user themselves                     |
+| `email`                                       | Admin only (ignored for everyone else)            |
+| `role_id`, `status`                           | Admin, for another user only (otherwise `403`)    |
+
+All fields are optional. Validation rules are the same as in section 8.3, and a user may keep their own current values. `updated_by_user` is set from the authenticated user.
+
+### 8.5 Roles
+
+```http
+GET /api/v1/roles
+```
+
+Admin only. Returns a paginated list of `{ "id": 1, "name": "admin", "status": "ACTIVE" }`.
 
 ---
 

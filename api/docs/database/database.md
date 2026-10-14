@@ -21,8 +21,10 @@ MySQL
 Allowed values:
 
 ```text
-ADMIN, TEACHER, STUDENT
+admin, teacher, student
 ```
+
+Role names are lowercase and match the `RoleName` enum. The `roles` table is seeded by `RoleSeeder`.
 ---
 Role status:
 
@@ -49,11 +51,17 @@ ACTIVE, INACTIVE
 | status             | ENUM           | NOT NULL, DEFAULT 'ACTIVE'  |
 | email_verified_at  | TIMESTAMP      | NULL                        |
 | created_at         | TIMESTAMP      | NULL                        |
-| created_by_user    | TIMESTAMP      | NULL                        |
+| created_by_user    | BIGINT         | FK (users.id), NULL         |
 | updated_at         | TIMESTAMP      | NULL                        |
-| updated_by_user    | BIGINT         | NULL                        |
+| updated_by_user    | BIGINT         | FK (users.id), NULL         |
 | deleted_at         | TIMESTAMP      | NULL                        |
-| deleted_by_user    | BIGINT         | NULL                        |
+| deleted_by_user    | BIGINT         | FK (users.id), NULL         |
+
+Notes:
+
+- The audit foreign keys use `ON DELETE SET NULL`. `role_id` uses `ON DELETE RESTRICT`.
+- Users are soft-deleted (`deleted_at`). Emails, usernames, and phones stay reserved after a soft delete, because the unique indexes include deleted rows.
+- `created_by_user` is `NULL` for public self-registration and for seeded accounts.
 
 ---
 User status:

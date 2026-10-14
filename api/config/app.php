@@ -123,4 +123,32 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | Base URL of the frontend. Password reset links point here.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | First Admin Account
+    |--------------------------------------------------------------------------
+    |
+    | Read by AdminUserSeeder. Leave ADMIN_EMAIL or ADMIN_PASSWORD empty to skip.
+    |
+    */
+
+    'admin' => [
+        'fullname' => env('ADMIN_FULLNAME') ?: 'Administrator',
+        'username' => env('ADMIN_USERNAME') ?: 'admin',
+        'email' => env('ADMIN_EMAIL'),
+        'phone' => env('ADMIN_PHONE') ?: '+000000000000',
+        'password' => env('ADMIN_PASSWORD'),
+    ],
+
 ];

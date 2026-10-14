@@ -185,15 +185,19 @@ Use the column names defined in `docs/database/database.md`.
 
 ### 5.1 Users and Roles
 
-| Action               | Admin             | Teacher   | Student   |
-|----------------------|-------------------|-----------|-----------|
-| List roles           | ✅                 | ❌         | ❌         |
-| List users           | ✅                 | ❌         | ❌         |
-| Create user          | ✅                 | ❌         | ❌         |
-| View user            | ✅                 | Own       | Own       |
-| Update user profile  | ✅                 | Own       | Own       |
-| Change a user's role | ✅ (not their own) | ❌         | ❌         |
-| Delete user          | ✅ (not their own) | ❌         | ❌         |
+| Action                    | Admin             | Teacher   | Student   |
+|---------------------------|-------------------|-----------|-----------|
+| List roles                | ✅                 | ❌         | ❌         |
+| List users                | ✅                 | ❌         | ❌         |
+| Create user               | ✅                 | ❌         | ❌         |
+| View user                 | ✅                 | Own       | Own       |
+| Update user profile       | ✅                 | Own       | Own       |
+| Change a user's email     | ✅                 | ❌         | ❌         |
+| Change a user's role      | ✅ (not their own) | ❌         | ❌         |
+| Change a user's status    | ✅ (not their own) | ❌         | ❌         |
+| Delete user               | ✅ (not their own) | ❌         | ❌         |
+
+Response codes: listing roles or users, or creating a user, as a non-admin returns `403`. Viewing, updating, or deleting **another** user as a non-admin returns `404`, because the user must not learn that the account exists. A non-admin deleting their own account, an admin deleting their own account, and any attempt to change one's own role or status return `403`. Non-admins "update user profile" means `fullname`, `username`, and `phone`.
 
 ### 5.2 Assignments and Assignment Content
 

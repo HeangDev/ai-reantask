@@ -204,7 +204,9 @@ These inconsistencies are known. Do not resolve them silently; follow the note a
 - Error codes used in the business docs but missing from the `error-handling.md` catalog: `DUPLICATE_SUBMISSION`, `ASSIGNMENT_HAS_NO_REQUIREMENTS`, `TEMPLATE_ALREADY_LINKED`. Add them when you first use them.
 - Issue category `INTEGRITY` (from `ai-review.md`) is not yet listed in `business-rules.md` `BR-ISS-02`.
 - The submission response in `api.md` section 17 does not yet show `attempt_number`, `is_latest`, `review_status`, or `current_analysis` (see `submissions.md`).
-- Authentication endpoints in `authentication.md` (`logout-all`, `password`, `forgot-password`, `reset-password`) are not yet listed in `api.md`.
+- User fields: the user is now `fullname` / `username` (as in `database.md`). Examples elsewhere that still show a user `name` (for example the assignment `teacher` object in `api.md`, and `assignments.md` section 7.2) have not been updated. Use `fullname`.
+- Whether `INACTIVE` and `SUSPENDED` users may log in or use the API is not defined in the business rules. Only soft-deleted users are blocked today.
+- `BR-USR-08` (role change blocked while a user owns active assignments or has active enrollments) is not enforced yet, because the assignment and enrollment tables do not exist. Add the check to `UserService::update()` when they do.
 
 ---
 
