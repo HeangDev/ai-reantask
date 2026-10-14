@@ -1,10 +1,10 @@
 import type { TranslationKey } from '@/lib/i18n'
 
+/** One signed-in device, from `GET /users/{user}/sessions`. */
 export interface LoginSession {
-  id: string
+  id: number
   device: string
-  location: string
-  /** Epoch milliseconds of the last activity. */
+  /** Epoch milliseconds of the last activity (the sign-in time when the token was never used). */
   lastActiveAt: number
   isCurrent: boolean
   kind: 'desktop' | 'phone'

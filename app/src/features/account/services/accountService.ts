@@ -1,16 +1,27 @@
+import { getSession } from '@/features/auth/store/authStore'
+import type { LoginSession } from '@/features/account/types'
+import { apiRequest } from '@/lib/apiClient'
+
+interface ApiSession {
+  id: number
+  device_name: string
+  is_current: boolean
+  last_used_at: string | null
+  expires_at: string | null
+  created_at: string
+}
+
 /**
- * Account operations that need a server: changing the password, two-factor authentication,
- * signing other devices out and deleting the account.
+ * Account operations that need a server: changing the password, two-factor authentication
+ * and deleting the account.
  *
- * None of these are documented in docs/api.md yet, so no endpoint is assumed. Until the API exists the
+ * Changing the password calls the real API (`PUT /auth/password`). The rest have no API yet, so the
  * simulated service below only waits and resolves, so the screens (loading, success, duplicate-submit
- * protection) can be built and used. Nothing is actually changed, verified or enforced on a server.
+ * protection) can be built and used. Those do not change, verify or enforce anything on a server.
  */
 export interface AccountService {
-  changePassword: (input: { current: string; next: string }) => Promise<void>
-  enableTwoFactor: (code: string) => Promise<void>
+    enableTwoFactor: (code: string) => Promise<void>
   disableTwoFactor: () => Promise<void>
-  revokeSessions: (ids: string[]) => Promise<void>
   deleteAccount: () => Promise<void>
 }
 
@@ -18,12 +29,32 @@ const SIMULATED_DELAY_MS = 700
 const wait = () => new Promise<void>((resolve) => setTimeout(resolve, SIMULATED_DELAY_MS))
 
 export const simulatedAccountService: AccountService = {
-  changePassword: wait,
   enableTwoFactor: wait,
   disableTwoFactor: wait,
-  revokeSessions: wait,
   deleteAccount: wait,
 }
 
-// Swap this for the real, API-backed service when it exists.
-export const accountService: AccountService = simulatedAccountService
+/** Active login sessions of a user, newest first. Revoking one session is not in the API yet. */
+export async function fetchSessions(userId: number): Promise<LoginSession[]> {
+  const { data } = await apiRequest<{ data: ApiSession[] }>(`/users/${userId}/sessions?per_page=100`, {
+    token: getSession()?.token,
+  })
+  return data.map((s) => ({
+    id: s.id,
+    device: s.device_name,
+    lastActiveAt: Date.parse(s.last_used_at ?? s.created_at),
+    isCurrent: s.is_current,
+    kind: /iphone|android|mobile/i.test(s.device_name) ? 'phone' : 'desktop',
+  }))
+}
+
+/** Revokes the account's other sign-ins on the server; the current one keeps working. */
+export const changePassword = (input: { current: string; next: string; confirm: string }) =>
+  apiRequest<void>('/auth/password', {
+    method: 'PUT',
+    token: getSession()?.token,
+    body: { current_password: input.current, password: input.next, password_confirmation: input.confirm },
+  })
+
+// Swap the remaining simulated operations for real, API-backed ones when those endpoints exist.
+export const accountService: AccountService = { ...simulatedAccountService }

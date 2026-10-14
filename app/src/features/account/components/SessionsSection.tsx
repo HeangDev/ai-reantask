@@ -1,11 +1,15 @@
 import { useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import LogoutDialog from '@/components/layout/LogoutDialog'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { LogoutIcon, MonitorIcon, PhoneIcon } from '@/components/ui/icons'
 import { useToast } from '@/components/ui/Toast'
 import SectionCard from '@/features/account/components/SectionCard'
-import { accountService } from '@/features/account/services/accountService'
-import { accountActions, useSessions } from '@/features/account/store/accountStore'
+import { useSessions } from '@/features/account/hooks/useSessions'
+import { useLogoutAll } from '@/features/auth/hooks/useAuthMutations'
+import { useMe } from '@/features/auth/hooks/useMe'
+import { authActions } from '@/features/auth/store/authStore'
 import { useI18n } from '@/lib/i18n'
 import { formatTimeAgo } from '@/lib/timeAgo'
 
@@ -14,38 +18,57 @@ const outlineButton =
 
 export default function SessionsSection() {
   const { t, locale } = useI18n()
-  const { notify } = useToast()
-  const reduceMotion = useReducedMotion()
-  const sessions = useSessions()
-  const [pending, setPending] = useState(false)
+  const me = useMe()
+  const sessionsQuery = useSessions(me.data?.id)
+  const sessions = sessionsQuery.data
   const [confirmingLogout, setConfirmingLogout] = useState(false)
-  const others = sessions.filter((s) => !s.isCurrent)
+  const [confirmingAll, setConfirmingAll] = useState(false)
+  const { notify } = useToast()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const logoutAll = useLogoutAll()
 
-  const revoke = async (ids: string[], title: string, subtitle: string) => {
-    if (pending) return
-    setPending(true)
-    try {
-      await accountService.revokeSessions(ids)
-      accountActions.removeSessions(new Set(ids))
-      notify({ variant: 'danger', title, subtitle })
-    } finally {
-      setPending(false)
-    }
-  }
+  // Every token is revoked, this device's included, so the person is signed out here too.
+  const signOutEverywhere = () =>
+    logoutAll.mutate(undefined, {
+      onSuccess: () => {
+        setConfirmingAll(false)
+        authActions.signOut()
+        queryClient.clear()
+        navigate('/login')
+      },
+      onError: () => {
+        setConfirmingAll(false)
+        notify({ variant: 'danger', title: t('acct.logoutAllFailed'), subtitle: t('acct.passwordFailedDesc') })
+      },
+    })
 
   return (
     <div className="space-y-5">
       <SectionCard title={t('acct.sessionsTitle')} description={t('acct.sessionsDesc')} icon={<MonitorIcon />}>
-        <ul className="divide-y divide-line rounded-lg border border-line">
-          <AnimatePresence initial={false}>
+        {sessionsQuery.isError || me.isError ? (
+          <>
+            <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+              {t('acct.sessionsLoadFailed')}
+            </p>
+            <button
+              type="button"
+              onClick={() => void (me.isError ? me.refetch() : sessionsQuery.refetch())}
+              className={`${outlineButton} mt-3`}
+            >
+              {t('dash.retry')}
+            </button>
+          </>
+        ) : !sessions ? (
+          <p role="status" className="text-sm text-muted">
+            {t('acct.sessionsLoading')}
+          </p>
+        ) : sessions.length === 0 ? (
+          <p className="text-sm text-muted">{t('acct.noSessions')}</p>
+        ) : (
+          <ul className="divide-y divide-line rounded-lg border border-line">
             {sessions.map((session) => (
-              <motion.li
-                key={session.id}
-                layout={!reduceMotion}
-                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 24 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center gap-3 bg-surface p-3"
-              >
+              <li key={session.id} className="flex items-center gap-3 bg-surface p-3">
                 <span
                   aria-hidden="true"
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sunken text-muted [&>svg]:h-5 [&>svg]:w-5"
@@ -62,48 +85,33 @@ export default function SessionsSection() {
                     )}
                   </p>
                   <p className="mt-0.5 text-xs text-muted">
-                    {session.location} ·{' '}
                     {session.isCurrent ? t('acct.activeNow') : formatTimeAgo(session.lastActiveAt, locale)}
                   </p>
                 </div>
-                {!session.isCurrent && (
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() =>
-                      revoke(
-                        [session.id],
-                        t('acct.sessionRevoked'),
-                        t('acct.sessionRevokedDesc', { device: session.device }),
-                      )
-                    }
-                    className={outlineButton}
-                  >
-                    {t('acct.revoke')}
-                  </button>
-                )}
-              </motion.li>
+              </li>
             ))}
-          </AnimatePresence>
-        </ul>
-
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs text-muted">{others.length === 0 ? t('acct.noOtherSessions') : ''}</p>
+          </ul>
+        )}
+        <div className="mt-4 flex justify-end">
           <button
             type="button"
-            disabled={pending || others.length === 0}
-            onClick={() =>
-              revoke(
-                others.map((s) => s.id),
-                t('acct.allRevoked'),
-                t('acct.allRevokedDesc', { count: String(others.length) }),
-              )
-            }
+            disabled={logoutAll.isPending}
+            onClick={() => setConfirmingAll(true)}
+            aria-haspopup="dialog"
             className={`${outlineButton} text-red-600 dark:text-red-400`}
           >
-            {t('acct.revokeAll')}
+            {t('acct.logoutAll')}
           </button>
         </div>
+        <ConfirmDialog
+          open={confirmingAll}
+          icon={<LogoutIcon />}
+          title={t('acct.logoutAllTitle')}
+          message={t('acct.logoutAllMessage')}
+          confirmLabel={t('acct.logoutAll')}
+          onCancel={() => setConfirmingAll(false)}
+          onConfirm={signOutEverywhere}
+        />
       </SectionCard>
 
       <SectionCard title={t('nav.logout')} description={t('acct.logoutDesc')} icon={<LogoutIcon />}>

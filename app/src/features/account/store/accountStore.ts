@@ -1,6 +1,4 @@
 import { useSyncExternalStore } from 'react'
-import { createSampleSessions } from '@/features/account/data/sampleSessions'
-import type { LoginSession } from '@/features/account/types'
 import { currentUser } from '@/lib/currentUser'
 import type { CurrentUser } from '@/lib/currentUser'
 
@@ -25,7 +23,6 @@ function createStore<T>(initial: T) {
 const profileStore = createStore<CurrentUser>(currentUser)
 // The authenticator secret while two-factor authentication is on, otherwise null. Kept in memory only, never saved.
 const twoFactorStore = createStore<string | null>(null)
-const sessionsStore = createStore<LoginSession[]>(createSampleSessions())
 
 export const useProfile = () => useSyncExternalStore(profileStore.subscribe, profileStore.get)
 export const useTwoFactorEnabled = () =>
@@ -33,9 +30,11 @@ export const useTwoFactorEnabled = () =>
 
 /** The current secret without subscribing, for the second step of signing in. */
 export const getTwoFactorSecret = () => twoFactorStore.get()
-export const useSessions = () => useSyncExternalStore(sessionsStore.subscribe, sessionsStore.get)
 
 export const accountActions = {
+  /** Replaces the whole profile, for example with the signed-in user from the API. */
+  setProfile: (profile: CurrentUser) => profileStore.set(profile),
+
   /** The email is deliberately not editable. */
   updateProfile: (changes: Partial<Pick<CurrentUser, 'fullName' | 'avatarUrl'>>) =>
     profileStore.set({ ...profileStore.get(), ...changes }),
@@ -43,6 +42,4 @@ export const accountActions = {
   enableTwoFactor: (secret: string) => twoFactorStore.set(secret),
   disableTwoFactor: () => twoFactorStore.set(null),
 
-  removeSessions: (ids: ReadonlySet<string>) =>
-    sessionsStore.set(sessionsStore.get().filter((s) => s.isCurrent || !ids.has(s.id))),
 }

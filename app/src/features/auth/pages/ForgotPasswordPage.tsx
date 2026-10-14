@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button'
 import { ArrowLeftIcon, LockIcon } from '@/components/ui/icons'
 import TextField from '@/components/ui/TextField'
 import AuthLayout from '@/features/auth/components/AuthLayout'
-import { authService } from '@/features/auth/services/authService'
+import { useForgotPassword } from '@/features/auth/hooks/useAuthMutations'
 import { useI18n } from '@/lib/i18n'
 import type { TranslationKey } from '@/lib/i18n'
 import { isValidEmail } from '@/lib/validation'
@@ -19,10 +19,11 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [error, setError] = useState<TranslationKey>()
   const [failed, setFailed] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const forgot = useForgotPassword()
+  const submitting = forgot.isPending
   const [sentTo, setSentTo] = useState<string | null>(null)
 
-  const submit = async (e: FormEvent) => {
+  const submit = (e: FormEvent) => {
     e.preventDefault()
     if (submitting) return
     setFailed(false)
@@ -31,15 +32,11 @@ export default function ForgotPasswordPage() {
       return
     }
 
-    setSubmitting(true)
-    try {
-      await authService.requestPasswordReset(email.trim())
-      setSentTo(email.trim())
-    } catch {
-      setFailed(true)
-    } finally {
-      setSubmitting(false)
-    }
+    const address = email.trim()
+    forgot.mutate(address, {
+      onSuccess: () => setSentTo(address),
+      onError: () => setFailed(true),
+    })
   }
 
   if (sentTo) {

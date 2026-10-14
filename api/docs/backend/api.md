@@ -109,6 +109,7 @@ Authentication uses the system configured in the project. The examples in this d
 | `POST` | `/auth/logout-all`      | Revoke all of the user's tokens        | Authenticated |
 | `GET`  | `/auth/me`              | Get the authenticated user             | Authenticated |
 | `PUT`  | `/auth/password`        | Change the current user's password     | Authenticated |
+| `DELETE` | `/auth/account`       | Delete your own account (suspend + soft-delete) | Authenticated, not admins |
 | `POST` | `/auth/forgot-password` | Send a password reset link             | Public        |
 | `POST` | `/auth/reset-password`  | Reset the password using a reset token | Public        |
 
@@ -333,6 +334,7 @@ Use the actual role names stored in the database. Authorization is enforced by L
 | `GET`    | `/users/{user}` | Get a user         | Admin, or the user themselves                  |
 | `PATCH`  | `/users/{user}` | Update a user      | Admin, or the user themselves (limited fields) |
 | `DELETE` | `/users/{user}` | Soft-delete a user | Admin                                          |
+| `GET`    | `/users/{user}/sessions` | List a user's login sessions | Admin, or the user themselves |
 
 **Rules**
 
@@ -436,6 +438,39 @@ GET /api/v1/roles
 ```
 
 Admin only. Returns a paginated list of `{ "id": 1, "name": "admin", "status": "ACTIVE" }`.
+
+### 8.6 Login Sessions
+
+```http
+GET /api/v1/users/{user}/sessions
+```
+
+A login session is one Sanctum token, created by each login or registration. The endpoint lists the user's **active** (not expired) sessions, newest first, paginated (`per_page` default `15`, maximum `100`).
+
+```json
+{
+  "data": [
+    {
+      "id": 12,
+      "device_name": "Chrome on Windows",
+      "is_current": true,
+      "last_used_at": "2026-10-14T08:30:00Z",
+      "expires_at": "2026-10-21T08:30:00Z",
+      "created_at": "2026-10-14T08:00:00Z"
+    }
+  ],
+  "links": {},
+  "meta": {}
+}
+```
+
+**Rules**
+
+- Access: admins and the user themselves. Anyone else gets `404`, as for `GET /users/{user}`.
+- `is_current` is `true` only for the token that made the request, and only when the user is viewing their own sessions.
+- The token value and its hash are never returned. `device_name` is the `device_name` sent at login (or the `User-Agent` for registration).
+- IP address and user agent are not recorded, so they are not available.
+- This endpoint is read-only. Revoking a single session is not part of the API yet; use `POST /auth/logout` and `POST /auth/logout-all`.
 
 ---
 

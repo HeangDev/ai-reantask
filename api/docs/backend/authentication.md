@@ -94,6 +94,7 @@ Authentication works on the `users` table. Each user has exactly one role throug
 | `POST` | `/auth/logout-all`      | Revoke all of the user's tokens        | Authenticated |
 | `GET`  | `/auth/me`              | Get the authenticated user             | Authenticated |
 | `PUT`  | `/auth/password`        | Change the current user's password     | Authenticated |
+| `DELETE` | `/auth/account`       | Delete your own account (suspend + soft-delete) | Authenticated, not admins |
 | `POST` | `/auth/forgot-password` | Send a password reset link             | Public        |
 | `POST` | `/auth/reset-password`  | Reset the password using a reset token | Public        |
 
@@ -408,6 +409,7 @@ All tokens use the `['*']` ability. Access control is handled by roles and Polic
 | Password reset                | All tokens                        |
 | Role change by an admin       | All of the affected user's tokens |
 | User soft-deleted by an admin | All of the affected user's tokens |
+| User deletes their own account | All of the user's tokens       |
 
 Revoking tokens on role change ensures that cached client state is refreshed with the new permissions.
 
@@ -480,6 +482,24 @@ PUT /api/v1/auth/password
 
 - `current_password` uses Laravel's `current_password:sanctum` rule.
 - On success, return `204 No Content` and revoke all other tokens.
+
+### 9.3.1 Delete Own Account
+
+```http
+DELETE /api/v1/auth/account
+```
+
+```json
+{
+  "current_password": "my-password"
+}
+```
+
+- Returns `204 No Content`. A missing or wrong `current_password` returns `422`.
+- Admins cannot delete their own account (`BR-USR-04`) and get `403`, checked before the password.
+- In one transaction the account gets `status = SUSPENDED`, is soft-deleted, has `deleted_by_user` set to itself, and all of its tokens are revoked.
+- Nothing else is deleted (`BR-USR-07`). The email, username, and phone stay reserved (`BR-USR-05`).
+- The user can no longer log in (`BR-USR-06`). Restoring an account is not part of the API.
 
 ### 9.4 Forgot and Reset Password
 

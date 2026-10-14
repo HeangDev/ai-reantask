@@ -1,28 +1,20 @@
 import { useState } from 'react'
-import type { FormEvent, ReactNode } from 'react'
+import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Button from '@/components/ui/Button'
-import { RolesIcon, StudentsIcon, TeachersIcon } from '@/components/ui/icons'
 import TextField from '@/components/ui/TextField'
 import { getTwoFactorSecret } from '@/features/account/store/accountStore'
 import AuthLayout from '@/features/auth/components/AuthLayout'
 import PasswordField from '@/features/auth/components/PasswordField'
 import TwoFactorStep from '@/features/auth/components/TwoFactorStep'
 import { roleHome } from '@/features/auth/lib/access'
-import { authService } from '@/features/auth/services/authService'
+import { useLogin } from '@/features/auth/hooks/useAuthMutations'
 import { authActions } from '@/features/auth/store/authStore'
-import { registrationFor, useRegistrations } from '@/features/auth/store/registrationsStore'
-import { roles } from '@/features/auth/types'
-import type { Role } from '@/features/auth/types'
+import type { AuthResult } from '@/features/auth/types'
+import { getDeviceName } from '@/lib/deviceName'
 import { useI18n } from '@/lib/i18n'
 import type { TranslationKey } from '@/lib/i18n'
 import { isValidEmail } from '@/lib/validation'
-
-const roleOptions: Record<Role, { icon: ReactNode; labelKey: TranslationKey }> = {
-  teacher: { icon: <TeachersIcon />, labelKey: 'role.teacher' },
-  student: { icon: <StudentsIcon />, labelKey: 'role.student' },
-  admin: { icon: <RolesIcon />, labelKey: 'role.admin' },
-}
 
 interface Errors {
   email?: TranslationKey
@@ -35,28 +27,19 @@ const linkClass =
 export default function LoginPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
-  const [role, setRole] = useState<Role>('teacher')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<Errors>({})
   const [failed, setFailed] = useState(false)
-  // Worked out as the email is typed: an account that registered but is not approved yet (or was turned down)
-  // may not sign in, and the person is told straight away instead of after pressing Sign in.
-  useRegistrations() // re-check when an admin or teacher answers
-  const registration = isValidEmail(email) ? registrationFor(email) : undefined
-  const blocked: TranslationKey | undefined =
-    registration && registration.status !== 'approved'
-      ? registration.status === 'pending'
-        ? 'login.errPending'
-        : 'login.errDeclined'
-      : undefined
-  const [submitting, setSubmitting] = useState(false)
+  const login = useLogin()
+  const submitting = login.isPending
   // After the password, a second step asks for the authenticator code when two-factor authentication is on.
   const [step, setStep] = useState<'credentials' | 'code'>('credentials')
+  const [result, setResult] = useState<AuthResult | null>(null)
 
-  const finishSignIn = () => {
-    authActions.signIn(role, email)
-    navigate(roleHome[role])
+  const finishSignIn = (auth: AuthResult) => {
+    authActions.signIn(auth.user.role.name, auth.user.email, auth.token)
+    navigate(roleHome[auth.user.role.name])
   }
 
   const submit = async (e: FormEvent) => {
@@ -67,24 +50,26 @@ export default function LoginPage() {
     if (!password) found.password = 'login.errPassword'
     setErrors(found)
     setFailed(false)
-    if (Object.keys(found).length > 0 || blocked) return
+    if (Object.keys(found).length > 0) return
 
-    setSubmitting(true)
-    try {
-      await authService.signIn({ email: email.trim(), password })
-      if (getTwoFactorSecret()) setStep('code')
-      else finishSignIn()
-    } catch {
-      setFailed(true)
-    } finally {
-      setSubmitting(false)
-    }
+    login.mutate(
+      { email: email.trim(), password, device_name: getDeviceName() },
+      {
+        onSuccess: (auth) => {
+          if (getTwoFactorSecret()) {
+            setResult(auth)
+            setStep('code')
+          } else finishSignIn(auth)
+        },
+        onError: () => setFailed(true),
+      },
+    )
   }
 
   return (
     <AuthLayout>
       {step === 'code' ? (
-        <TwoFactorStep onVerified={finishSignIn} onBack={() => setStep('credentials')} />
+        <TwoFactorStep onVerified={() => result && finishSignIn(result)} onBack={() => setStep('credentials')} />
       ) : (
         <form onSubmit={submit} noValidate className="w-full max-w-sm">
           <span
@@ -105,29 +90,7 @@ export default function LoginPage() {
             </p>
           )}
 
-          <fieldset className="mt-6">
-            <legend className="text-sm font-medium">{t('login.signInAs')}</legend>
-            <div className="mt-1 grid grid-cols-3 gap-2">
-              {roles.map((value) => (
-                <label key={value} className="relative flex cursor-pointer">
-                  <input
-                    type="radio"
-                    name="role"
-                    value={value}
-                    checked={role === value}
-                    onChange={() => setRole(value)}
-                    className="peer sr-only"
-                  />
-                  <span className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-2 py-2.5 text-sm font-medium text-muted transition-colors hover:border-accent/50 peer-checked:border-accent peer-checked:bg-accent-soft peer-checked:text-accent-fg peer-checked:ring-2 peer-checked:ring-accent/30 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4">
-                    {roleOptions[value].icon}
-                    {t(roleOptions[value].labelKey)}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <div className="mt-4 space-y-4">
+          <div className="mt-6 space-y-4">
             <TextField
               label={t('acct.email')}
               type="email"
@@ -140,15 +103,6 @@ export default function LoginPage() {
               }}
               error={errors.email}
             />
-            {blocked && (
-              <p
-                role="alert"
-                className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
-              >
-                {t(blocked)}
-              </p>
-            )}
-
             <div>
               <PasswordField
                 label={t('login.password')}
@@ -168,7 +122,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <Button type="submit" disabled={submitting || Boolean(blocked)} className="mt-4 w-full py-2.5">
+          <Button type="submit" disabled={submitting} className="mt-4 w-full py-2.5">
             {submitting ? t('login.signingIn') : t('login.signIn')}
           </Button>
 

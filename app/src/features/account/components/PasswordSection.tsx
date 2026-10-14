@@ -6,9 +6,10 @@ import { useToast } from '@/components/ui/Toast'
 import SectionCard from '@/features/account/components/SectionCard'
 import TextField from '@/components/ui/TextField'
 import { passwordStrength, validatePassword } from '@/features/account/lib/validation'
-import { accountService } from '@/features/account/services/accountService'
+import { useChangePassword } from '@/features/account/hooks/useChangePassword'
 import type { PasswordErrors, PasswordField, PasswordValues } from '@/features/account/types'
 import { useI18n } from '@/lib/i18n'
+import { ApiError } from '@/lib/apiClient'
 import type { TranslationKey } from '@/lib/i18n'
 
 const EMPTY: PasswordValues = { current: '', next: '', confirm: '' }
@@ -27,28 +28,33 @@ export default function PasswordSection() {
   const { notify } = useToast()
   const [values, setValues] = useState<PasswordValues>(EMPTY)
   const [errors, setErrors] = useState<PasswordErrors>({})
-  const [saving, setSaving] = useState(false)
+  const changePassword = useChangePassword()
+  const saving = changePassword.isPending
 
   const set = (field: PasswordField) => (value: string) => {
     setValues((v) => ({ ...v, [field]: value }))
     setErrors((e) => ({ ...e, [field]: undefined }))
   }
 
-  const submit = async (e: FormEvent) => {
+  const submit = (e: FormEvent) => {
     e.preventDefault()
     if (saving) return
     const found = validatePassword(values)
     setErrors(found)
     if (Object.keys(found).length > 0) return
 
-    setSaving(true)
-    try {
-      await accountService.changePassword({ current: values.current, next: values.next })
-      setValues(EMPTY)
-      notify({ variant: 'info', title: t('acct.passwordChanged'), subtitle: t('acct.passwordChangedDesc') })
-    } finally {
-      setSaving(false)
-    }
+    changePassword.mutate(values, {
+      onSuccess: () => {
+        setValues(EMPTY)
+        notify({ variant: 'info', title: t('acct.passwordChanged'), subtitle: t('acct.passwordChangedDesc') })
+      },
+      onError: (error) => {
+        const fields = error instanceof ApiError && error.status === 422 ? error.fieldErrors : {}
+        if (fields.current_password) setErrors({ current: 'acct.errCurrentWrong' })
+        else if (fields.password) setErrors({ next: 'acct.errPasswordRule' })
+        else notify({ variant: 'danger', title: t('acct.passwordFailed'), subtitle: t('acct.passwordFailedDesc') })
+      },
+    })
   }
 
   const strength = passwordStrength(values.next)

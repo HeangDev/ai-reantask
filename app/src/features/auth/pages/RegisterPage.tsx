@@ -7,23 +7,23 @@ import TextField from '@/components/ui/TextField'
 import { isAcceptablePassword } from '@/features/account/lib/validation'
 import AuthLayout from '@/features/auth/components/AuthLayout'
 import PasswordField from '@/features/auth/components/PasswordField'
-import { authService } from '@/features/auth/services/authService'
-import { registrationFor, registrationsActions } from '@/features/auth/store/registrationsStore'
-import { getUsers } from '@/features/users/store/usersStore'
-import { useToast } from '@/components/ui/Toast'
+import { useRegister } from '@/features/auth/hooks/useAuthMutations'
+import { ApiError } from '@/lib/apiClient'
 import { useI18n } from '@/lib/i18n'
 import type { TranslationKey } from '@/lib/i18n'
-import { isValidEmail } from '@/lib/validation'
+import { isValidEmail, isValidPhone } from '@/lib/validation'
 
 interface Values {
   fullName: string
+  username: string
   email: string
+  phone: string
   password: string
   confirm: string
 }
 type Errors = Partial<Record<keyof Values, TranslationKey>>
 
-const EMPTY: Values = { fullName: '', email: '', password: '', confirm: '' }
+const EMPTY: Values = { fullName: '', username: '', email: '', phone: '', password: '', confirm: '' }
 
 const linkClass =
   'rounded font-medium text-accent-fg hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
@@ -31,7 +31,9 @@ const linkClass =
 function validate(values: Values): Errors {
   const errors: Errors = {}
   if (!values.fullName.trim()) errors.fullName = 'acct.errName'
+  if (!/^[A-Za-z0-9._-]+$/.test(values.username.trim())) errors.username = 'register.errUsername'
   if (!isValidEmail(values.email)) errors.email = 'stu.errEmail'
+  if (!isValidPhone(values.phone)) errors.phone = 'stu.errPhone'
   if (!isAcceptablePassword(values.password)) errors.password = 'acct.errPasswordRule'
   if (values.confirm !== values.password) errors.confirm = 'acct.errPasswordMatch'
   return errors
@@ -41,11 +43,11 @@ function validate(values: Values): Errors {
 export default function RegisterPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
-  const { notifyRole } = useToast()
   const [values, setValues] = useState<Values>(EMPTY)
   const [errors, setErrors] = useState<Errors>({})
   const [failed, setFailed] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const register = useRegister()
+  const submitting = register.isPending
   const [createdFor, setCreatedFor] = useState<string | null>(null)
 
   const set = (field: keyof Values) => (value: string) => {
@@ -53,7 +55,7 @@ export default function RegisterPage() {
     setErrors((e) => ({ ...e, [field]: undefined }))
   }
 
-  const submit = async (e: FormEvent) => {
+  const submit = (e: FormEvent) => {
     e.preventDefault()
     if (submitting) return
     const found = validate(values)
@@ -61,41 +63,31 @@ export default function RegisterPage() {
     setFailed(false)
     if (Object.keys(found).length > 0) return
 
-    // One account per email: a person who is registered (and not turned down) or already a user cannot register again.
     const email = values.email.trim()
-    const existing = registrationFor(email)
-    const taken =
-      getUsers().some((u) => u.email.toLowerCase() === email.toLowerCase()) ||
-      (existing !== undefined && existing.status !== 'declined')
-    if (taken) {
-      setErrors({ email: 'register.errEmailTaken' })
-      return
-    }
-
-    setSubmitting(true)
-    try {
-      await authService.register({ fullName: values.fullName.trim(), email, password: values.password })
-      const name = values.fullName.trim()
-      registrationsActions.register(name, email)
-      // The new student cannot sign in until an admin or a teacher approves, so both are told.
-      notifyRole('admin', {
-        variant: 'info',
-        title: t('reg.notifyTitle'),
-        subtitle: t('reg.notifyDesc', { name }),
-        to: '/users',
-      })
-      notifyRole('teacher', {
-        variant: 'info',
-        title: t('reg.notifyTitle'),
-        subtitle: t('reg.notifyDesc', { name }),
-        to: '/students',
-      })
-      setCreatedFor(email)
-    } catch {
-      setFailed(true)
-    } finally {
-      setSubmitting(false)
-    }
+    register.mutate(
+      {
+        fullname: values.fullName.trim(),
+        username: values.username.trim(),
+        email,
+        phone: values.phone.trim(),
+        password: values.password,
+        password_confirmation: values.confirm,
+      },
+      {
+        onSuccess: () => setCreatedFor(email),
+        onError: (error) => {
+          // The server enforces unique emails, usernames and phone numbers; show those under their field.
+          const fields = error instanceof ApiError && error.status === 422 ? error.fieldErrors : {}
+          const serverErrors: Errors = {}
+          if (fields.email) serverErrors.email = 'register.errEmailTaken'
+          if (fields.username) serverErrors.username = 'register.errUsernameTaken'
+          if (fields.phone) serverErrors.phone = 'register.errPhoneTaken'
+          if (fields.password) serverErrors.password = 'acct.errPasswordRule'
+          if (Object.keys(serverErrors).length > 0) setErrors(serverErrors)
+          else setFailed(true)
+        },
+      },
+    )
   }
 
   if (createdFor) {
@@ -148,6 +140,13 @@ export default function RegisterPage() {
             error={errors.fullName}
           />
           <TextField
+            label={t('register.username')}
+            autoComplete="username"
+            value={values.username}
+            onChange={set('username')}
+            error={errors.username}
+          />
+          <TextField
             label={t('acct.email')}
             type="email"
             autoComplete="email"
@@ -155,6 +154,14 @@ export default function RegisterPage() {
             value={values.email}
             onChange={set('email')}
             error={errors.email}
+          />
+          <TextField
+            label={t('stu.fieldPhone')}
+            type="tel"
+            autoComplete="tel"
+            value={values.phone}
+            onChange={set('phone')}
+            error={errors.phone}
           />
           <PasswordField
             label={t('login.password')}

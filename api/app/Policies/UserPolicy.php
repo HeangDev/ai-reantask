@@ -19,6 +19,14 @@ class UserPolicy
             : Response::denyAsNotFound();
     }
 
+    /**
+     * Admins and the user themselves; everyone else must not know the account exists.
+     */
+    public function viewSessions(User $user, User $target): Response
+    {
+        return $this->view($user, $target);
+    }
+
     public function create(User $user): bool
     {
         return $user->isAdmin();
@@ -58,6 +66,14 @@ class UserPolicy
         return $this->canSee($user, $target)
             ? Response::deny()
             : Response::denyAsNotFound();
+    }
+
+    /**
+     * Self-service account deletion. Admins cannot delete their own account (BR-USR-04).
+     */
+    public function deleteAccount(User $user): bool
+    {
+        return ! $user->isAdmin();
     }
 
     private function canSee(User $user, User $target): bool

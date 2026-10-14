@@ -5,10 +5,12 @@ import Header from '@/components/layout/Header'
 import MobileNav from '@/components/layout/MobileNav'
 import Sidebar from '@/components/layout/Sidebar'
 import { canAccess, roleHome } from '@/features/auth/lib/access'
+import { useMe } from '@/features/auth/hooks/useMe'
 import { useSession } from '@/features/auth/store/authStore'
 
 export default function MainLayout() {
   const session = useSession()
+  useMe() // loads the signed-in user's profile for the header and the Account page
   const { pathname } = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const closeMenu = useCallback(() => setMenuOpen(false), [])

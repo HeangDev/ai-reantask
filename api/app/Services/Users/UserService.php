@@ -91,6 +91,21 @@ class UserService
     }
 
     /**
+     * Self-service deletion: the account is suspended, soft-deleted, and signed out everywhere.
+     * Only the user is deleted (BR-USR-07). The email, username, and phone stay reserved (BR-USR-05).
+     */
+    public function deleteOwnAccount(User $user): void
+    {
+        DB::transaction(function () use ($user) {
+            $user->status = UserStatus::Suspended;
+            $user->deleted_by_user = $user->id;
+            $user->save();
+            $user->delete();
+            $user->tokens()->delete();
+        });
+    }
+
+    /**
      * Soft-deletes only the user (BR-USR-07) and revokes their tokens (BR-USR-06).
      */
     public function delete(User $actor, User $target): void

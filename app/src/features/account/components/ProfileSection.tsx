@@ -7,6 +7,7 @@ import SectionCard from '@/features/account/components/SectionCard'
 import TextField from '@/components/ui/TextField'
 import { validateAvatar, validateName } from '@/features/account/lib/validation'
 import { accountActions, useProfile } from '@/features/account/store/accountStore'
+import { useMe } from '@/features/auth/hooks/useMe'
 import { roleLabelKey } from '@/features/auth/lib/roleLabels'
 import { useSession } from '@/features/auth/store/authStore'
 import { DEFAULT_AVATAR_URL } from '@/lib/currentUser'
@@ -17,6 +18,33 @@ const outlineButton =
   'rounded-lg border border-line px-3 py-1.5 text-xs font-medium transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40'
 
 export default function ProfileSection() {
+  const { t } = useI18n()
+  const me = useMe()
+
+  // The form starts from the loaded profile, so it is only shown once the profile has arrived.
+  if (me.isError)
+    return (
+      <SectionCard title={t('acct.profileTitle')} description={t('acct.profileDesc')} icon={<UserIcon />}>
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          {t('acct.profileLoadFailed')}
+        </p>
+        <button type="button" onClick={() => void me.refetch()} className={`${outlineButton} mt-3`}>
+          {t('dash.retry')}
+        </button>
+      </SectionCard>
+    )
+  if (!me.data)
+    return (
+      <SectionCard title={t('acct.profileTitle')} description={t('acct.profileDesc')} icon={<UserIcon />}>
+        <p role="status" className="text-sm text-muted">
+          {t('acct.profileLoading')}
+        </p>
+      </SectionCard>
+    )
+  return <ProfileForm />
+}
+
+function ProfileForm() {
   const { t } = useI18n()
   const { notify } = useToast()
   const profile = useProfile()

@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Auth\DeleteAccountRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\RegisterRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\RegistrationService;
+use App\Services\Users\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -19,6 +21,7 @@ class AuthController extends Controller
     public function __construct(
         private readonly AuthService $auth,
         private readonly RegistrationService $registration,
+        private readonly UserService $users,
     ) {}
 
     public function register(RegisterRequest $request): JsonResponse
@@ -54,6 +57,13 @@ class AuthController extends Controller
     public function logoutAll(Request $request): Response
     {
         $request->user()->tokens()->delete();
+
+        return response()->noContent();
+    }
+
+    public function deleteAccount(DeleteAccountRequest $request): Response
+    {
+        $this->users->deleteOwnAccount($request->user());
 
         return response()->noContent();
     }
