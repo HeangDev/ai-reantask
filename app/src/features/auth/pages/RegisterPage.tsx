@@ -11,11 +11,10 @@ import { useRegister } from '@/features/auth/hooks/useAuthMutations'
 import { ApiError } from '@/lib/apiClient'
 import { useI18n } from '@/lib/i18n'
 import type { TranslationKey } from '@/lib/i18n'
-import { isValidEmail, isValidPhone } from '@/lib/validation'
+import { isValidEmail, isValidPhone, usernameFromEmail } from '@/lib/validation'
 
 interface Values {
   fullName: string
-  username: string
   email: string
   phone: string
   password: string
@@ -23,7 +22,7 @@ interface Values {
 }
 type Errors = Partial<Record<keyof Values, TranslationKey>>
 
-const EMPTY: Values = { fullName: '', username: '', email: '', phone: '', password: '', confirm: '' }
+const EMPTY: Values = { fullName: '', email: '', phone: '', password: '', confirm: '' }
 
 const linkClass =
   'rounded font-medium text-accent-fg hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
@@ -31,7 +30,6 @@ const linkClass =
 function validate(values: Values): Errors {
   const errors: Errors = {}
   if (!values.fullName.trim()) errors.fullName = 'acct.errName'
-  if (!/^[A-Za-z0-9._-]+$/.test(values.username.trim())) errors.username = 'register.errUsername'
   if (!isValidEmail(values.email)) errors.email = 'stu.errEmail'
   if (!isValidPhone(values.phone)) errors.phone = 'stu.errPhone'
   if (!isAcceptablePassword(values.password)) errors.password = 'acct.errPasswordRule'
@@ -67,7 +65,8 @@ export default function RegisterPage() {
     register.mutate(
       {
         fullname: values.fullName.trim(),
-        username: values.username.trim(),
+        // The form has no username field; the API needs one, so it is made from the email.
+        username: usernameFromEmail(email),
         email,
         phone: values.phone.trim(),
         password: values.password,
@@ -76,11 +75,10 @@ export default function RegisterPage() {
       {
         onSuccess: () => setCreatedFor(email),
         onError: (error) => {
-          // The server enforces unique emails, usernames and phone numbers; show those under their field.
+          // The server enforces unique emails and phone numbers; the username is made from the email, so a clash on it is shown on the email field.
           const fields = error instanceof ApiError && error.status === 422 ? error.fieldErrors : {}
           const serverErrors: Errors = {}
-          if (fields.email) serverErrors.email = 'register.errEmailTaken'
-          if (fields.username) serverErrors.username = 'register.errUsernameTaken'
+          if (fields.email || fields.username) serverErrors.email = 'register.errEmailTaken'
           if (fields.phone) serverErrors.phone = 'register.errPhoneTaken'
           if (fields.password) serverErrors.password = 'acct.errPasswordRule'
           if (Object.keys(serverErrors).length > 0) setErrors(serverErrors)
@@ -138,13 +136,6 @@ export default function RegisterPage() {
             value={values.fullName}
             onChange={set('fullName')}
             error={errors.fullName}
-          />
-          <TextField
-            label={t('register.username')}
-            autoComplete="username"
-            value={values.username}
-            onChange={set('username')}
-            error={errors.username}
           />
           <TextField
             label={t('acct.email')}

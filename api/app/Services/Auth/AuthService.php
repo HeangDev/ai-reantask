@@ -2,6 +2,9 @@
 
 namespace App\Services\Auth;
 
+use App\Enums\UserStatus;
+use App\Exceptions\AccountNotActiveException;
+use App\Exceptions\AccountPendingException;
 use App\Exceptions\InvalidCredentialsException;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -25,6 +28,16 @@ class AuthService
 
         if (! $user || ! $valid) {
             throw new InvalidCredentialsException;
+        }
+
+        // Status is checked only after the password is right, so a stranger cannot learn an account's state.
+        if ($user->status === UserStatus::Pending) {
+            throw new AccountPendingException;
+        }
+
+        // Only ACTIVE users can log in (BR-USR-10).
+        if ($user->status !== UserStatus::Active) {
+            throw new AccountNotActiveException;
         }
 
         return $this->issueToken($user, $deviceName);

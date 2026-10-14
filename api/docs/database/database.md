@@ -43,7 +43,6 @@ ACTIVE, INACTIVE
 | id                 | BIGINT         | PK, AUTO_INCREMENT          |
 | role_id            | BIGINT         | FK, NOT NULL                |
 | fullname           | VARCHAR(255)   | NOT NULL                    |
-| username           | VARCHAR(255)   | NOT NULL, UNIQUE            |
 | email              | VARCHAR(150)   | NOT NULL, UNIQUE            |
 | phone              | VARCHAR(20)    | NOT NULL, UNIQUE            |
 | password           | VARCHAR(255)   | NOT NULL                    |
@@ -60,15 +59,17 @@ ACTIVE, INACTIVE
 Notes:
 
 - The audit foreign keys use `ON DELETE SET NULL`. `role_id` uses `ON DELETE RESTRICT`.
-- Users are soft-deleted (`deleted_at`). Emails, usernames, and phones stay reserved after a soft delete, because the unique indexes include deleted rows.
+- Users are soft-deleted (`deleted_at`). Emails and phones stay reserved after a soft delete, because the unique indexes include deleted rows.
 - `created_by_user` is `NULL` for public self-registration and for seeded accounts.
 
 ---
 User status:
 
 ```text
-ACTIVE, INACTIVE, SUSPENDED, DELETED
+PENDING, ACTIVE, INACTIVE, SUSPENDED, DELETED
 ```
+
+`PENDING` is a student who registered publicly and is waiting for an admin or a teacher to approve the account.
 
 ---
 

@@ -27,6 +27,24 @@ class UserPolicy
         return $this->view($user, $target);
     }
 
+    /**
+     * Admins and teachers see the students waiting for approval.
+     */
+    public function viewPending(User $user): bool
+    {
+        return $user->isAdmin() || $user->isTeacher();
+    }
+
+    /**
+     * Only a student account can be approved; to anyone else the account does not exist.
+     */
+    public function approve(User $user, User $target): Response
+    {
+        return $this->viewPending($user) && $target->isStudent()
+            ? Response::allow()
+            : Response::denyAsNotFound();
+    }
+
     public function create(User $user): bool
     {
         return $user->isAdmin();

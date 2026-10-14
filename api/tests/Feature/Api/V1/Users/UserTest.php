@@ -10,7 +10,6 @@ function validUserPayload(array $overrides = []): array
 
     return array_merge([
         'fullname' => 'Sok Dara',
-        'username' => 'sok_dara',
         'email' => 'teacher@example.com',
         'phone' => '+855 12 345 678',
         'password' => 'password123',
@@ -60,7 +59,7 @@ describe('GET /users', function () {
             ->assertOk()
             ->assertJsonCount(4, 'data')
             ->assertJsonStructure([
-                'data' => [['id', 'fullname', 'username', 'email', 'phone', 'avatar', 'status', 'role' => ['id', 'name'], 'created_at', 'updated_at']],
+                'data' => [['id', 'fullname', 'email', 'phone', 'avatar', 'status', 'role' => ['id', 'name'], 'created_at', 'updated_at']],
                 'links',
                 'meta' => ['current_page', 'per_page', 'total'],
             ]);
@@ -169,7 +168,7 @@ describe('POST /users', function () {
 
         $this->postJson('/api/v1/users', [])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['fullname', 'username', 'email', 'phone', 'password', 'role_id']);
+            ->assertJsonValidationErrors(['fullname', 'email', 'phone', 'password', 'role_id']);
     });
 
     it('br_usr_05: rejects duplicate emails, including soft-deleted users', function () {
@@ -181,23 +180,21 @@ describe('POST /users', function () {
             ->assertJsonValidationErrors(['email']);
     });
 
-    it('rejects duplicate usernames and phones', function () {
+    it('rejects duplicate phones', function () {
         $this->actingAsAdmin();
-        User::factory()->create(['username' => 'sok_dara', 'phone' => '+855 12 345 678']);
+        User::factory()->create(['phone' => '+855 12 345 678']);
 
         $this->postJson('/api/v1/users', validUserPayload())
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['username', 'phone']);
+            ->assertJsonValidationErrors(['phone']);
     });
 
-    it('rejects weak passwords, bad usernames and unknown or inactive roles', function () {
+    it('rejects weak passwords, unknown or inactive roles', function () {
         $this->actingAsAdmin();
         $inactive = Role::factory()->inactive()->create();
 
         $this->postJson('/api/v1/users', validUserPayload(['password' => 'short', 'password_confirmation' => 'short']))
             ->assertUnprocessable()->assertJsonValidationErrors(['password']);
-        $this->postJson('/api/v1/users', validUserPayload(['username' => 'has space']))
-            ->assertUnprocessable()->assertJsonValidationErrors(['username']);
         $this->postJson('/api/v1/users', validUserPayload(['role_id' => 9999]))
             ->assertUnprocessable()->assertJsonValidationErrors(['role_id']);
         $this->postJson('/api/v1/users', validUserPayload(['role_id' => $inactive->id]))
@@ -272,12 +269,10 @@ describe('PATCH /users/{user}', function () {
 
         $this->patchJson("/api/v1/users/{$user->id}", [
             'fullname' => 'New Name',
-            'username' => 'new_name',
             'phone' => '+855 99 111 222',
         ])
             ->assertOk()
-            ->assertJsonPath('data.fullname', 'New Name')
-            ->assertJsonPath('data.username', 'new_name');
+            ->assertJsonPath('data.fullname', 'New Name');
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
@@ -331,7 +326,7 @@ describe('PATCH /users/{user}', function () {
 
         $this->patchJson("/api/v1/users/{$other->id}", ['fullname' => 'Hacked'])->assertNotFound();
         // An invalid body must not turn into a 422 that reveals the user exists.
-        $this->patchJson("/api/v1/users/{$other->id}", ['username' => 'x y'])->assertNotFound();
+        $this->patchJson("/api/v1/users/{$other->id}", ['phone' => 'x y'])->assertNotFound();
 
         expect($other->fresh()->fullname)->not->toBe('Hacked');
     });
@@ -387,9 +382,7 @@ describe('PATCH /users/{user}', function () {
         $student = $this->actingAsStudent();
         $other = User::factory()->create();
 
-        $this->patchJson("/api/v1/users/{$student->id}", ['username' => $student->username])->assertOk();
-        $this->patchJson("/api/v1/users/{$student->id}", ['username' => $other->username])
-            ->assertUnprocessable()->assertJsonValidationErrors(['username']);
+        $this->patchJson("/api/v1/users/{$student->id}", ['phone' => $student->phone])->assertOk();
         $this->patchJson("/api/v1/users/{$student->id}", ['phone' => $other->phone])
             ->assertUnprocessable()->assertJsonValidationErrors(['phone']);
     });
@@ -439,5 +432,79 @@ describe('DELETE /users/{user}', function () {
         $user->delete();
 
         $this->deleteJson("/api/v1/users/{$user->id}")->assertNotFound();
+    });
+});
+
+describe('GET /users/pending-students', function () {
+    it('lets admins and teachers list pending students, oldest first', function (string $actor) {
+        $this->{$actor}();
+        $first = User::factory()->student()->status(UserStatus::Pending)->create(['created_at' => now()->subDay()]);
+        $second = User::factory()->student()->status(UserStatus::Pending)->create(['created_at' => now()]);
+        User::factory()->student()->create();
+        User::factory()->teacher()->status(UserStatus::Pending)->create();
+
+        $this->getJson('/api/v1/users/pending-students')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.id', $first->id)
+            ->assertJsonPath('data.1.id', $second->id)
+            ->assertJsonPath('data.0.status', 'PENDING');
+    })->with(['actingAsAdmin', 'actingAsTeacher']);
+
+    it('forbids students', function () {
+        $this->actingAsStudent();
+
+        $this->getJson('/api/v1/users/pending-students')->assertForbidden();
+    });
+});
+
+describe('POST /users/{user}/approve', function () {
+    it('lets admins and teachers approve a pending student', function (string $actor) {
+        $approver = $this->{$actor}();
+        $student = User::factory()->student()->status(UserStatus::Pending)->create();
+
+        $this->postJson("/api/v1/users/{$student->id}/approve")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'ACTIVE');
+
+        expect($student->fresh()->status)->toBe(UserStatus::Active)
+            ->and($student->fresh()->updated_by_user)->toBe($approver->id);
+    })->with(['actingAsAdmin', 'actingAsTeacher']);
+
+    it('lets an approved student log in', function () {
+        $this->actingAsAdmin();
+        $student = User::factory()->student()->status(UserStatus::Pending)->create([
+            'email' => 'student@example.com',
+            'password' => 'password123',
+        ]);
+
+        $this->postJson("/api/v1/users/{$student->id}/approve")->assertOk();
+
+        $this->postJson('/api/v1/auth/login', ['email' => 'student@example.com', 'password' => 'password123'])
+            ->assertOk();
+    });
+
+    it('returns 409 for a user who is not pending', function () {
+        $this->actingAsAdmin();
+        $student = User::factory()->student()->create();
+
+        $this->postJson("/api/v1/users/{$student->id}/approve")
+            ->assertConflict()
+            ->assertJsonPath('code', 'USER_NOT_PENDING');
+    });
+
+    it('returns 404 for a pending user who is not a student', function () {
+        $this->actingAsAdmin();
+        $teacher = User::factory()->teacher()->status(UserStatus::Pending)->create();
+
+        $this->postJson("/api/v1/users/{$teacher->id}/approve")->assertNotFound();
+    });
+
+    it('returns 404 for students', function () {
+        $this->actingAsStudent();
+        $pending = User::factory()->student()->status(UserStatus::Pending)->create();
+
+        $this->postJson("/api/v1/users/{$pending->id}/approve")->assertNotFound();
+        expect($pending->fresh()->status)->toBe(UserStatus::Pending);
     });
 });

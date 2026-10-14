@@ -10,6 +10,7 @@ export interface AuthUser {
   phone: string
   avatar: string | null
   status: string
+  created_at: string
   role: { id: number; name: Role }
 }
 

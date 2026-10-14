@@ -18,7 +18,7 @@ trait ValidatesUserFields
     {
         $normalized = [];
 
-        foreach (['fullname', 'username', 'phone'] as $field) {
+        foreach (['fullname', 'phone'] as $field) {
             if (is_string($this->input($field))) {
                 $normalized[$field] = trim($this->input($field));
             }
@@ -42,10 +42,6 @@ trait ValidatesUserFields
 
         return [
             'fullname' => [...$presence, 'string', 'max:255'],
-            'username' => [
-                ...$presence, 'string', 'max:255', 'regex:/^[A-Za-z0-9._-]+$/',
-                Rule::unique('users', 'username')->ignore($ignore?->id),
-            ],
             'email' => [
                 ...$presence, 'string', 'email', 'max:150',
                 Rule::unique('users', 'email')->ignore($ignore?->id),

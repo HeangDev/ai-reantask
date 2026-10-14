@@ -2,8 +2,8 @@ import Avatar from '@/components/ui/Avatar'
 import { EditIcon, TrashIcon } from '@/components/ui/icons'
 import Modal from '@/components/ui/Modal'
 import AccountStatusBadge from '@/features/users/components/AccountStatusBadge'
+import { roleLabelKey } from '@/features/auth/lib/roleLabels'
 import type { User } from '@/features/users/types'
-import { formatDate } from '@/lib/dates'
 import { useI18n } from '@/lib/i18n'
 
 interface Props {
@@ -17,7 +17,7 @@ const actionClass =
   'flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4'
 
 export default function UserDetail({ user, onEdit, onDelete, onClose }: Props) {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
 
   return (
     <Modal title={t('usr.details')} onClose={onClose}>
@@ -36,15 +36,11 @@ export default function UserDetail({ user, onEdit, onDelete, onClose }: Props) {
           </div>
           <div className="flex justify-between gap-4 px-3 py-2">
             <dt className="text-muted">{t('usr.role')}</dt>
-            <dd className="font-medium">{user.role}</dd>
+            <dd className="font-medium">{t(roleLabelKey[user.role])}</dd>
           </div>
           <div className="flex justify-between gap-4 px-3 py-2">
             <dt className="text-muted">{t('usr.status')}</dt>
             <dd className="font-medium"><AccountStatusBadge status={user.status} /></dd>
-          </div>
-          <div className="flex justify-between gap-4 px-3 py-2">
-            <dt className="text-muted">{t('usr.colLastLogin')}</dt>
-            <dd className="font-medium">{user.lastLogin ? formatDate(user.lastLogin, locale) : t('stu.noVisit')}</dd>
           </div>
         </dl>
       </div>

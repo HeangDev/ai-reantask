@@ -30,7 +30,6 @@ class UserFactory extends Factory
         return [
             'role_id' => fn () => $this->roleId(RoleName::Student),
             'fullname' => fake()->name(),
-            'username' => fake()->unique()->userName(),
             'email' => fake()->unique()->safeEmail(),
             'phone' => fake()->unique()->numerify('+855#########'),
             'password' => static::$password ??= Hash::make('password'),

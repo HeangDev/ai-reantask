@@ -142,7 +142,6 @@ POST /api/v1/auth/register
 ```json
 {
   "fullname": "Chan Sreyneang",
-  "username": "sreyneang",
   "email": "student@example.com",
   "phone": "+855 12 000 111",
   "password": "a-strong-password",
@@ -152,21 +151,20 @@ POST /api/v1/auth/register
 
 ### 5.2 Validation
 
-`username`, `email`, and `phone` are required and unique because `docs/database/database.md` defines them as `NOT NULL` and `UNIQUE`.
+`email` and `phone` are required and unique because `docs/database/database.md` defines them as `NOT NULL` and `UNIQUE`.
 
 | Field      | Rules                                                                                                       |
 |------------|-------------------------------------------------------------------------------------------------------------|
 | `fullname` | Required, string, maximum 255 characters                                                                    |
-| `username` | Required, maximum 255 characters, only letters, digits, `.`, `_`, `-`, unique (including soft-deleted users) |
 | `email`    | Required, valid email, maximum 150 characters, unique among users (including soft-deleted users)            |
 | `phone`    | Required, digits with an optional leading `+`, spaces, or hyphens, maximum 20 characters, unique            |
 | `password` | Required, confirmed, follows the password policy in section 9                                               |
 
-Any `role_id`, `role`, `status`, or audit field sent in the request is ignored. New accounts are `ACTIVE` students.
+Any `role_id`, `role`, `status`, or audit field sent in the request is ignored. New accounts are `PENDING` students (`BR-USR-09`).
 
 ### 5.3 Response `201 Created`
 
-The body is the same as the login response in section 6.2. The token is named after the request's `User-Agent` header (truncated to 255 characters), or `api` when the header is empty.
+The body is `{ "data": <user resource> }` with `status` `PENDING`. **No token is issued**: the student must be approved (`POST /users/{user}/approve`, by an admin or a teacher) and then log in.
 
 **Rules**
 
@@ -205,7 +203,6 @@ POST /api/v1/auth/login
     "user": {
       "id": 1,
       "fullname": "Sok Dara",
-      "username": "sok_dara",
       "email": "teacher@example.com",
       "phone": "+855 12 345 678",
       "avatar": null,
@@ -235,9 +232,11 @@ POST /api/v1/auth/login
 **Rules**
 
 - Return the same response for an unknown email and a wrong password, so attackers cannot discover which emails are registered.
-- Soft-deleted users cannot log in.
+- Only `ACTIVE` users can log in (`BR-USR-10`). Soft-deleted users cannot log in.
+- A user with status `INACTIVE`, `SUSPENDED`, or `DELETED` who gives the right password gets `403` with code `ACCOUNT_NOT_ACTIVE`.
+- A `PENDING` user who gives the right password gets `403` with code `ACCOUNT_PENDING`. A wrong password still gets `401`, so an unapproved account is not revealed.
 - Failed attempts are rate-limited per email and IP address (section 10).
-- The plain-text token is returned **only once**, in the login or registration response. It cannot be retrieved again.
+- The plain-text token is returned **only once**, in the login response. It cannot be retrieved again.
 
 ### 6.4 Controller Example
 
@@ -309,7 +308,7 @@ class AuthController extends Controller
 
 **In the code:** the controller above is a simplified example. The implemented controller is thin; credential checking, token issuing, logout, and password changes are in `App\Services\Auth\AuthService`, and registration is in `App\Services\Auth\RegistrationService`.
 
-**Account status:** only soft-deleted users are blocked from logging in (`BR-USR-06`). Whether `INACTIVE` and `SUSPENDED` users may log in is not defined in the business rules yet, so the API currently allows it.
+**Account status:** only `ACTIVE` users can log in (`BR-USR-10`), and the same check runs on every protected route (the `active` middleware, after `auth:sanctum`). A user who is not `ACTIVE` but still holds a token gets `403` with code `ACCOUNT_NOT_ACTIVE`. Moving a user to any status other than `ACTIVE` also revokes all of their tokens.
 
 ---
 
@@ -345,7 +344,6 @@ GET /api/v1/auth/me
   "data": {
     "id": 1,
     "fullname": "Sok Dara",
-    "username": "sok_dara",
     "email": "teacher@example.com",
     "phone": "+855 12 345 678",
     "avatar": null,
@@ -410,6 +408,7 @@ All tokens use the `['*']` ability. Access control is handled by roles and Polic
 | Role change by an admin       | All of the affected user's tokens |
 | User soft-deleted by an admin | All of the affected user's tokens |
 | User deletes their own account | All of the user's tokens       |
+| Admin sets a user's status to anything but `ACTIVE` | All of the affected user's tokens |
 
 Revoking tokens on role change ensures that cached client state is refreshed with the new permissions.
 
@@ -498,7 +497,7 @@ DELETE /api/v1/auth/account
 - Returns `204 No Content`. A missing or wrong `current_password` returns `422`.
 - Admins cannot delete their own account (`BR-USR-04`) and get `403`, checked before the password.
 - In one transaction the account gets `status = SUSPENDED`, is soft-deleted, has `deleted_by_user` set to itself, and all of its tokens are revoked.
-- Nothing else is deleted (`BR-USR-07`). The email, username, and phone stay reserved (`BR-USR-05`).
+- Nothing else is deleted (`BR-USR-07`). The email and phone stay reserved (`BR-USR-05`).
 - The user can no longer log in (`BR-USR-06`). Restoring an account is not part of the API.
 
 ### 9.4 Forgot and Reset Password

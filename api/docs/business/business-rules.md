@@ -84,13 +84,15 @@ return [
 | ID          | Rule                                                                                                                                                                            |
 |-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `BR-USR-01` | Every user has exactly one role: admin, teacher, or student.                                                                                                                    |
-| `BR-USR-02` | Public registration creates student accounts only.                                                                                                                              |
+| `BR-USR-02` | Public registration creates student accounts only. They start `PENDING` and cannot log in until approved (`BR-USR-09`). |
 | `BR-USR-03` | Only admins can create teacher and admin accounts or change a user's role.                                                                                                      |
 | `BR-USR-04` | An admin cannot change their own role or delete their own account.                                                                                                              |
 | `BR-USR-05` | Email addresses are unique across all users, including soft-deleted users.                                                                                                      |
 | `BR-USR-06` | A soft-deleted user cannot log in, and all of their tokens are revoked.                                                                                                         |
 | `BR-USR-07` | Soft-deleting a user does not delete their assignments, submissions, or analysis history.                                                                                       |
 | `BR-USR-08` | A user's role cannot change from teacher to student, or student to teacher, while they own active assignments or have active enrollments. They must be closed or removed first. |
+| `BR-USR-09` | A `PENDING` student account becomes `ACTIVE` when an admin or a teacher approves it. Until then the student cannot log in. |
+| `BR-USR-10` | Only users with status `ACTIVE` can log in. `PENDING`, `INACTIVE`, `SUSPENDED`, and `DELETED` users cannot. A user who is not `ACTIVE` is also blocked from every protected endpoint, and their tokens are revoked when an admin changes their status. |
 
 ---
 

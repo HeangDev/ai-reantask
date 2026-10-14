@@ -124,7 +124,6 @@ POST /api/v1/auth/register
 ```json
 {
   "fullname": "Chan Sreyneang",
-  "username": "sreyneang",
   "email": "student@example.com",
   "phone": "+855 12 000 111",
   "password": "a-strong-password",
@@ -160,7 +159,6 @@ POST /api/v1/auth/login
     "user": {
       "id": 1,
       "fullname": "Sok Dara",
-      "username": "sok_dara",
       "email": "teacher@example.com",
       "phone": "+855 12 345 678",
       "avatar": null,
@@ -335,6 +333,8 @@ Use the actual role names stored in the database. Authorization is enforced by L
 | `PATCH`  | `/users/{user}` | Update a user      | Admin, or the user themselves (limited fields) |
 | `DELETE` | `/users/{user}` | Soft-delete a user | Admin                                          |
 | `GET`    | `/users/{user}/sessions` | List a user's login sessions | Admin, or the user themselves |
+| `GET`    | `/users/pending-students` | List students waiting for approval (oldest first, paginated) | Admin, Teacher |
+| `POST`   | `/users/{user}/approve` | Approve a `PENDING` student; the status becomes `ACTIVE` | Admin, Teacher |
 
 **Rules**
 
@@ -354,7 +354,6 @@ Use the actual role names stored in the database. Authorization is enforced by L
 {
   "id": 3,
   "fullname": "Chan Sreyneang",
-  "username": "sreyneang",
   "email": "student@example.com",
   "phone": "+855 12 000 111",
   "avatar": null,
@@ -378,8 +377,8 @@ GET /api/v1/users?role=student&status=ACTIVE&search=sreyneang&sort=-created_at&p
 |------------|------------------------------------------------|----------------------------------------------------|
 | `role`     | `admin`, `teacher`, `student`                  | Filter by role name                                |
 | `status`   | `ACTIVE`, `INACTIVE`, `SUSPENDED`, `DELETED`   | Filter by status                                   |
-| `search`   | any text, up to 255 characters                 | Matches `fullname`, `username`, and `email`        |
-| `sort`     | `created_at`, `fullname`, `username`, `email`  | Prefix `-` for descending; default `-created_at`   |
+| `search`   | any text, up to 255 characters                 | Matches `fullname` and `email`        |
+| `sort`     | `created_at`, `fullname`, `email`  | Prefix `-` for descending; default `-created_at`   |
 | `page`     | integer                                        |                                                    |
 | `per_page` | `1`–`100`                                      | Default `15`                                       |
 
@@ -394,7 +393,6 @@ POST /api/v1/users
 ```json
 {
   "fullname": "Sok Dara",
-  "username": "sok_dara",
   "email": "teacher@example.com",
   "phone": "+855 12 345 678",
   "password": "a-strong-password",
@@ -411,7 +409,6 @@ POST /api/v1/users
 | Field      | Rules                                                                                                  |
 |------------|--------------------------------------------------------------------------------------------------------|
 | `fullname` | Required, string, maximum 255 characters                                                               |
-| `username` | Required, maximum 255 characters, only letters, digits, `.`, `_`, `-`, unique (including deleted users) |
 | `email`    | Required, valid email, maximum 150 characters, unique (including deleted users); stored lowercase      |
 | `phone`    | Required, digits with an optional leading `+`, spaces, or hyphens, maximum 20 characters, unique      |
 | `password` | Required, confirmed, follows the password policy in `authentication.md`                               |
@@ -425,11 +422,19 @@ PATCH /api/v1/users/{user}
 
 | Field                                         | Who can send it                                   |
 |-----------------------------------------------|---------------------------------------------------|
-| `fullname`, `username`, `phone`               | Admin, or the user themselves                     |
+| `fullname`, `phone`                           | Admin, or the user themselves                     |
 | `email`                                       | Admin only (ignored for everyone else)            |
 | `role_id`, `status`                           | Admin, for another user only (otherwise `403`)    |
 
 All fields are optional. Validation rules are the same as in section 8.3, and a user may keep their own current values. `updated_by_user` is set from the authenticated user.
+
+### 8.4a Approve a Student
+
+```http
+POST /api/v1/users/{user}/approve
+```
+
+Returns `200` with the user resource (`status` `ACTIVE`). A user who is not a student returns `404`; a student who is not `PENDING` returns `409` with code `USER_NOT_PENDING`. `GET /users/pending-students` accepts `page` and `per_page`.
 
 ### 8.5 Roles
 

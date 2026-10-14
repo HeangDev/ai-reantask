@@ -145,7 +145,6 @@ return [
 
     'admin' => [
         'fullname' => env('ADMIN_FULLNAME') ?: 'Administrator',
-        'username' => env('ADMIN_USERNAME') ?: 'admin',
         'email' => env('ADMIN_EMAIL'),
         'phone' => env('ADMIN_PHONE') ?: '+000000000000',
         'password' => env('ADMIN_PASSWORD'),

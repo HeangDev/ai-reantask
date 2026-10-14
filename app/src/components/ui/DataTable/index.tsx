@@ -3,19 +3,20 @@ import TableColGroup from './TableColGroup'
 import TableHeader from './TableHeader'
 import TablePagination from './TablePagination'
 import { pageSizes, tableClass } from './constants'
+import { useMemo } from 'react'
 import { useDataTable } from './useDataTable'
 import { useRowSelection } from './useRowSelection'
 import { useScrollbarWidth } from './useScrollbarWidth'
 import type { DataTableProps } from './types'
 
-export type { Column, DataTableProps, TableLabels } from './types'
+export type { Column, DataTableProps, ServerPaging, TableLabels } from './types'
 
 const NO_SELECTION: ReadonlySet<string> = new Set()
 const noop = () => {}
 
 export default function DataTable<T extends { id: string }>({
   rows: allRows,
-  columns,
+  columns: allColumns,
   getName,
   getSubtitle,
   initialSort,
@@ -32,10 +33,16 @@ export default function DataTable<T extends { id: string }>({
   minWidthClass,
   showAvatar = true,
   renderActions,
+  serverPaging,
 }: DataTableProps<T>) {
   const showActions = !readOnly || Boolean(renderActions)
   const { bodyRef, scrollbarWidth } = useScrollbarWidth()
-  const data = useDataTable({ rows: allRows, columns, getName, initialSort, initialPageSize })
+  // The server decides the order, so the columns are not sortable in the browser.
+  const columns = useMemo(
+    () => (serverPaging ? allColumns.map(({ sortValue: _sortValue, ...column }) => column) : allColumns),
+    [allColumns, serverPaging],
+  )
+  const data = useDataTable({ rows: allRows, columns, getName, initialSort, initialPageSize, serverPaging })
   const selection = useRowSelection({ rows: data.rows, selected, onSelectedChange })
 
   return (

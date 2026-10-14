@@ -190,6 +190,7 @@ Use the column names defined in `docs/database/database.md`.
 | List roles                | ✅                 | ❌         | ❌         |
 | List users                | ✅                 | ❌         | ❌         |
 | Create user               | ✅                 | ❌         | ❌         |
+| List pending students, approve a pending student | ✅ | ✅ | ❌ |
 | View user                 | ✅                 | Own       | Own       |
 | Update user profile       | ✅                 | Own       | Own       |
 | View a user's login sessions | ✅               | Own       | Own       |
@@ -199,7 +200,7 @@ Use the column names defined in `docs/database/database.md`.
 | Delete user               | ✅ (not their own) | ❌         | ❌         |
 | Delete own account (`DELETE /auth/account`) | ❌ | ✅ | ✅ |
 
-Response codes: listing roles or users, or creating a user, as a non-admin returns `403`. Viewing, updating, or deleting **another** user as a non-admin returns `404`, because the user must not learn that the account exists. A non-admin deleting their own account, an admin deleting their own account, and any attempt to change one's own role or status return `403`. Non-admins "update user profile" means `fullname`, `username`, and `phone`.
+Response codes: listing roles or users, or creating a user, as a non-admin returns `403`. Viewing, updating, or deleting **another** user as a non-admin returns `404`, because the user must not learn that the account exists. A non-admin deleting their own account, an admin deleting their own account, and any attempt to change one's own role or status return `403`. Non-admins "update user profile" means `fullname` and `phone`.
 
 ### 5.2 Assignments and Assignment Content
 

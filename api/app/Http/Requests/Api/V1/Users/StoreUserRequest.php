@@ -15,7 +15,7 @@ class StoreUserRequest extends FormRequest
 
     /**
      * Authorization runs before validation on purpose: the unique rules would otherwise
-     * let a non-admin probe which emails, usernames, and phones are taken.
+     * let a non-admin probe which emails and phones are taken.
      */
     public function authorize(): bool
     {

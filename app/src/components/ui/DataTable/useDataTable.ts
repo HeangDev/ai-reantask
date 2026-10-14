@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTable } from '@tanstack/react-table'
 import type { ColumnDef } from '@tanstack/react-table'
 import { features } from './features'
-import type { Column } from './types'
+import type { Column, ServerPaging } from './types'
 
 interface Options<T extends { id: string }> {
   rows: T[]
@@ -10,15 +10,16 @@ interface Options<T extends { id: string }> {
   getName: (row: T) => string
   initialSort: string
   initialPageSize: number
+  serverPaging?: ServerPaging
 }
 
 /** Sorting and pagination, done by TanStack Table. Returns the rows of the current page. */
-export function useDataTable<T extends { id: string }>({ rows: allRows, columns, getName, initialSort, initialPageSize }: Options<T>) {
+export function useDataTable<T extends { id: string }>({ rows: allRows, columns, getName, initialSort, initialPageSize, serverPaging }: Options<T>) {
   const [pageSize, setPageSize] = useState(initialPageSize)
   const [requestedPage, setRequestedPage] = useState(0)
 
   // Rows with equal sort values keep this order (TanStack falls back to the input order), so sort by name first.
-  const byName = useMemo(() => [...allRows].sort((a, b) => getName(a).localeCompare(getName(b))), [allRows, getName])
+  const byName = useMemo(() => (serverPaging ? allRows : [...allRows].sort((a, b) => getName(a).localeCompare(getName(b)))), [allRows, getName, serverPaging])
 
   const columnDefs = useMemo<ColumnDef<typeof features, T>[]>(
     () =>
@@ -48,6 +49,23 @@ export function useDataTable<T extends { id: string }>({ rows: allRows, columns,
   })
 
   const rows = table.getRowModel().rows.map((r) => r.original)
+
+  if (serverPaging) {
+    const { page: serverPage, pageSize: serverPageSize, total } = serverPaging
+    return {
+      rows: allRows,
+      total,
+      page: serverPage,
+      pageCount: Math.max(1, Math.ceil(total / serverPageSize)),
+      pageSize: serverPageSize,
+      from: total === 0 ? 0 : serverPage * serverPageSize + 1,
+      to: serverPage * serverPageSize + allRows.length,
+      goToPage: serverPaging.onPageChange,
+      changePageSize: serverPaging.onPageSizeChange,
+      sortDirection: () => false as const,
+      sortHandler: () => undefined,
+    }
+  }
 
   return {
     rows,

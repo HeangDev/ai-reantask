@@ -16,3 +16,6 @@ export function isValidPhone(phone: string) {
 
 /** An ISO date (YYYY-MM-DD) that is not in the future. */
 export const isValidDateOfBirth = (iso: string) => /^\d{4}-\d{2}-\d{2}$/.test(iso) && iso <= todayIso()
+
+/** A username the API accepts (letters, digits, `.`, `_`, `-`), made from the part of the email before the @. */
+export const usernameFromEmail = (email: string) => email.trim().split('@')[0].replace(/[^A-Za-z0-9._-]/g, '_')

@@ -33,7 +33,6 @@ class AdminUserSeeder extends Seeder
 
         $admin->fill([
             'fullname' => config('app.admin.fullname'),
-            'username' => config('app.admin.username'),
             'phone' => config('app.admin.phone'),
             'password' => $password,
         ]);

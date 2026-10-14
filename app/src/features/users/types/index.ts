@@ -1,19 +1,66 @@
-export type AccountStatus = 'active' | 'inactive'
+import type { Role } from '@/features/auth/types'
+
+export type AccountStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
+
+export const accountStatuses: AccountStatus[] = ['PENDING', 'ACTIVE', 'INACTIVE', 'SUSPENDED']
 
 export interface User {
+  /** The API's numeric id, as a string because tables select rows by string id. */
   id: string
   fullName: string
+  username: string
   email: string
   phone: string
-  role: string
+  role: Role
+  roleId: number
   status: AccountStatus
-  /** ISO date of the last login; recorded by the system, so absent for a user who never signed in. */
-  lastLogin?: string
+  /** Epoch milliseconds of registration. */
+  createdAt: number
 }
 
-// Last login is not entered by hand.
-export type UserInput = Omit<User, 'id' | 'lastLogin'>
+/** What the form edits. `roleId` is a string because the dropdown works with strings; an empty string means none chosen. */
+export interface UserInput {
+  fullName: string
+  username: string
+  email: string
+  phone: string
+  roleId: string
+  status: AccountStatus
+}
 
-export type UserErrorKey = 'usr.errName' | 'tch.errEmailTaken' | 'stu.errEmail' | 'stu.errPhone' | 'usr.errEmailTaken' | 'usr.errRole'
+/** A new user also needs a password. */
+export interface UserSaveInput extends UserInput {
+  password?: string
+}
 
-export type UserFormErrors = Partial<Record<keyof UserInput, UserErrorKey>>
+export interface RoleOption {
+  id: number
+  name: Role
+}
+
+export interface UserFilters {
+  search: string
+  role: '' | Role
+  status: '' | AccountStatus
+  /** One-based page number. */
+  page: number
+  perPage: number
+}
+
+export interface UsersPage {
+  users: User[]
+  total: number
+}
+
+export type UserErrorKey =
+  | 'usr.errName'
+  | 'tch.errEmailTaken'
+  | 'stu.errEmail'
+  | 'stu.errPhone'
+  | 'usr.errEmailTaken'
+  | 'usr.errRole'
+  | 'register.errPhoneTaken'
+  | 'acct.errPasswordRule'
+  | 'acct.errPasswordMatch'
+
+export type UserFormErrors = Partial<Record<keyof UserInput | 'password' | 'confirm', UserErrorKey>>

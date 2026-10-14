@@ -9,7 +9,7 @@ use Illuminate\Validation\Rule;
 
 class IndexUsersRequest extends FormRequest
 {
-    public const SORT_FIELDS = ['created_at', 'fullname', 'username', 'email'];
+    public const SORT_FIELDS = ['created_at', 'fullname', 'email'];
 
     public function authorize(): bool
     {

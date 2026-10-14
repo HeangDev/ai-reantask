@@ -536,6 +536,9 @@ Codes are uppercase `SNAKE_CASE`. Once published, a code must not be renamed, be
 |----------------------------|----------|-------------------------------------------------------------|
 | `UNAUTHENTICATED`          | `401`    | Unauthenticated.                                            |
 | `INVALID_CREDENTIALS`      | `401`    | The provided credentials are incorrect.                     |
+| `ACCOUNT_PENDING`          | `403`    | Your account is waiting for approval.                       |
+| `ACCOUNT_NOT_ACTIVE`       | `403`    | Your account is not active. Please contact an administrator. |
+| `USER_NOT_PENDING`         | `409`    | This user is not waiting for approval.                      |
 | `FORBIDDEN`                | `403`    | You do not have permission to perform this action.          |
 | `NOT_FOUND`                | `404`    | Resource not found.                                         |
 | `METHOD_NOT_ALLOWED`       | `405`    | Method not allowed.                                         |

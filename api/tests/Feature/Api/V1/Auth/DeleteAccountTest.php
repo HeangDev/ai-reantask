@@ -33,7 +33,7 @@ it('br_usr_05: keeps the email reserved after deletion', function () {
 
     $this->seed(RoleSeeder::class);
     $this->postJson('/api/v1/auth/register', [
-        'fullname' => 'New', 'username' => 'newuser', 'email' => 'me@example.com', 'phone' => '+855 11 222 333',
+        'fullname' => 'New', 'email' => 'me@example.com', 'phone' => '+855 11 222 333',
         'password' => 'password123', 'password_confirmation' => 'password123',
     ])->assertUnprocessable()->assertJsonValidationErrors(['email']);
 });

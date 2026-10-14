@@ -10,12 +10,16 @@ import { pickableSubjectNames, useSubjects } from '@/features/subjects/store/sub
 import { validateTeacher } from '@/features/teachers/lib/validation'
 import { useTeachers } from '@/features/teachers/store/teachersStore'
 import type { TeacherDetails } from '@/features/teachers/types'
-import { userRoles } from '@/features/users/data/sampleUsers'
+import { roleLabelKey } from '@/features/auth/lib/roleLabels'
+import type { Role } from '@/features/auth/types'
+import { useRoles } from '@/features/users/hooks/useUsers'
 import { validateUser } from '@/features/users/lib/validation'
-import type { AccountStatus, User, UserFormErrors, UserInput } from '@/features/users/types'
+import { accountStatuses } from '@/features/users/types'
+import type { AccountStatus, User, UserFormErrors, UserInput, UserSaveInput } from '@/features/users/types'
 import { useI18n } from '@/lib/i18n'
 import type { TranslationKey } from '@/lib/i18n'
 import { todayIso } from '@/lib/dates'
+import { usernameFromEmail } from '@/lib/validation'
 
 interface Props {
   /** The user being edited, or null when creating. */
@@ -23,31 +27,53 @@ interface Props {
   /** Every user, used to catch duplicate emails. */
   users: User[]
   /** A user added with the Teacher role also brings the details a teacher profile needs. */
-  onSave: (input: UserInput, teacher?: TeacherDetails) => void
+  onSave: (input: UserSaveInput, teacher?: TeacherDetails) => void
   onClose: () => void
+  /** Errors the server reported for the last save, shown under their fields. */
+  serverErrors?: UserFormErrors
+  saving?: boolean
+  /** Fixes the role (for example the Students page edits only students), so the role field is not shown. */
+  lockedRole?: Role
 }
 
-const TEACHER_ROLE = 'Teacher'
+const statusLabel: Record<AccountStatus, TranslationKey> = {
+  PENDING: 'usr.pending',
+  ACTIVE: 'usr.active',
+  INACTIVE: 'usr.inactive',
+  SUSPENDED: 'usr.suspended',
+}
 
 const fieldClass =
   'w-full rounded-lg border bg-sunken px-3 py-2 text-sm text-fg focus-visible:outline-2 focus-visible:outline-accent'
 
-export default function UserForm({ user, users, onSave, onClose }: Props) {
+export default function UserForm({ user, users, onSave, onClose, serverErrors, saving = false, lockedRole }: Props) {
   const { t } = useI18n()
   const subjects = useSubjects()
   const teachers = useTeachers()
+  const roles = useRoles().data ?? []
   const [values, setValues] = useState<UserInput>({
     fullName: user?.fullName ?? '',
     email: user?.email ?? '',
     phone: user?.phone ?? '',
-    role: user?.role ?? '',
-    status: user?.status ?? 'active',
+    username: user?.username ?? '',
+    roleId: user ? String(user.roleId) : '',
+    status: user?.status ?? 'ACTIVE',
   })
+  // A new user also gets a password; an existing user's password is never edited here.
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [errors, setErrors] = useState<UserFormErrors>({})
+  // Server errors stay until that field is edited; a new batch of them resets this.
+  const [seenServerErrors, setSeenServerErrors] = useState(serverErrors)
+  const [edited, setEdited] = useState<Set<string>>(new Set())
+  if (seenServerErrors !== serverErrors) {
+    setSeenServerErrors(serverErrors)
+    setEdited(new Set())
+  }
   // Teacher details are only asked for when creating a user with the Teacher role.
   const [teacher, setTeacher] = useState<TeacherDetails>({ sex: '' as Sex, dateOfBirth: '', subject: '' })
   const [teacherErrors, setTeacherErrors] = useState<Partial<Record<keyof TeacherDetails, TranslationKey>>>({})
-  const asTeacher = !user && values.role === TEACHER_ROLE
+  const asTeacher = !user && roles.find((r) => String(r.id) === values.roleId)?.name === 'teacher'
 
   const setTeacherField = <K extends keyof TeacherDetails>(field: K, value: TeacherDetails[K]) => {
     setTeacher((v) => ({ ...v, [field]: value }))
@@ -57,11 +83,17 @@ export default function UserForm({ user, users, onSave, onClose }: Props) {
   const set = <K extends keyof UserInput>(field: K, value: UserInput[K]) => {
     setValues((v) => ({ ...v, [field]: value }))
     setErrors((e) => ({ ...e, [field]: undefined }))
+    setEdited((fields) => new Set(fields).add(field))
   }
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    const found = validateUser(values, users.filter((x) => x.id !== user?.id))
+    if (saving) return
+    const found = validateUser(
+      { ...values, roleId: lockedRole ? 'locked' : values.roleId },
+      users.filter((x) => x.id !== user?.id),
+      user ? undefined : { value: password, confirm },
+    )
     let foundTeacher: typeof teacherErrors = {}
     if (asTeacher) {
       const check = validateTeacher({ ...values, ...teacher, classes: [] }, teachers)
@@ -73,18 +105,27 @@ export default function UserForm({ user, users, onSave, onClose }: Props) {
     setTeacherErrors(foundTeacher)
     if (Object.keys(found).length > 0 || Object.values(foundTeacher).some(Boolean)) return
     onSave(
-      { ...values, fullName: values.fullName.trim(), email: values.email.trim(), phone: values.phone.trim() },
+      {
+        ...values,
+        fullName: values.fullName.trim(),
+        // The form has no username field; the API needs one, so a new user gets one made from the email.
+        username: user ? user.username : usernameFromEmail(values.email),
+        roleId: lockedRole ? String(roles.find((r) => r.name === lockedRole)?.id ?? values.roleId) : values.roleId,
+        email: values.email.trim(),
+        phone: values.phone.trim(),
+        password: user ? undefined : password,
+      },
       asTeacher ? teacher : undefined,
     )
   }
 
   const field = (
-    name: keyof UserInput,
+    name: keyof UserInput | 'password' | 'confirm',
     label: string,
     input: (props: object) => React.ReactNode,
     span?: 'full',
   ) => {
-    const error = errors[name]
+    const error = errors[name] ?? (edited.has(name) ? undefined : serverErrors?.[name])
     return (
       <div className={span ? 'sm:col-span-2' : undefined}>
         <label htmlFor={`user-${name}`} className="text-sm font-medium">{label}</label>
@@ -103,6 +144,7 @@ export default function UserForm({ user, users, onSave, onClose }: Props) {
     )
   }
 
+  const roleName = roles.find((r) => String(r.id) === values.roleId)?.name
   const preview = (
     <div className="rounded-xl border border-line bg-surface p-4 text-center shadow-sm">
       <div className="flex justify-center">
@@ -111,7 +153,7 @@ export default function UserForm({ user, users, onSave, onClose }: Props) {
       <p className="mt-3 truncate font-semibold">{values.fullName.trim() || t('stu.fieldName')}</p>
       <p className="truncate text-xs text-muted">{values.email.trim() || t('stu.fieldEmail')}</p>
       <div className="mt-3 flex flex-wrap justify-center gap-1.5 text-xs">
-        {[values.role, t(values.status === 'active' ? 'usr.active' : 'usr.inactive')]
+        {[roleName && t(roleLabelKey[roleName]), t(statusLabel[values.status])]
           .filter(Boolean)
           .map((chip) => (
             <span key={chip} className="rounded-md bg-sunken px-2 py-0.5 font-medium">{chip}</span>
@@ -138,16 +180,17 @@ export default function UserForm({ user, users, onSave, onClose }: Props) {
           {field('email', t('stu.fieldEmail'), (props) => (
             <input {...props} type="email" autoComplete="off" value={values.email} onChange={(e) => set('email', e.target.value)} />
           ))}
-          {field('role', t('usr.role'), (props) => (
+          {!lockedRole &&
+            field('roleId', t('usr.role'), (props) => (
             <Dropdown
               {...props}
               className="py-2"
-              invalid={Boolean(errors.role)}
+              invalid={Boolean(errors.roleId ?? serverErrors?.roleId)}
               wrapperClassName="block w-full"
-              value={values.role}
+              value={values.roleId}
               placeholder={t('usr.chooseRole')}
-              options={userRoles.map((r) => ({ value: r, label: r }))}
-              onChange={(v) => set('role', v)}
+              options={roles.map((r) => ({ value: String(r.id), label: t(roleLabelKey[r.name]) }))}
+              onChange={(v) => set('roleId', v)}
             />
           ))}
           {field('status', t('usr.status'), (props) => (
@@ -157,13 +200,18 @@ export default function UserForm({ user, users, onSave, onClose }: Props) {
               wrapperClassName="block w-full"
               value={values.status}
               placeholder={t('usr.chooseStatus')}
-              options={[
-                { value: 'active', label: t('usr.active') },
-                { value: 'inactive', label: t('usr.inactive') },
-              ]}
+              options={accountStatuses.map((value) => ({ value, label: t(statusLabel[value]) }))}
               onChange={(v) => set('status', v as AccountStatus)}
             />
           ))}
+          {!user &&
+            field('password', t('login.password'), (props) => (
+              <input {...props} type="password" autoComplete="new-password" value={password} onChange={(e) => { setPassword(e.target.value); setErrors((er) => ({ ...er, password: undefined })); setEdited((f) => new Set(f).add('password')) }} />
+            ))}
+          {!user &&
+            field('confirm', t('acct.confirmPassword'), (props) => (
+              <input {...props} type="password" autoComplete="new-password" value={confirm} onChange={(e) => { setConfirm(e.target.value); setErrors((er) => ({ ...er, confirm: undefined })) }} />
+            ))}
           {asTeacher && (
             <>
               <p className="border-t border-line pt-3 text-sm font-semibold sm:col-span-2">
@@ -225,7 +273,9 @@ export default function UserForm({ user, users, onSave, onClose }: Props) {
           >
             {t('dialog.cancel')}
           </button>
-          <Button type="submit">{t('stu.save')}</Button>
+          <Button type="submit" disabled={saving}>
+            {t('stu.save')}
+          </Button>
         </div>
       </form>
     </FormDialog>

@@ -27,6 +27,14 @@ export interface TableLabels {
   next: string
 }
 
+export interface ServerPaging {
+  page: number
+  pageSize: number
+  total: number
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
+}
+
 export interface DataTableProps<T extends { id: string }> {
   /** Already filtered by the page. */
   rows: T[]
@@ -43,6 +51,11 @@ export interface DataTableProps<T extends { id: string }> {
   onDelete?: (id: string) => void
   /** A plain list: no selection boxes, no row actions, and rows do not open. */
   readOnly?: boolean
+  /**
+   * Paging done by the server: `rows` is then just the current page, in the order the server sent it, and the
+   * table neither sorts nor slices it. `page` is zero-based.
+   */
+  serverPaging?: ServerPaging
   /** Rows per page to start with; defaults to 10. */
   initialPageSize?: number
   /** Shown inside the table, between the header and the pagination, when there are no rows. */

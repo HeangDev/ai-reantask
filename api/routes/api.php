@@ -18,7 +18,7 @@ Route::prefix('v1')->group(function () {
             Route::post('reset-password', [PasswordController::class, 'reset']);
         });
 
-        Route::middleware('auth:sanctum')->group(function () {
+        Route::middleware(['auth:sanctum', 'active'])->group(function () {
             Route::get('me', [AuthController::class, 'me']);
             Route::post('logout', [AuthController::class, 'logout']);
             Route::post('logout-all', [AuthController::class, 'logoutAll']);
@@ -27,14 +27,16 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('roles', [RoleController::class, 'index']);
 
         Route::get('users', [UserController::class, 'index']);
+        Route::get('users/pending-students', [UserController::class, 'pendingStudents']);
         Route::post('users', [UserController::class, 'store']);
         Route::get('users/{user}', [UserController::class, 'show']);
         Route::patch('users/{user}', [UserController::class, 'update']);
         Route::delete('users/{user}', [UserController::class, 'destroy']);
+        Route::post('users/{user}/approve', [UserController::class, 'approve']);
         Route::get('users/{user}/sessions', [SessionController::class, 'index']);
     });
 });

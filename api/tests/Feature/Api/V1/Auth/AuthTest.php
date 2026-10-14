@@ -13,7 +13,6 @@ function registerPayload(array $overrides = []): array
 {
     return array_merge([
         'fullname' => 'Chan Sreyneang',
-        'username' => 'sreyneang',
         'email' => 'student@example.com',
         'phone' => '+855 12 000 111',
         'password' => 'password123',
@@ -25,21 +24,21 @@ describe('POST /auth/register', function () {
     // Idempotent: the seeder uses firstOrCreate, like the factories.
     beforeEach(fn () => $this->seed(RoleSeeder::class));
 
-    it('br_usr_02: registers a student and returns a token', function () {
+    it('br_usr_02: registers a pending student without a token', function () {
         $this->postJson('/api/v1/auth/register', registerPayload())
             ->assertCreated()
-            ->assertJsonPath('data.token_type', 'Bearer')
-            ->assertJsonPath('data.user.role.name', 'student')
-            ->assertJsonPath('data.user.email', 'student@example.com')
-            ->assertJsonStructure(['data' => ['token', 'expires_at', 'user' => ['id', 'fullname', 'username']]])
-            ->assertJsonMissingPath('data.user.password');
+            ->assertJsonPath('data.role.name', 'student')
+            ->assertJsonPath('data.email', 'student@example.com')
+            ->assertJsonPath('data.status', 'PENDING')
+            ->assertJsonMissingPath('data.token')
+            ->assertJsonMissingPath('data.password');
 
         $user = User::where('email', 'student@example.com')->firstOrFail();
 
         expect($user->isStudent())->toBeTrue()
-            ->and($user->status)->toBe(UserStatus::Active)
+            ->and($user->status)->toBe(UserStatus::Pending)
             ->and(Hash::check('password123', $user->password))->toBeTrue()
-            ->and($user->tokens()->count())->toBe(1);
+            ->and($user->tokens()->count())->toBe(0);
     });
 
     it('br_usr_02: ignores role and server-owned fields', function () {
@@ -50,31 +49,31 @@ describe('POST /auth/register', function () {
             'role' => 'admin',
             'status' => 'SUSPENDED',
             'created_by_user' => 1,
-        ]))->assertCreated()->assertJsonPath('data.user.role.name', 'student');
+        ]))->assertCreated()->assertJsonPath('data.role.name', 'student');
 
         $user = User::where('email', 'student@example.com')->firstOrFail();
 
         expect($user->isStudent())->toBeTrue()
-            ->and($user->status)->toBe(UserStatus::Active)
+            ->and($user->status)->toBe(UserStatus::Pending)
             ->and($user->created_by_user)->toBeNull();
     });
 
     it('validates required fields, passwords and uniqueness', function () {
-        User::factory()->create(['email' => 'student@example.com', 'username' => 'sreyneang', 'phone' => '+855 12 000 111']);
+        User::factory()->create(['email' => 'student@example.com', 'phone' => '+855 12 000 111']);
 
         $this->postJson('/api/v1/auth/register', [])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['fullname', 'username', 'email', 'phone', 'password']);
+            ->assertJsonValidationErrors(['fullname', 'email', 'phone', 'password']);
 
         $this->postJson('/api/v1/auth/register', registerPayload())
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['email', 'username', 'phone']);
+            ->assertJsonValidationErrors(['email', 'phone']);
 
-        $this->postJson('/api/v1/auth/register', registerPayload(['email' => 'new@example.com', 'username' => 'new', 'phone' => '+855 1 2345 67', 'password_confirmation' => 'different']))
+        $this->postJson('/api/v1/auth/register', registerPayload(['email' => 'new@example.com', 'phone' => '+855 1 2345 67', 'password_confirmation' => 'different']))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['password']);
 
-        $this->postJson('/api/v1/auth/register', registerPayload(['email' => 'new@example.com', 'username' => 'new', 'phone' => '+855 1 2345 67', 'password' => 'short', 'password_confirmation' => 'short']))
+        $this->postJson('/api/v1/auth/register', registerPayload(['email' => 'new@example.com', 'phone' => '+855 1 2345 67', 'password' => 'short', 'password_confirmation' => 'short']))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['password']);
     });
@@ -116,6 +115,48 @@ describe('POST /auth/login', function () {
             ->assertJsonMissingPath('data.user.password');
 
         expect($user->tokens()->first()->name)->toBe('Chrome on Windows');
+    });
+
+    it('refuses a pending account with the right password', function () {
+        User::factory()->status(UserStatus::Pending)->create(['email' => 'student@example.com', 'password' => 'correct-password']);
+
+        $this->postJson('/api/v1/auth/login', ['email' => 'student@example.com', 'password' => 'correct-password'])
+            ->assertForbidden()
+            ->assertJsonPath('code', 'ACCOUNT_PENDING');
+
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    });
+
+    it('br_usr_10: refuses every non-active status with the right password', function (UserStatus $status) {
+        User::factory()->status($status)->create(['email' => 'student@example.com', 'password' => 'correct-password']);
+
+        $this->postJson('/api/v1/auth/login', ['email' => 'student@example.com', 'password' => 'correct-password'])
+            ->assertForbidden()
+            ->assertJsonPath('code', 'ACCOUNT_NOT_ACTIVE');
+
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    })->with([UserStatus::Inactive, UserStatus::Suspended, UserStatus::Deleted]);
+
+    it('br_usr_10: lets an active user log in', function () {
+        User::factory()->status(UserStatus::Active)->create(['email' => 'student@example.com', 'password' => 'correct-password']);
+
+        $this->postJson('/api/v1/auth/login', ['email' => 'student@example.com', 'password' => 'correct-password'])->assertOk();
+    });
+
+    it('does not reveal a non-active status to a wrong password', function () {
+        User::factory()->status(UserStatus::Suspended)->create(['email' => 'student@example.com', 'password' => 'correct-password']);
+
+        $this->postJson('/api/v1/auth/login', ['email' => 'student@example.com', 'password' => 'wrong-password'])
+            ->assertUnauthorized()
+            ->assertJsonPath('code', 'INVALID_CREDENTIALS');
+    });
+
+    it('does not reveal a pending account to a wrong password', function () {
+        User::factory()->status(UserStatus::Pending)->create(['email' => 'student@example.com', 'password' => 'correct-password']);
+
+        $this->postJson('/api/v1/auth/login', ['email' => 'student@example.com', 'password' => 'wrong-password'])
+            ->assertUnauthorized()
+            ->assertJsonPath('code', 'INVALID_CREDENTIALS');
     });
 
     it('returns the same error for a wrong password and an unknown email', function () {

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Button from '@/components/ui/Button'
+import { ClockIcon } from '@/components/ui/icons'
 import TextField from '@/components/ui/TextField'
 import { getTwoFactorSecret } from '@/features/account/store/accountStore'
 import AuthLayout from '@/features/auth/components/AuthLayout'
@@ -12,6 +13,7 @@ import { useLogin } from '@/features/auth/hooks/useAuthMutations'
 import { authActions } from '@/features/auth/store/authStore'
 import type { AuthResult } from '@/features/auth/types'
 import { getDeviceName } from '@/lib/deviceName'
+import { ApiError } from '@/lib/apiClient'
 import { useI18n } from '@/lib/i18n'
 import type { TranslationKey } from '@/lib/i18n'
 import { isValidEmail } from '@/lib/validation'
@@ -31,6 +33,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<Errors>({})
   const [failed, setFailed] = useState(false)
+  const [pending, setPending] = useState(false)
   const login = useLogin()
   const submitting = login.isPending
   // After the password, a second step asks for the authenticator code when two-factor authentication is on.
@@ -50,6 +53,7 @@ export default function LoginPage() {
     if (!password) found.password = 'login.errPassword'
     setErrors(found)
     setFailed(false)
+    setPending(false)
     if (Object.keys(found).length > 0) return
 
     login.mutate(
@@ -61,7 +65,11 @@ export default function LoginPage() {
             setStep('code')
           } else finishSignIn(auth)
         },
-        onError: () => setFailed(true),
+        onError: (error) => {
+          // The password was right but an admin or a teacher has not approved the account yet.
+          if (error instanceof ApiError && error.code === 'ACCOUNT_PENDING') setPending(true)
+          else setFailed(true)
+        },
       },
     )
   }
@@ -88,6 +96,24 @@ export default function LoginPage() {
             >
               {t('login.errFailed')}
             </p>
+          )}
+
+          {pending && (
+            <div
+              role="alert"
+              className="mt-5 flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+            >
+              <span
+                aria-hidden="true"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-200 text-amber-800 dark:bg-amber-500/25 dark:text-amber-200 [&>svg]:h-5 [&>svg]:w-5"
+              >
+                <ClockIcon />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{t('login.pendingTitle')}</p>
+                <p className="mt-0.5 text-sm">{t('login.errPending')}</p>
+              </div>
+            </div>
           )}
 
           <div className="mt-6 space-y-4">

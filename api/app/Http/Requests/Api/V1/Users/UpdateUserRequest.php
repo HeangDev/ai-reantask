@@ -43,7 +43,7 @@ class UpdateUserRequest extends FormRequest
     }
 
     /**
-     * Everyone may edit fullname, username, and phone. Email is admin-only; for other
+     * Everyone may edit fullname and phone. Email is admin-only; for other
      * users it is not validated, so it is dropped from `validated()`.
      *
      * @return array<string, array<int, mixed>>
@@ -57,7 +57,6 @@ class UpdateUserRequest extends FormRequest
 
         $rules = [
             'fullname' => $fields['fullname'],
-            'username' => $fields['username'],
             'phone' => $fields['phone'],
             'role_id' => ['sometimes', 'integer', Rule::exists('roles', 'id')->where('status', 'ACTIVE')],
             'status' => ['sometimes', 'string', Rule::enum(UserStatus::class)->except(UserStatus::Deleted)],

@@ -28,6 +28,22 @@ class UserController extends Controller
         );
     }
 
+    public function pendingStudents(IndexUsersRequest $request): AnonymousResourceCollection
+    {
+        Gate::authorize('viewPending', User::class);
+
+        return UserResource::collection(
+            $this->users->paginatePendingStudents((int) $request->validated('per_page', 15))
+        );
+    }
+
+    public function approve(Request $request, User $user): UserResource
+    {
+        Gate::authorize('approve', $user);
+
+        return new UserResource($this->users->approve($request->user(), $user));
+    }
+
     public function store(StoreUserRequest $request): JsonResponse
     {
         $user = $this->users->create($request->user(), $request->validated());

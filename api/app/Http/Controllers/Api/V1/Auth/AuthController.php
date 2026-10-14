@@ -14,7 +14,6 @@ use App\Services\Users\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -28,7 +27,8 @@ class AuthController extends Controller
     {
         $user = $this->registration->register($request->validated());
 
-        return $this->tokenResponse($this->auth->issueToken($user, Str::limit((string) $request->userAgent(), 255, '')), 201);
+        // No token: the account cannot be used until it is approved.
+        return (new UserResource($user))->response()->setStatusCode(201);
     }
 
     public function login(LoginRequest $request): JsonResponse
@@ -71,7 +71,7 @@ class AuthController extends Controller
     /**
      * @param  array{token: string, token_type: string, expires_at: ?string, user: User}  $result
      */
-    private function tokenResponse(array $result, int $status = 200): JsonResponse
+    private function tokenResponse(array $result): JsonResponse
     {
         return response()->json([
             'data' => [
@@ -80,6 +80,6 @@ class AuthController extends Controller
                 'expires_at' => $result['expires_at'],
                 'user' => new UserResource($result['user']),
             ],
-        ], $status);
+        ]);
     }
 }

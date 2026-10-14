@@ -10,6 +10,7 @@ export const authApi = {
   logoutAll: () => apiRequest<void>('/auth/logout-all', { method: 'POST', token: getSession()?.token }),
   forgotPassword: (email: string) =>
     apiRequest<{ message: string }>('/auth/forgot-password', { method: 'POST', body: { email } }),
+  /** The new student is PENDING and gets no token until an admin or a teacher approves the account. */
   register: (input: RegisterInput) =>
-    apiRequest<{ data: AuthResult }>('/auth/register', { method: 'POST', body: input }).then((r) => r.data),
+    apiRequest<{ data: AuthUser }>('/auth/register', { method: 'POST', body: input }).then((r) => r.data),
 }
