@@ -1,419 +1,503 @@
 # Database Relationships
 
-## User
+---
 
-#### A User can create many Assignments.
+## 1. Role
 
+#### A Role can have many Users.
+
+```text
+Role
+↓
+hasMany
+↓
+Users
+```
+
+#### A User belongs to a Role.
+
+```text
+User
+↓
+belongsTo
+↓
+Role
+```
+
+---
+
+## 2. User
+
+#### A User can create many Assignments as a Teacher.
+
+```text
 User
   ↓
 hasMany
   ↓
 Assignments
+```
 
 #### A User can join many Assignments as a Student.
 
+```text
 User
   ↓
 hasMany
   ↓
 AssignmentStudents
+```
 
 #### A User can have many Git Connections.
 
+```text
 User
   ↓
 hasMany
   ↓
 GitConnections
+```
 
 #### A User can have many Student Repositories.
 
+```text
 User
   ↓
 hasMany
   ↓
 AssignmentStudentRepositories
+```
 
-#### A User can have many Submissions.
+#### A User can have many Submissions as a Student.
 
+```text
 User
   ↓
 hasMany
   ↓
 Submissions
+```
 
-## Assignment
+#### A User can resolve many Analysis Issues.
+
+```text
+User
+  ↓
+hasMany
+  ↓
+AnalysisIssues
+```
+
+---
+
+## 3. Assignment
 
 #### An Assignment belongs to a Teacher/User.
 
+```text
 Assignment
   ↓
 belongsTo
   ↓
 User
+```
 
 #### An Assignment can have many Students.
 
+```text
 Assignment
   ↓
 hasMany
   ↓
 AssignmentStudents
+```
 
 #### An Assignment can have many Requirements.
 
+```text
 Assignment
   ↓
 hasMany
   ↓
 AssignmentRequirements
+```
 
-#### An Assignment can have one Project Structure.
+#### An Assignment can have many Project Structure.
 
+```text
 Assignment
   ↓
-hasOne
+hasMany
   ↓
 AssignmentStructure
+```
 
-#### An Assignment can have one Template Repository.
+#### An Assignment can have many Assignment Repositories.
 
+```text
 Assignment
   ↓
-hasOne
+hasMany
   ↓
-AssignmentRepository
+AssignmentRepositories
+```
 
 #### An Assignment can have many Student Repositories.
 
+```text
 Assignment
   ↓
 hasMany
   ↓
 AssignmentStudentRepositories
+```
 
 #### An Assignment can have many Submissions.
 
+```text
 Assignment
   ↓
 hasMany
   ↓
 Submissions
+```
 
-## AssignmentStudent
+---
+
+## 4. AssignmentStudent
 
 #### An AssignmentStudent belongs to an Assignment.
 
+```text
 AssignmentStudent
   ↓
 belongsTo
   ↓
 Assignment
+```
 
 #### An AssignmentStudent belongs to a User/Student.
 
+```text
 AssignmentStudent
   ↓
 belongsTo
   ↓
 User
+```
 
-## AssignmentRequirement
+---
+
+## 5. AssignmentRequirement
 
 #### An AssignmentRequirement belongs to an Assignment.
 
+```text
 AssignmentRequirement
   ↓
 belongsTo
   ↓
 Assignment
+```
 
 #### An AssignmentRequirement can have many Analysis Results.
 
+```text
 AssignmentRequirement
   ↓
 hasMany
   ↓
 AnalysisResults
+```
 
-## AssignmentStructure
+---
+
+## 6. AssignmentStructure
 
 #### An AssignmentStructure belongs to an Assignment.
 
+```text
 AssignmentStructure
   ↓
 belongsTo
   ↓
 Assignment
+```
 
 #### An AssignmentStructure can have many Structure Rules.
 
+```text
 AssignmentStructure
   ↓
 hasMany
   ↓
 AssignmentStructureRules
+```
 
-## AssignmentStructureRule
+---
+
+## 7. AssignmentStructureRule
 
 #### An AssignmentStructureRule belongs to an Assignment Structure.
 
+```text
 AssignmentStructureRule
   ↓
 belongsTo
   ↓
 AssignmentStructure
+```
 
-## GitConnection
+---
+
+## 8. GitConnection
 
 #### A GitConnection belongs to a User.
 
+```text
 GitConnection
   ↓
 belongsTo
   ↓
 User
+```
 
 #### A GitConnection can have many Repositories.
 
+```text
 GitConnection
   ↓
 hasMany
   ↓
 Repositories
+```
 
-## Repository
+---
+
+## 9. Repository
 
 #### A Repository belongs to a Git Connection.
 
+```text
 Repository
   ↓
 belongsTo
   ↓
 GitConnection
+```
 
-#### A Repository can be used as a Template Repository.
+#### A Repository can be linked to many Assignments.
 
+```text
 Repository
   ↓
-hasOne
+hasMany
   ↓
 AssignmentRepository
+```
 
 #### A Repository can be used by many Student Repositories.
 
+```text
 Repository
   ↓
 hasMany
   ↓
 AssignmentStudentRepositories
+```
 
 #### A Repository can have many Submissions.
 
+```text
 Repository
   ↓
 hasMany
   ↓
 Submissions
+```
 
-## AssignmentRepository
+---
+
+## 10. AssignmentRepository
 
 #### An AssignmentRepository belongs to an Assignment.
 
+```text
 AssignmentRepository
   ↓
 belongsTo
   ↓
 Assignment
+```
 
 #### An AssignmentRepository belongs to a Repository.
 
+```text
 AssignmentRepository
   ↓
 belongsTo
   ↓
 Repository
+```
 
-## AssignmentStudentRepository
+---
+
+## 11. AssignmentStudentRepository
 
 #### An AssignmentStudentRepository belongs to an Assignment.
 
+```text
 AssignmentStudentRepository
   ↓
 belongsTo
   ↓
 Assignment
+```
 
-#### An AssignmentStudentRepository belongs to a Student/User.
+#### An AssignmentStudentRepository belongs to a User/Student.
 
+```text
 AssignmentStudentRepository
   ↓
 belongsTo
   ↓
 User
+```
 
 #### An AssignmentStudentRepository belongs to a Repository.
 
+```text
 AssignmentStudentRepository
   ↓
 belongsTo
   ↓
 Repository
+```
 
-## Submission
+---
+
+## 12. Submission
 
 #### A Submission belongs to an Assignment.
 
+```text
 Submission
   ↓
 belongsTo
   ↓
 Assignment
+```
 
-#### A Submission belongs to a Student/User.
+#### A Submission belongs to a User/Student.
 
+```text
 Submission
   ↓
 belongsTo
   ↓
 User
+```
 
 #### A Submission belongs to a Repository.
 
+```text
 Submission
   ↓
 belongsTo
   ↓
 Repository
+```
 
 #### A Submission can have many Analysis Runs.
 
+```text
 Submission
   ↓
 hasMany
   ↓
 AnalysisRuns
+```
 
-## AnalysisRun
+---
+
+## 13. AnalysisRun
 
 #### An AnalysisRun belongs to a Submission.
 
+```text
 AnalysisRun
   ↓
 belongsTo
   ↓
 Submission
+```
 
 #### An AnalysisRun can have many Analysis Results.
 
+```text
 AnalysisRun
   ↓
 hasMany
   ↓
 AnalysisResults
+```
 
 #### An AnalysisRun can have many Analysis Issues.
 
+```text
 AnalysisRun
   ↓
 hasMany
   ↓
 AnalysisIssues
+```
 
-## AnalysisResult
+---
+
+## 14. AnalysisResult
 
 #### An AnalysisResult belongs to an Analysis Run.
 
+```text
 AnalysisResult
   ↓
 belongsTo
   ↓
 AnalysisRun
+```
 
 #### An AnalysisResult belongs to an Assignment Requirement.
 
+```text
 AnalysisResult
   ↓
 belongsTo
   ↓
 AssignmentRequirement
+```
 
-## AnalysisIssue
+---
+
+## 15. AnalysisIssue
 
 #### An AnalysisIssue belongs to an Analysis Run.
 
+```text
 AnalysisIssue
   ↓
 belongsTo
   ↓
 AnalysisRun
+```
 
-# Relationship Summary
+#### An AnalysisIssue can be resolved by a User.
 
-User
- ├── hasMany → Assignments
- ├── hasMany → AssignmentStudents
- ├── hasMany → GitConnections
- ├── hasMany → AssignmentStudentRepositories
- └── hasMany → Submissions
-
-Assignment
- ├── belongsTo → User
- ├── hasMany → AssignmentStudents
- ├── hasMany → AssignmentRequirements
- ├── hasOne → AssignmentStructure
- ├── hasOne → AssignmentRepository
- ├── hasMany → AssignmentStudentRepositories
- └── hasMany → Submissions
-
-AssignmentStudent
- ├── belongsTo → Assignment
- └── belongsTo → User
-
-AssignmentRequirement
- ├── belongsTo → Assignment
- └── hasMany → AnalysisResults
-
-AssignmentStructure
- ├── belongsTo → Assignment
- └── hasMany → AssignmentStructureRules
-
-AssignmentStructureRule
- └── belongsTo → AssignmentStructure
-
-GitConnection
- ├── belongsTo → User
- └── hasMany → Repositories
-
-Repository
- ├── belongsTo → GitConnection
- ├── hasOne → AssignmentRepository
- ├── hasMany → AssignmentStudentRepositories
- └── hasMany → Submissions
-
-AssignmentRepository
- ├── belongsTo → Assignment
- └── belongsTo → Repository
-
-AssignmentStudentRepository
- ├── belongsTo → Assignment
- ├── belongsTo → User
- └── belongsTo → Repository
-
-Submission
- ├── belongsTo → Assignment
- ├── belongsTo → User
- ├── belongsTo → Repository
- └── hasMany → AnalysisRuns
-
-AnalysisRun
- ├── belongsTo → Submission
- ├── hasMany → AnalysisResults
- └── hasMany → AnalysisIssues
-
-AnalysisResult
- ├── belongsTo → AnalysisRun
- └── belongsTo → AssignmentRequirement
-
+```text
 AnalysisIssue
- └── belongsTo → AnalysisRun
+  ↓
+belongsTo
+  ↓
+User
+```
+
+---
