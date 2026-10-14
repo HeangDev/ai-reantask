@@ -105,6 +105,7 @@ project-root/
 │   │   └── testing.md
 │   ├── database/
 │   │   ├── database.md
+│   │   ├── database-performance.md
 │   │   ├── database-rules.md
 │   │   └── relationships.md
 │   └── business/
