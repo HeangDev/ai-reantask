@@ -115,7 +115,7 @@ export function createSampleNotifications(now = Date.now()): AppNotification[] {
     audience: 'teacher',
     title: 'New registration',
     subtitle: 'Rathana Keo registered and is waiting for approval.',
-    to: '/students',
+    to: '/dashboard',
     createdAt: now - 40 * MINUTE,
     read: false,
   })

@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'motion/react'
 import GradientBanner from '@/components/ui/GradientBanner'
-import { ClassIcon, EditIcon, TrashIcon,  } from '@/components/ui/icons'
+import { ClassIcon, EditIcon, TrashIcon } from '@/components/ui/icons'
 import StatusBadge from '@/components/ui/StatusBadge'
 import Switch from '@/components/ui/Switch'
 import CopyCodeButton from '@/features/classes/components/CopyCodeButton'

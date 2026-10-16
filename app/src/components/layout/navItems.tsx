@@ -28,7 +28,7 @@ export const navItems: NavItem[] = [
   { to: '/assignments', labelKey: 'nav.assignments', icon: <AssignmentsIcon />, roles: ['student'] },
   { to: '/my-classes', labelKey: 'nav.myClasses', icon: <ClassIcon />, roles: ['student'] },
   { to: '/assign', labelKey: 'nav.assign', icon: <ClipboardListIcon />, roles: ['teacher'] },
-  { to: '/students', labelKey: 'nav.students', icon: <StudentsIcon />, roles: ['admin', 'teacher'] },
+  { to: '/students', labelKey: 'nav.students', icon: <StudentsIcon />, roles: ['admin'] },
   { to: '/teachers', labelKey: 'nav.teachers', icon: <TeachersIcon />, roles: ['admin'] },
   { to: '/reports/scores', labelKey: 'nav.scoreReport', icon: <ReportIcon />, roles: ['teacher'] },
   { to: '/classes', labelKey: 'nav.classes', icon: <ClassIcon />, roles: ['admin', 'teacher'] },

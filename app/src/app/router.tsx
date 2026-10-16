@@ -15,6 +15,7 @@ import UsersPage from '@/features/users/pages/UsersPage'
 import NotificationsPage from '@/features/notifications/pages/NotificationsPage'
 import AccountPage from '@/features/account/pages/AccountPage'
 import ClassesPage from '@/features/classes/pages/ClassesPage'
+import TeacherClassesPage from '@/features/classes/pages/TeacherClassesPage'
 import SubjectsPage from '@/features/subjects/pages/SubjectsPage'
 import StudentClassesPage from '@/features/classes/pages/StudentClassesPage'
 import ScoreReportPage from '@/features/reports/pages/ScoreReportPage'
@@ -24,6 +25,11 @@ import LoginPage from '@/features/auth/pages/LoginPage'
 import RegisterPage from '@/features/auth/pages/RegisterPage'
 
 // The layout only lets a signed-in user reach this, so it can send each role to its own start page.
+/** Admins manage every class; a teacher sees their own classes with subject and student totals. */
+function ClassesRoute() {
+  return useSession()?.role === 'teacher' ? <TeacherClassesPage /> : <ClassesPage />
+}
+
 function HomeRedirect() {
   const session = useSession()
   return <Navigate to={session ? roleHome[session.role] : '/login'} replace />
@@ -44,7 +50,7 @@ export const router = createBrowserRouter([
       { path: '/students', element: <StudentsPage />, handle: { titleKey: 'nav.students' } },
       { path: '/teachers', element: <TeachersPage />, handle: { titleKey: 'nav.teachers' } },
       { path: '/reports/scores', element: <ScoreReportPage />, handle: { titleKey: 'nav.scoreReport' } },
-      { path: '/classes', element: <ClassesPage />, handle: { titleKey: 'nav.classes' } },
+      { path: '/classes', element: <ClassesRoute />, handle: { titleKey: 'nav.classes' } },
       { path: '/subjects', element: <SubjectsPage />, handle: { titleKey: 'nav.subjects' } },
       { path: '/users', element: <UsersPage />, handle: { titleKey: 'nav.users' } },
       { path: '/integration', element: <IntegrationsPage />, handle: { titleKey: 'nav.integration' } },

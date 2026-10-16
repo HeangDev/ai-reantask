@@ -6,7 +6,7 @@ const shared = ['/dashboard', '/tasks', '/notifications', '/account', '/settings
 const allowed: Record<Role, string[]> = {
   admin: [...shared, '/students', '/teachers', '/classes', '/subjects', '/users'],
   student: [...shared, '/assignments', '/my-classes'],
-  teacher: [...shared, '/assign', '/students', '/reports', '/classes', '/integration'],
+  teacher: [...shared, '/assign', '/reports', '/classes', '/integration'],
 }
 
 /** Where each role lands after signing in. */
