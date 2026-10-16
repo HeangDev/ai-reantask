@@ -512,6 +512,43 @@ A login session is one Sanctum token, created by each login or registration. The
 - `name` must be unique among non-deleted subjects; a duplicate returns `422`.
 - `DELETE` soft-deletes only the subject and returns `204`. Deleted subjects return `404`.
 
+### 8.8 Classes
+
+| Method   | Endpoint            | Description      | Access                                                          |
+|----------|---------------------|------------------|-----------------------------------------------------------------|
+| `GET`    | `/classes`          | List classes     | All roles (non-admins see only their own classes)               |
+| `POST`   | `/classes`          | Create a class   | Admin                                                           |
+| `GET`    | `/classes/{class}`  | Get a class      | Admin, or a teacher/student who belongs to it (else `404`)      |
+| `PATCH`  | `/classes/{class}`  | Update a class   | Admin                                                           |
+| `DELETE` | `/classes/{class}`  | Soft-delete      | Admin                                                           |
+
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Web Dev 2026",
+    "code": "K7Q2ZP",
+    "description": "Morning class",
+    "status": "ACTIVE",
+    "start_at": "2026-11-01",
+    "end_date": "2027-03-01",
+    "created_at": "2026-10-16T08:00:00Z",
+    "updated_at": "2026-10-16T08:00:00Z"
+  }
+}
+```
+
+**Fields:** `name` (required on create, max 255), `description` (optional), `start_at` and `end_date` (required on create, `YYYY-MM-DD`), `status` (`ACTIVE` or `INACTIVE`, default `ACTIVE`). `code` is read-only.
+
+**List query parameters:** `page`, `per_page` (default `15`, maximum `100`), `search` (name or code contains), `status`, `sort` (`start_at`, `name`, or `created_at`; default `-start_at`; prefix `-` for descending).
+
+**Rules** (`BR-CLS-01` to `BR-CLS-05`)
+
+- A teacher or student who belongs to a class gets `403` on `PATCH` and `DELETE`; anyone else gets `404`.
+- `POST` and `PATCH` check authorization before validation.
+- On `PATCH`, a single date is checked against the stored other date.
+- `DELETE` soft-deletes only the class and returns `204`. Deleted classes return `404`.
+
 ---
 
 ## 9. Assignments

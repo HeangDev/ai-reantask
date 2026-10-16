@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
+use App\Http\Controllers\Api\V1\Classes\ClassController;
 use App\Http\Controllers\Api\V1\Subjects\SubjectController;
 use App\Http\Controllers\Api\V1\Users\RoleController;
 use App\Http\Controllers\Api\V1\Users\SessionController;
@@ -42,5 +43,7 @@ Route::prefix('v1')->group(function () {
         Route::get('users/{user}/sessions', [SessionController::class, 'index']);
 
         Route::apiResource('subjects', SubjectController::class);
+
+        Route::apiResource('classes', ClassController::class)->parameters(['classes' => 'school_class']);
     });
 });
