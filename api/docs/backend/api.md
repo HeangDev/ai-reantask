@@ -478,6 +478,40 @@ A login session is one Sanctum token, created by each login or registration. The
 - IP address and user agent are not recorded, so they are not available.
 - This endpoint is read-only. Revoking a single session is not part of the API yet; use `POST /auth/logout` and `POST /auth/logout-all`.
 
+### 8.7 Subjects
+
+| Method   | Endpoint              | Description      | Access                                            |
+|----------|-----------------------|------------------|---------------------------------------------------|
+| `GET`    | `/subjects`           | List subjects    | All roles (non-admins see `ACTIVE` only)          |
+| `POST`   | `/subjects`           | Create a subject | Admin                                             |
+| `GET`    | `/subjects/{subject}` | Get a subject    | All roles (non-admins: `ACTIVE` only, else `404`) |
+| `PATCH`  | `/subjects/{subject}` | Update a subject | Admin                                             |
+| `DELETE` | `/subjects/{subject}` | Soft-delete      | Admin                                             |
+
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Web Development",
+    "description": "HTML, CSS, and JavaScript",
+    "status": "ACTIVE",
+    "created_at": "2026-10-16T08:00:00Z",
+    "updated_at": "2026-10-16T08:00:00Z"
+  }
+}
+```
+
+**Fields:** `name` (required on create, max 255), `description` (optional), `status` (`ACTIVE` or `INACTIVE`, default `ACTIVE`).
+
+**List query parameters:** `page`, `per_page` (default `15`, maximum `100`), `search` (name contains), `status`, `sort` (`name` default, or `created_at`; prefix `-` for descending).
+
+**Rules** (`BR-SBJ-01` to `BR-SBJ-04`)
+
+- Non-admins who can see a subject get `403` on `PATCH` and `DELETE`; if they cannot see it (`INACTIVE`), they get `404`.
+- `POST` and `PATCH` check authorization before validation.
+- `name` must be unique among non-deleted subjects; a duplicate returns `422`.
+- `DELETE` soft-deletes only the subject and returns `204`. Deleted subjects return `404`.
+
 ---
 
 ## 9. Assignments

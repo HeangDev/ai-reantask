@@ -94,6 +94,15 @@ return [
 | `BR-USR-09` | A `PENDING` student account becomes `ACTIVE` when an admin or a teacher approves it. Until then the student cannot log in. |
 | `BR-USR-10` | Only users with status `ACTIVE` can log in. `PENDING`, `INACTIVE`, `SUSPENDED`, and `DELETED` users cannot. A user who is not `ACTIVE` is also blocked from every protected endpoint, and their tokens are revoked when an admin changes their status. |
 
+### 3.1 Subjects
+
+| ID          | Rule                                                                                                                                  |
+|-------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `BR-SBJ-01` | Only admins create, update, or delete subjects.                                                                                       |
+| `BR-SBJ-02` | Teachers and students see only `ACTIVE` subjects. An `INACTIVE` subject returns `404` to them. Admins see all non-deleted subjects. |
+| `BR-SBJ-03` | Subject names are unique among subjects that are not soft-deleted. The name of a deleted subject can be reused.                       |
+| `BR-SBJ-04` | Deleting a subject is a soft delete. It does not change `class_subjects` rows or any history.                                         |
+
 ---
 
 ## 4. Assignments

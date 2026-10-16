@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
+use App\Http\Controllers\Api\V1\Subjects\SubjectController;
 use App\Http\Controllers\Api\V1\Users\RoleController;
 use App\Http\Controllers\Api\V1\Users\SessionController;
 use App\Http\Controllers\Api\V1\Users\UserController;
@@ -39,5 +40,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('users/{user}', [UserController::class, 'destroy']);
         Route::post('users/{user}/approve', [UserController::class, 'approve']);
         Route::get('users/{user}/sessions', [SessionController::class, 'index']);
+
+        Route::apiResource('subjects', SubjectController::class);
     });
 });
