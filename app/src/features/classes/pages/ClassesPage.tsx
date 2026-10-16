@@ -8,20 +8,16 @@ import SelectionBar from '@/components/ui/SelectionBar'
 import { useToast } from '@/components/ui/Toast'
 import ViewSwitch from '@/components/ui/ViewSwitch'
 import type { ViewMode } from '@/components/ui/ViewSwitch'
-import { useAssignments } from '@/features/assignments/store/assignmentsStore'
-import AddStudentsDialog from '@/features/classes/components/AddStudentsDialog'
 import ClassCard from '@/features/classes/components/ClassCard'
 import ClassForm from '@/features/classes/components/ClassForm'
 import ClassesTable from '@/features/classes/components/ClassesTable'
 import JoinRequestsPanel from '@/features/classes/components/JoinRequestsPanel'
-import { useSession } from '@/features/auth/store/authStore'
-import { useVisibleClasses } from '@/features/classes/hooks/useVisibleClasses'
-import { classesActions } from '@/features/classes/store/classesStore'
-import { membersOfClass, useJoinRequests } from '@/features/classes/store/joinRequestsStore'
-import type { ClassInput, SchoolClass } from '@/features/classes/types'
+import { useClassesQuery, useCreateClass, useDeleteClasses, useUpdateClass } from '@/features/classes/hooks/useClasses'
+import type { ClassFormErrors, ClassInput, SchoolClass } from '@/features/classes/types'
 import { teachersActions } from '@/features/teachers/store/teachersStore'
 import { useCurrentTeacher } from '@/features/teachers/hooks/useCurrentTeacher'
 import { useViewMode } from '@/hooks/useViewMode'
+import { ApiError } from '@/lib/apiClient'
 import TableEmpty from '@/components/ui/TableEmpty'
 import { useI18n } from '@/lib/i18n'
 
@@ -29,7 +25,7 @@ type Dialog =
   | { type: 'none' }
   | { type: 'create' }
   | { type: 'deleteSelected' }
-  | { type: 'edit' | 'delete' | 'students'; id: string }
+  | { type: 'edit' | 'delete'; id: string }
 
 const NO_DIALOG: Dialog = { type: 'none' }
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
@@ -39,13 +35,15 @@ const PAGE_SIZE = 6
 export default function ClassesPage() {
   const { t } = useI18n()
   const { notify } = useToast()
-  const assignments = useAssignments()
-  // A teacher only sees the classes they teach.
-  const classes = useVisibleClasses()
+  // The API only returns the classes this person may see.
+  const classesQuery = useClassesQuery()
+  const classes = useMemo(() => classesQuery.data ?? [], [classesQuery.data])
   const currentTeacher = useCurrentTeacher()
-  const requests = useJoinRequests()
-  // Approving who joins a class, and adding students to one, is the teacher's job only.
-  const isTeacher = useSession()?.role === 'teacher'
+  const createClass = useCreateClass()
+  const updateClass = useUpdateClass()
+  const deleteClasses = useDeleteClasses()
+  const saving = createClass.isPending || updateClass.isPending
+  const [serverErrors, setServerErrors] = useState<ClassFormErrors>({})
   const [view, setView] = useViewMode('classes-view')
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
@@ -60,54 +58,76 @@ export default function ClassesPage() {
     )
   }, [classes, query, status])
 
-  // Derived from the assignments and the class members, not stored, so it can never drift out of date.
-  const stats = useMemo(
-    () =>
-      Object.fromEntries(
-        classes.map((c) => {
-          const own = assignments.filter((a) => a.className === c.name)
-          const students = new Set([
-            ...own.flatMap((a) => a.assignees ?? []),
-            ...membersOfClass(requests, c.id).map((m) => m.student),
-          ])
-          return [c.id, { students: students.size, assignments: own.length }]
-        }),
-      ),
-    [classes, assignments, requests],
-  )
-
   const target = 'id' in dialog ? classes.find((c) => c.id === dialog.id) ?? null : null
-  const close = () => setDialog(NO_DIALOG)
+  const close = () => {
+    setDialog(NO_DIALOG)
+    setServerErrors({})
+  }
   const resetPaging = () => setLimit(PAGE_SIZE)
 
+  const showSaveError = (error: unknown) => {
+    const fields = error instanceof ApiError && error.status === 422 ? error.fieldErrors : {}
+    const found: ClassFormErrors = {}
+    if (fields.name) found.name = 'cls.errNameTaken'
+    if (fields.start_at) found.startDate = 'cls.errStartDate'
+    if (fields.end_date) found.endDate = 'cls.errEndDate'
+    if (Object.keys(found).length > 0) setServerErrors(found)
+    else notify({ variant: 'danger', title: t('cls.saveFailed'), subtitle: t('usr.tryAgain') })
+  }
+
   const save = (input: ClassInput) => {
+    if (saving) return
     if (target && dialog.type === 'edit') {
-      classesActions.update(target.id, input)
-      notify({ variant: 'info', title: t('cls.updated'), subtitle: t('toast.saved', { name: input.name }) })
+      updateClass.mutate(
+        { id: target.id, changes: input },
+        {
+          onSuccess: () => {
+            notify({ variant: 'info', title: t('cls.updated'), subtitle: t('toast.saved', { name: input.name }) })
+            close()
+          },
+          onError: showSaveError,
+        },
+      )
     } else {
-      const id = classesActions.add(input)
-      // A class a teacher creates is theirs to teach.
-      if (currentTeacher) teachersActions.update(currentTeacher.id, { classes: [...currentTeacher.classes, id] })
-      notify({ title: t('cls.added'), subtitle: t('toast.added', { name: input.name }) })
+      createClass.mutate(input, {
+        onSuccess: (created) => {
+          // A class a teacher creates is theirs to teach.
+          if (currentTeacher) teachersActions.update(currentTeacher.id, { classes: [...currentTeacher.classes, created.id] })
+          notify({ title: t('cls.added'), subtitle: t('toast.added', { name: input.name }) })
+          close()
+        },
+        onError: showSaveError,
+      })
     }
-    close()
   }
 
   const toggleStatus = (c: SchoolClass) => {
-    const status = c.status === 'active' ? 'inactive' : 'active'
-    classesActions.update(c.id, { status })
-    notify({
-      variant: 'info',
-      title: t('cls.updated'),
-      subtitle: t(status === 'active' ? 'cls.nowActive' : 'cls.nowInactive', { name: c.name }),
-    })
+    if (saving) return
+    const next = c.status === 'active' ? 'inactive' : 'active'
+    updateClass.mutate(
+      { id: c.id, changes: { status: next } },
+      {
+        onSuccess: () =>
+          notify({
+            variant: 'info',
+            title: t('cls.updated'),
+            subtitle: t(next === 'active' ? 'cls.nowActive' : 'cls.nowInactive', { name: c.name }),
+          }),
+        onError: () => notify({ variant: 'danger', title: t('cls.saveFailed'), subtitle: t('usr.tryAgain') }),
+      },
+    )
   }
 
   const removeIds = (ids: ReadonlySet<string>) => {
-    classesActions.remove(ids)
-    setSelected((current) => new Set([...current].filter((id) => !ids.has(id))))
-    notify({ variant: 'danger', title: t('cls.deleted'), subtitle: t('toast.removed', { count: String(ids.size) }) })
-    close()
+    if (deleteClasses.isPending) return
+    deleteClasses.mutate([...ids], {
+      onSuccess: () => {
+        setSelected((current) => new Set([...current].filter((id) => !ids.has(id))))
+        notify({ variant: 'danger', title: t('cls.deleted'), subtitle: t('toast.removed', { count: String(ids.size) }) })
+      },
+      onError: () => notify({ variant: 'danger', title: t('cls.deleteFailed'), subtitle: t('usr.tryAgain') }),
+      onSettled: close,
+    })
   }
 
   const chooseView = (next: ViewMode) => {
@@ -160,6 +180,19 @@ export default function ClassesPage() {
       </>
     )
 
+  const loadError = classesQuery.isError && (
+    <div role="alert" className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+      {t('cls.loadFailed')}
+      <button
+        type="button"
+        onClick={() => void classesQuery.refetch()}
+        className={`rounded-lg border border-line px-3 py-1 text-xs font-medium text-fg hover:bg-hover ${focusRing}`}
+      >
+        {t('usr.tryAgain')}
+      </button>
+    </div>
+  )
+
   const emptyState = (
     <>
       <p className="font-semibold">{t('cls.emptyTitle')}</p>
@@ -193,20 +226,21 @@ export default function ClassesPage() {
       {view === 'table' ? (
         <div className="mt-5 overflow-hidden rounded-xl border border-line bg-surface">
           <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center">{filters}</div>
+          {loadError}
           <ClassesTable
             emptyMessage={
-              classes.length === 0 ? (
+              classesQuery.isPending ? (
+                <TableEmpty title={t('cls.loading')} />
+              ) : classes.length === 0 ? (
                 <TableEmpty title={t('cls.emptyTitle')} description={t('cls.emptyDesc')} />
               ) : (
                 <TableEmpty title={t('cls.noMatch')} />
               )
             }
             classes={visible}
-            stats={stats}
             selected={selected}
             onSelectedChange={setSelected}
             onOpen={(id) => setDialog({ type: 'edit', id })}
-            onAddStudents={isTeacher ? (id) => setDialog({ type: 'students', id }) : undefined}
             onEdit={(id) => setDialog({ type: 'edit', id })}
             onDelete={(id) => setDialog({ type: 'delete', id })}
           />
@@ -214,7 +248,10 @@ export default function ClassesPage() {
       ) : (
         <>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">{filters}</div>
-          {classes.length === 0 ? (
+          {loadError}
+          {classesQuery.isPending ? (
+            <p className="mt-5 rounded-xl border border-line p-10 text-center text-sm text-muted">{t('cls.loading')}</p>
+          ) : classes.length === 0 ? (
             <div className="mt-5 rounded-xl border border-line p-10 text-center">{emptyState}</div>
           ) : visible.length === 0 ? (
             <p className="mt-5 rounded-xl border border-line p-10 text-center text-sm text-muted">{t('cls.noMatch')}</p>
@@ -226,10 +263,7 @@ export default function ClassesPage() {
                     key={c.id}
                     schoolClass={c}
                     index={index}
-                    studentCount={stats[c.id]?.students ?? 0}
-                    assignmentCount={stats[c.id]?.assignments ?? 0}
                     onToggleStatus={() => toggleStatus(c)}
-                    onAddStudents={isTeacher ? () => setDialog({ type: 'students', id: c.id }) : undefined}
                     onEdit={() => setDialog({ type: 'edit', id: c.id })}
                     onDelete={() => setDialog({ type: 'delete', id: c.id })}
                   />
@@ -257,9 +291,12 @@ export default function ClassesPage() {
         </>
       )}
 
-      {dialog.type === 'create' && <ClassForm schoolClass={null} classes={classes} onSave={save} onClose={close} />}
-      {dialog.type === 'edit' && target && <ClassForm schoolClass={target} classes={classes} onSave={save} onClose={close} />}
-      {isTeacher && dialog.type === 'students' && target && <AddStudentsDialog schoolClass={target} onClose={close} />}
+      {dialog.type === 'create' && (
+        <ClassForm schoolClass={null} classes={classes} onSave={save} onClose={close} serverErrors={serverErrors} saving={saving} />
+      )}
+      {dialog.type === 'edit' && target && (
+        <ClassForm schoolClass={target} classes={classes} onSave={save} onClose={close} serverErrors={serverErrors} saving={saving} />
+      )}
       {dialog.type === 'delete' && target && (
         <DeleteDialog
           title={t('cls.deleteTitle')}

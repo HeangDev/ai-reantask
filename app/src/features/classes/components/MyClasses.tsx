@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Button from '@/components/ui/Button'
 import { ClassIcon, PlusIcon } from '@/components/ui/icons'
 import JoinClassDialog from '@/features/classes/components/JoinClassDialog'
-import { useClasses } from '@/features/classes/store/classesStore'
+import { useClasses } from '@/features/classes/hooks/useClasses'
 import { useJoinedClassIds, usePendingClassIds } from '@/features/classes/store/joinRequestsStore'
 import { useI18n } from '@/lib/i18n'
 

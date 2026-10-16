@@ -21,9 +21,12 @@ interface Props {
   classes: SchoolClass[]
   onSave: (input: ClassInput) => void
   onClose: () => void
+  /** Errors the API reported after submit, such as a name taken by a class this user cannot see. */
+  serverErrors?: ClassFormErrors
+  saving?: boolean
 }
 
-export default function ClassForm({ schoolClass, classes, onSave, onClose }: Props) {
+export default function ClassForm({ schoolClass, classes, onSave, onClose, serverErrors, saving = false }: Props) {
   const { t } = useI18n()
   const [values, setValues] = useState<ClassInput>({
     name: schoolClass?.name ?? '',
@@ -37,10 +40,21 @@ export default function ClassForm({ schoolClass, classes, onSave, onClose }: Pro
   const set = <K extends keyof ClassInput>(field: K, value: ClassInput[K]) => {
     setValues((v) => ({ ...v, [field]: value }))
     setErrors((e) => ({ ...e, [field]: undefined }))
+    setEdited((prev) => new Set(prev).add(field))
   }
+
+  // A server error shows until the user edits that field again.
+  const [edited, setEdited] = useState<ReadonlySet<keyof ClassInput>>(new Set())
+  const [seenServerErrors, setSeenServerErrors] = useState(serverErrors)
+  if (seenServerErrors !== serverErrors) {
+    setSeenServerErrors(serverErrors)
+    setEdited(new Set())
+  }
+  const fieldError = (field: keyof ClassInput) => errors[field] ?? (edited.has(field) ? undefined : serverErrors?.[field])
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
+    if (saving) return
     const found = validateClass(values, classes.filter((x) => x.id !== schoolClass?.id))
     setErrors(found)
     if (Object.keys(found).length > 0) return
@@ -75,13 +89,13 @@ export default function ClassForm({ schoolClass, classes, onSave, onClose }: Pro
             autoComplete="off"
             value={values.name}
             onChange={(v) => set('name', v)}
-            error={errors.name}
+            error={fieldError('name')}
           />
           <TextAreaField
             label={t('form.description')}
             value={values.description}
             onChange={(v) => set('description', v)}
-            error={errors.description}
+            error={fieldError('description')}
             maxLength={MAX_DESCRIPTION_LENGTH}
           />
           <div className="grid gap-4 sm:grid-cols-2">
@@ -89,14 +103,14 @@ export default function ClassForm({ schoolClass, classes, onSave, onClose }: Pro
               label={t('cls.startDate')}
               value={values.startDate}
               onChange={(v) => set('startDate', v)}
-              error={errors.startDate}
+              error={fieldError('startDate')}
             />
             <DateField
               label={t('cls.endDate')}
               min={values.startDate || undefined}
               value={values.endDate}
               onChange={(v) => set('endDate', v)}
-              error={errors.endDate}
+              error={fieldError('endDate')}
             />
           </div>
           <div>
@@ -124,7 +138,9 @@ export default function ClassForm({ schoolClass, classes, onSave, onClose }: Pro
           >
             {t('dialog.cancel')}
           </button>
-          <Button type="submit">{t('stu.save')}</Button>
+          <Button type="submit" disabled={saving}>
+            {t('stu.save')}
+          </Button>
         </div>
       </form>
     </FormDialog>

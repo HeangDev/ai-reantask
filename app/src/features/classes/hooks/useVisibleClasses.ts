@@ -1,18 +1,16 @@
 import { useMemo } from 'react'
-import { useClasses } from '@/features/classes/store/classesStore'
+import { useSession } from '@/features/auth/store/authStore'
+import { useClasses } from '@/features/classes/hooks/useClasses'
 import type { SchoolClass } from '@/features/classes/types'
-import { useTeacherClassScope } from '@/features/teachers/hooks/useCurrentTeacher'
 
-/** The classes the signed-in person may see: a teacher only their own, everyone else all of them. */
+/** The classes the signed-in person may see. The API already limits a teacher or student to their own classes. */
 export function useVisibleClasses(): SchoolClass[] {
-  const all = useClasses()
-  const scope = useTeacherClassScope()
-  return useMemo(() => (scope ? all.filter((c) => scope.has(c.id)) : all), [all, scope])
+  return useClasses()
 }
 
-/** The names of the visible classes as a set, or null when there is no restriction. Assignments follow their class by name. */
+/** The names of a teacher's classes as a set, or null when there is no restriction. Assignments follow their class by name. */
 export function useClassNameScope(): ReadonlySet<string> | null {
+  const role = useSession()?.role
   const all = useClasses()
-  const scope = useTeacherClassScope()
-  return useMemo(() => (scope ? new Set(all.filter((c) => scope.has(c.id)).map((c) => c.name)) : null), [all, scope])
+  return useMemo(() => (role === 'teacher' ? new Set(all.map((c) => c.name)) : null), [role, all])
 }

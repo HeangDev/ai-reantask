@@ -6,7 +6,7 @@ import { CheckIcon, ChevronRightIcon, ClassIcon, StudentsIcon, SubjectIcon, Teac
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useProfile } from '@/features/account/store/accountStore'
 import { teachingOf } from '@/features/classes/lib/classTeaching'
-import { useClasses } from '@/features/classes/store/classesStore'
+import { useClasses } from '@/features/classes/hooks/useClasses'
 import { greetingKey } from '@/features/dashboard/components/DashboardGreeting'
 import { Panel } from '@/features/dashboard/components/DashboardPanels'
 import { sampleStudents } from '@/features/students/data/sampleStudents'

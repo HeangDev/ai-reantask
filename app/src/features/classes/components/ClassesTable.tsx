@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import DataTable from '@/components/ui/DataTable'
-import { UsersIcon } from '@/components/ui/icons'
 import type { Column } from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
 import CopyCodeButton from '@/features/classes/components/CopyCodeButton'
@@ -13,40 +12,19 @@ interface Props {
   emptyMessage?: ReactNode
   /** Already filtered by the page. */
   classes: SchoolClass[]
-  /** Student and assignment counts per class id. */
-  stats: Record<string, { students: number; assignments: number }>
   selected: ReadonlySet<string>
   onSelectedChange: (ids: Set<string>) => void
   onOpen: (id: string) => void
-  /** Left out for roles that may not add students to a class. */
-  onAddStudents?: (id: string) => void
   onEdit: (id: string) => void
   onDelete: (id: string) => void
 }
 
-const pad = (n: number) => String(n).padStart(6, '0')
-
-export default function ClassesTable({ classes, stats, onAddStudents, ...handlers }: Props) {
+export default function ClassesTable({ classes, ...handlers }: Props) {
   const { t } = useI18n()
 
   const columns = useMemo<Column<SchoolClass>[]>(
     () => [
       { key: 'name', header: t('cls.fieldName'), primary: true, sortValue: (c) => c.name },
-      {
-        key: 'students',
-        header: t('cls.statStudents'),
-        width: '6.5rem',
-        sortValue: (c) => pad(stats[c.id]?.students ?? 0),
-        cell: (c) => stats[c.id]?.students ?? 0,
-      },
-      {
-        key: 'assignments',
-        header: t('cls.statAssignments'),
-        width: '8rem',
-        hideBelow: 'lg',
-        sortValue: (c) => pad(stats[c.id]?.assignments ?? 0),
-        cell: (c) => stats[c.id]?.assignments ?? 0,
-      },
       {
         key: 'code',
         header: t('cls.code'),
@@ -66,7 +44,7 @@ export default function ClassesTable({ classes, stats, onAddStudents, ...handler
         cell: (c) => <StatusBadge status={c.status} />,
       },
     ],
-    [t, stats],
+    [t],
   )
 
   const labels = useMemo(
@@ -95,20 +73,6 @@ export default function ClassesTable({ classes, stats, onAddStudents, ...handler
       initialSort="name"
       minWidthClass="min-w-[46rem] lg:min-w-[52rem]"
       labels={labels}
-      renderActions={
-        onAddStudents &&
-        ((c) => (
-        <button
-          type="button"
-          onClick={() => onAddStudents(c.id)}
-          aria-label={`${t('cls.addStudents')}: ${c.name}`}
-          title={t('cls.addStudents')}
-          className="rounded-md p-1.5 text-muted transition-colors hover:bg-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4"
-        >
-          <UsersIcon />
-        </button>
-        ))
-      }
       {...handlers}
     />
   )

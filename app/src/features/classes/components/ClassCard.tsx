@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'motion/react'
 import GradientBanner from '@/components/ui/GradientBanner'
-import { ClassIcon, EditIcon, TrashIcon, UsersIcon } from '@/components/ui/icons'
+import { ClassIcon, EditIcon, TrashIcon,  } from '@/components/ui/icons'
 import StatusBadge from '@/components/ui/StatusBadge'
 import Switch from '@/components/ui/Switch'
 import CopyCodeButton from '@/features/classes/components/CopyCodeButton'
@@ -10,11 +10,7 @@ import { useI18n } from '@/lib/i18n'
 
 interface Props {
   schoolClass: SchoolClass
-  studentCount: number
-  assignmentCount: number
   onToggleStatus: () => void
-  /** Left out for roles that may not add students to a class. */
-  onAddStudents?: () => void
   onEdit: () => void
   onDelete: () => void
   /** Position in the grid, used to stagger the entrance. */
@@ -24,7 +20,7 @@ interface Props {
 const bannerButton =
   'rounded-lg bg-white/20 p-1.5 text-white backdrop-blur-sm transition-colors hover:bg-white/35 focus-visible:outline-2 focus-visible:outline-white [&>svg]:h-4 [&>svg]:w-4'
 
-export default function ClassCard({ schoolClass: c, studentCount, assignmentCount, onToggleStatus, onAddStudents, onEdit, onDelete, index = 0 }: Props) {
+export default function ClassCard({ schoolClass: c, onToggleStatus, onEdit, onDelete, index = 0 }: Props) {
   const { t, locale } = useI18n()
   const reduceMotion = useReducedMotion()
 
@@ -61,17 +57,6 @@ export default function ClassCard({ schoolClass: c, studentCount, assignmentCoun
           {formatDate(c.startDate, locale)} – {formatDate(c.endDate, locale)}
         </p>
 
-        <dl className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg bg-sunken p-3">
-            <dt className="text-xs text-muted">{t('cls.statStudents')}</dt>
-            <dd className="mt-0.5 text-xl font-bold leading-none">{studentCount}</dd>
-          </div>
-          <div className="rounded-lg bg-sunken p-3">
-            <dt className="text-xs text-muted">{t('cls.statAssignments')}</dt>
-            <dd className="mt-0.5 text-xl font-bold leading-none">{assignmentCount}</dd>
-          </div>
-        </dl>
-
         <div
           title={t('cls.codeHint')}
           className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-line px-3 py-2"
@@ -82,18 +67,6 @@ export default function ClassCard({ schoolClass: c, studentCount, assignmentCoun
           </div>
           <CopyCodeButton code={c.code} />
         </div>
-
-        {onAddStudents && (
-          <button
-            type="button"
-            onClick={onAddStudents}
-            aria-haspopup="dialog"
-            className="flex items-center justify-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4"
-          >
-            <UsersIcon />
-            {t('cls.addStudents')}
-          </button>
-        )}
       </div>
 
       <div className="flex items-center justify-between gap-2 border-t border-line bg-sunken px-4 py-3">
