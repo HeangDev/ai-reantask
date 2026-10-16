@@ -105,6 +105,7 @@ Authentication uses the system configured in the project. The examples in this d
 |--------|-------------------------|----------------------------------------|---------------|
 | `POST` | `/auth/register`        | Register a student account             | Public        |
 | `POST` | `/auth/login`           | Log in and receive a token             | Public        |
+| `POST` | `/auth/google`          | Log in or register with a Google ID token | Public     |
 | `POST` | `/auth/logout`          | Revoke the current token               | Authenticated |
 | `POST` | `/auth/logout-all`      | Revoke all of the user's tokens        | Authenticated |
 | `GET`  | `/auth/me`              | Get the authenticated user             | Authenticated |

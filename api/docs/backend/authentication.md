@@ -572,6 +572,7 @@ public function boot(): void
 | `POST /auth/register`        | Same as login                                       |
 | `POST /auth/forgot-password` | Same as login                                       |
 | `POST /auth/reset-password`  | Same as login                                       |
+| `POST /auth/google`          | Same as login                                       |
 
 Exceeding the limit returns `429` with code `RATE_LIMITED` and a `Retry-After` header, as described in `docs/backend/error-handling.md`.
 
@@ -592,11 +593,31 @@ Email verification is not required in the current version. If enabled:
 
 Git connection tokens (for GitHub or other providers) are stored in `git_connections` and are used only to access repositories. They are **not** used to log in to this application.
 
-- Logging in with a Git provider (OAuth social login) is not supported in the current version.
+- Logging in with a Git provider is not supported. Google sign-in (section 12.1) is a separate flow.
 - Git tokens are encrypted at rest and never returned in API responses.
 - Logging out does not delete Git connections.
 
-If social login is added later, document the flow here and keep application tokens separate from Git provider tokens.
+Git provider tokens and application tokens stay separate.
+
+### 12.1 Google Sign-In
+
+`POST /auth/google` serves both "Sign in with Google" and "Sign up with Google". It is public and rate-limited like login.
+
+```json
+{ "credential": "<Google ID token>", "device_name": "Chrome on Windows" }
+```
+
+The web app gets the ID token from Google Identity Services and sends it here. The API verifies it with Google and checks that `aud` equals `GOOGLE_CLIENT_ID`, `iss` is Google and `email_verified` is true. Any failure returns `401 INVALID_GOOGLE_TOKEN`.
+
+| Situation | Result |
+|-----------|--------|
+| Account found by `google_id`, else by email, and ACTIVE | `200`, same body as login. `google_id` is saved on first use. |
+| Account is PENDING | `403 ACCOUNT_PENDING` |
+| Account is INACTIVE, SUSPENDED or DELETED | `403 ACCOUNT_NOT_ACTIVE` |
+| Email belongs to an account linked to a different Google id | `401 INVALID_GOOGLE_TOKEN` |
+| No account | `201`, same as register: a PENDING student, no token (BR-USR-02) |
+
+New Google accounts get a random password the user never sees and no phone number (`phone` is nullable). They can set a password with "forgot password".
 
 ---
 

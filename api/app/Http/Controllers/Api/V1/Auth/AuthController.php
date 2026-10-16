@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\DeleteAccountRequest;
+use App\Http\Requests\Api\V1\Auth\GoogleLoginRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\RegisterRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
 use App\Services\Auth\AuthService;
+use App\Services\Auth\GoogleTokenVerifier;
 use App\Services\Auth\RegistrationService;
 use App\Services\Users\UserService;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +22,7 @@ class AuthController extends Controller
     public function __construct(
         private readonly AuthService $auth,
         private readonly RegistrationService $registration,
+        private readonly GoogleTokenVerifier $google,
         private readonly UserService $users,
     ) {}
 
@@ -40,6 +43,22 @@ class AuthController extends Controller
         );
 
         return $this->tokenResponse($result);
+    }
+
+    /**
+     * One endpoint for "Sign in with Google" and "Sign up with Google". A known account gets a token;
+     * a new one is created as a pending student with no token, exactly like register().
+     */
+    public function google(GoogleLoginRequest $request): JsonResponse
+    {
+        $identity = $this->google->verify($request->validated('credential'));
+        $user = $this->auth->findGoogleUser($identity);
+
+        if (! $user) {
+            return (new UserResource($this->registration->registerFromGoogle($identity)))->response()->setStatusCode(201);
+        }
+
+        return $this->tokenResponse($this->auth->loginWithGoogle($user, $identity, $request->validated('device_name')));
     }
 
     public function me(Request $request): UserResource

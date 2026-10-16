@@ -6,8 +6,13 @@ import { CheckIcon } from '@/components/ui/icons'
 import TextField from '@/components/ui/TextField'
 import { isAcceptablePassword } from '@/features/account/lib/validation'
 import AuthLayout from '@/features/auth/components/AuthLayout'
+import GoogleAuthButton from '@/features/auth/components/GoogleAuthButton'
+import OrDivider from '@/features/auth/components/OrDivider'
 import PasswordField from '@/features/auth/components/PasswordField'
-import { useRegister } from '@/features/auth/hooks/useAuthMutations'
+import { roleHome } from '@/features/auth/lib/access'
+import { useGoogleAuth, useRegister } from '@/features/auth/hooks/useAuthMutations'
+import { authActions } from '@/features/auth/store/authStore'
+import { getDeviceName } from '@/lib/deviceName'
 import { ApiError } from '@/lib/apiClient'
 import { useI18n } from '@/lib/i18n'
 import type { TranslationKey } from '@/lib/i18n'
@@ -44,13 +49,38 @@ export default function RegisterPage() {
   const [values, setValues] = useState<Values>(EMPTY)
   const [errors, setErrors] = useState<Errors>({})
   const [failed, setFailed] = useState(false)
+  const [googleFailed, setGoogleFailed] = useState(false)
   const register = useRegister()
-  const submitting = register.isPending
+  const google = useGoogleAuth()
+  const submitting = register.isPending || google.isPending
   const [createdFor, setCreatedFor] = useState<string | null>(null)
 
   const set = (field: keyof Values) => (value: string) => {
     setValues((v) => ({ ...v, [field]: value }))
     setErrors((e) => ({ ...e, [field]: undefined }))
+  }
+
+  const signUpWithGoogle = (credential: string) => {
+    if (submitting) return
+    setFailed(false)
+    setGoogleFailed(false)
+    google.mutate(
+      { credential, device_name: getDeviceName() },
+      {
+        onSuccess: (auth) => {
+          // A first-time Google user is created as a pending student and waits for approval, like a password sign-up.
+          if (!('token' in auth)) return setCreatedFor(auth.email)
+          // The Google account already belongs to an approved user, so sign in instead.
+          authActions.signIn(auth.user.role.name, auth.user.email, auth.token)
+          navigate(roleHome[auth.user.role.name])
+        },
+        onError: (error) => {
+          // An existing account that is still waiting for approval.
+          if (error instanceof ApiError && error.code === 'ACCOUNT_PENDING') navigate('/login')
+          else setGoogleFailed(true)
+        },
+      },
+    )
   }
 
   const submit = (e: FormEvent) => {
@@ -59,6 +89,7 @@ export default function RegisterPage() {
     const found = validate(values)
     setErrors(found)
     setFailed(false)
+    setGoogleFailed(false)
     if (Object.keys(found).length > 0) return
 
     const email = values.email.trim()
@@ -129,6 +160,15 @@ export default function RegisterPage() {
           </p>
         )}
 
+        {googleFailed && (
+          <p
+            role="alert"
+            className="mt-5 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
+          >
+            {t('auth.googleFailed')}
+          </p>
+        )}
+
         <div className="mt-6 space-y-4">
           <TextField
             label={t('acct.fullName')}
@@ -174,6 +214,9 @@ export default function RegisterPage() {
         <Button type="submit" disabled={submitting} className="mt-6 w-full py-2.5">
           {submitting ? t('register.submitting') : t('register.submit')}
         </Button>
+
+        <OrDivider />
+        <GoogleAuthButton text="signup_with" disabled={submitting} onCredential={signUpWithGoogle} />
 
         <p className="mt-5 text-center text-sm text-muted">
           {t('register.haveAccount')}{' '}

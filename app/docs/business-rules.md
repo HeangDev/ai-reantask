@@ -5,6 +5,8 @@
 - Unauthenticated users cannot access protected pages.
 - Authenticated users can access authorized pages.
 - Authentication errors must be displayed clearly.
+- A new account created with Google is a pending student, like password registration. It can sign in only after approval.
+- Google sign-in is shown only when `VITE_GOOGLE_CLIENT_ID` is set.
 
 ## User Management
 

@@ -6,10 +6,12 @@ import { ClockIcon } from '@/components/ui/icons'
 import TextField from '@/components/ui/TextField'
 import { getTwoFactorSecret } from '@/features/account/store/accountStore'
 import AuthLayout from '@/features/auth/components/AuthLayout'
+import GoogleAuthButton from '@/features/auth/components/GoogleAuthButton'
+import OrDivider from '@/features/auth/components/OrDivider'
 import PasswordField from '@/features/auth/components/PasswordField'
 import TwoFactorStep from '@/features/auth/components/TwoFactorStep'
 import { roleHome } from '@/features/auth/lib/access'
-import { useLogin } from '@/features/auth/hooks/useAuthMutations'
+import { useGoogleAuth, useLogin } from '@/features/auth/hooks/useAuthMutations'
 import { authActions } from '@/features/auth/store/authStore'
 import type { AuthResult } from '@/features/auth/types'
 import { getDeviceName } from '@/lib/deviceName'
@@ -34,8 +36,10 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Errors>({})
   const [failed, setFailed] = useState(false)
   const [pending, setPending] = useState(false)
+  const [googleFailed, setGoogleFailed] = useState(false)
   const login = useLogin()
-  const submitting = login.isPending
+  const google = useGoogleAuth()
+  const submitting = login.isPending || google.isPending
   // After the password, a second step asks for the authenticator code when two-factor authentication is on.
   const [step, setStep] = useState<'credentials' | 'code'>('credentials')
   const [result, setResult] = useState<AuthResult | null>(null)
@@ -43,6 +47,35 @@ export default function LoginPage() {
   const finishSignIn = (auth: AuthResult) => {
     authActions.signIn(auth.user.role.name, auth.user.email, auth.token)
     navigate(roleHome[auth.user.role.name])
+  }
+
+  // After the password or Google, a teacher with two-factor authentication on still has to enter the code.
+  const continueSignIn = (auth: AuthResult) => {
+    if (getTwoFactorSecret()) {
+      setResult(auth)
+      setStep('code')
+    } else finishSignIn(auth)
+  }
+
+  const signInWithGoogle = (credential: string) => {
+    if (submitting) return
+    setFailed(false)
+    setGoogleFailed(false)
+    setPending(false)
+    google.mutate(
+      { credential, device_name: getDeviceName() },
+      {
+        onSuccess: (auth) => {
+          // A first-time Google user is created as a pending student, with no token until approved.
+          if ('token' in auth) continueSignIn(auth)
+          else setPending(true)
+        },
+        onError: (error) => {
+          if (error instanceof ApiError && error.code === 'ACCOUNT_PENDING') setPending(true)
+          else setGoogleFailed(true)
+        },
+      },
+    )
   }
 
   const submit = async (e: FormEvent) => {
@@ -53,18 +86,14 @@ export default function LoginPage() {
     if (!password) found.password = 'login.errPassword'
     setErrors(found)
     setFailed(false)
+    setGoogleFailed(false)
     setPending(false)
     if (Object.keys(found).length > 0) return
 
     login.mutate(
       { email: email.trim(), password, device_name: getDeviceName() },
       {
-        onSuccess: (auth) => {
-          if (getTwoFactorSecret()) {
-            setResult(auth)
-            setStep('code')
-          } else finishSignIn(auth)
-        },
+        onSuccess: continueSignIn,
         onError: (error) => {
           // The password was right but an admin or a teacher has not approved the account yet.
           if (error instanceof ApiError && error.code === 'ACCOUNT_PENDING') setPending(true)
@@ -95,6 +124,15 @@ export default function LoginPage() {
               className="mt-5 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
             >
               {t('login.errFailed')}
+            </p>
+          )}
+
+          {googleFailed && (
+            <p
+              role="alert"
+              className="mt-5 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
+            >
+              {t('auth.googleFailed')}
             </p>
           )}
 
@@ -151,6 +189,9 @@ export default function LoginPage() {
           <Button type="submit" disabled={submitting} className="mt-4 w-full py-2.5">
             {submitting ? t('login.signingIn') : t('login.signIn')}
           </Button>
+
+          <OrDivider />
+          <GoogleAuthButton text="signin_with" disabled={submitting} onCredential={signInWithGoogle} />
 
           <p className="mt-5 text-center text-sm text-muted">
             {t('login.noAccount')}{' '}

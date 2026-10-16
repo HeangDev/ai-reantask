@@ -5,6 +5,7 @@
 The application should provide:
 
 - Login
+- Google sign-in and sign-up on the login and register pages (`POST /auth/google`)
 - Logout
 - Authentication state
 - Protected routes

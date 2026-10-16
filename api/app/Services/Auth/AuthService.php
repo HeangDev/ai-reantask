@@ -6,6 +6,7 @@ use App\Enums\UserStatus;
 use App\Exceptions\AccountNotActiveException;
 use App\Exceptions\AccountPendingException;
 use App\Exceptions\InvalidCredentialsException;
+use App\Exceptions\InvalidGoogleTokenException;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -38,6 +39,47 @@ class AuthService
         // Only ACTIVE users can log in (BR-USR-10).
         if ($user->status !== UserStatus::Active) {
             throw new AccountNotActiveException;
+        }
+
+        return $this->issueToken($user, $deviceName);
+    }
+
+    /**
+     * The account a verified Google identity belongs to: matched by Google id first, then by email.
+     *
+     * @throws InvalidGoogleTokenException when the email belongs to a different Google account
+     */
+    public function findGoogleUser(GoogleIdentity $identity): ?User
+    {
+        $user = User::where('google_id', $identity->id)->first()
+            ?? User::where('email', $identity->email)->first();
+
+        if ($user?->google_id && $user->google_id !== $identity->id) {
+            throw new InvalidGoogleTokenException;
+        }
+
+        return $user;
+    }
+
+    /**
+     * Google has verified the email, so no password is needed. The account must still be approved and active.
+     *
+     * @return array{token: string, token_type: string, expires_at: ?string, user: User}
+     */
+    public function loginWithGoogle(User $user, GoogleIdentity $identity, ?string $deviceName): array
+    {
+        if ($user->status === UserStatus::Pending) {
+            throw new AccountPendingException;
+        }
+
+        if ($user->status !== UserStatus::Active) {
+            throw new AccountNotActiveException;
+        }
+
+        if (! $user->google_id) {
+            $user->google_id = $identity->id;
+            $user->email_verified_at ??= now();
+            $user->save();
         }
 
         return $this->issueToken($user, $deviceName);

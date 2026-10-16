@@ -14,7 +14,7 @@ const toUser = (u: AuthUser): User => ({
   fullName: u.fullname,
   username: u.username,
   email: u.email,
-  phone: u.phone,
+  phone: u.phone ?? '',
   role: u.role.name,
   roleId: u.role.id,
   status: u.status as User['status'],
