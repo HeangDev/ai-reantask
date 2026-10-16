@@ -21,9 +21,12 @@ interface Props {
   subjects: Subject[]
   onSave: (input: SubjectInput) => void
   onClose: () => void
+  /** Errors the API reported after submit, such as a name taken by a subject this user cannot see. */
+  serverErrors?: SubjectFormErrors
+  saving?: boolean
 }
 
-export default function SubjectForm({ subject, subjects, onSave, onClose }: Props) {
+export default function SubjectForm({ subject, subjects, onSave, onClose, serverErrors, saving = false }: Props) {
   const { t } = useI18n()
   const [values, setValues] = useState<SubjectInput>({
     name: subject?.name ?? '',
@@ -35,10 +38,21 @@ export default function SubjectForm({ subject, subjects, onSave, onClose }: Prop
   const set = <K extends keyof SubjectInput>(field: K, value: SubjectInput[K]) => {
     setValues((v) => ({ ...v, [field]: value }))
     setErrors((e) => ({ ...e, [field]: undefined }))
+    setEdited((prev) => new Set(prev).add(field))
   }
+
+  // A server error shows until the user edits that field again.
+  const [edited, setEdited] = useState<ReadonlySet<keyof SubjectInput>>(new Set())
+  const [seenServerErrors, setSeenServerErrors] = useState(serverErrors)
+  if (seenServerErrors !== serverErrors) {
+    setSeenServerErrors(serverErrors)
+    setEdited(new Set())
+  }
+  const fieldError = (field: keyof SubjectInput) => errors[field] ?? (edited.has(field) ? undefined : serverErrors?.[field])
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
+    if (saving) return
     const found = validateSubject(values, subjects.filter((x) => x.id !== subject?.id))
     setErrors(found)
     if (Object.keys(found).length > 0) return
@@ -73,14 +87,14 @@ export default function SubjectForm({ subject, subjects, onSave, onClose }: Prop
             autoComplete="off"
             value={values.name}
             onChange={(v) => set('name', v)}
-            error={errors.name}
+            error={fieldError('name')}
           />
 
           <TextAreaField
             label={t('form.description')}
             value={values.description}
             onChange={(v) => set('description', v)}
-            error={errors.description}
+            error={fieldError('description')}
             maxLength={MAX_DESCRIPTION_LENGTH}
           />
 
@@ -109,7 +123,9 @@ export default function SubjectForm({ subject, subjects, onSave, onClose }: Prop
           >
             {t('dialog.cancel')}
           </button>
-          <Button type="submit">{t('stu.save')}</Button>
+          <Button type="submit" disabled={saving}>
+            {t('stu.save')}
+          </Button>
         </div>
       </form>
     </FormDialog>

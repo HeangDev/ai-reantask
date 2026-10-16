@@ -8,7 +8,6 @@ import { useI18n } from '@/lib/i18n'
 
 interface Props {
   subject: Subject
-  teacherCount: number
   onToggleStatus: () => void
   onEdit: () => void
   onDelete: () => void
@@ -19,7 +18,7 @@ interface Props {
 const bannerButton =
   'rounded-lg bg-white/20 p-1.5 text-white backdrop-blur-sm transition-colors hover:bg-white/35 focus-visible:outline-2 focus-visible:outline-white [&>svg]:h-4 [&>svg]:w-4'
 
-export default function SubjectCard({ subject: s, teacherCount, onToggleStatus, onEdit, onDelete, index = 0 }: Props) {
+export default function SubjectCard({ subject: s, onToggleStatus, onEdit, onDelete, index = 0 }: Props) {
   const { t } = useI18n()
   const reduceMotion = useReducedMotion()
 
@@ -52,13 +51,6 @@ export default function SubjectCard({ subject: s, teacherCount, onToggleStatus, 
 
       <div className="flex flex-1 flex-col gap-4 p-4">
         <p className="line-clamp-2 min-h-10 text-sm text-muted">{s.description}</p>
-
-        <dl>
-          <div className="rounded-lg bg-sunken p-3">
-            <dt className="text-xs text-muted">{t('sub.statTeachers')}</dt>
-            <dd className="mt-0.5 text-xl font-bold leading-none">{teacherCount}</dd>
-          </div>
-        </dl>
       </div>
 
       <div className="flex items-center justify-between gap-2 border-t border-line bg-sunken px-4 py-3">

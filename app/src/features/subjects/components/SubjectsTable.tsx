@@ -11,8 +11,6 @@ interface Props {
   emptyMessage?: ReactNode
   /** Already filtered by the page. */
   subjects: Subject[]
-  /** Teacher count per subject id. */
-  teacherCounts: Record<string, number>
   selected: ReadonlySet<string>
   onSelectedChange: (ids: Set<string>) => void
   onOpen: (id: string) => void
@@ -20,21 +18,12 @@ interface Props {
   onDelete: (id: string) => void
 }
 
-const pad = (n: number) => String(n).padStart(6, '0')
-
-export default function SubjectsTable({ subjects, teacherCounts, ...handlers }: Props) {
+export default function SubjectsTable({ subjects, ...handlers }: Props) {
   const { t } = useI18n()
 
   const columns = useMemo<Column<Subject>[]>(
     () => [
       { key: 'name', header: t('sub.fieldName'), primary: true, sortValue: (s) => s.name },
-      {
-        key: 'teachers',
-        header: t('sub.statTeachers'),
-        width: '7rem',
-        sortValue: (s) => pad(teacherCounts[s.id] ?? 0),
-        cell: (s) => teacherCounts[s.id] ?? 0,
-      },
       {
         key: 'status',
         header: t('cls.status'),
@@ -43,7 +32,7 @@ export default function SubjectsTable({ subjects, teacherCounts, ...handlers }: 
         cell: (s) => <StatusBadge status={s.status} />,
       },
     ],
-    [t, teacherCounts],
+    [t],
   )
 
   const labels = useMemo(
