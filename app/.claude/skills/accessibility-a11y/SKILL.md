@@ -110,19 +110,19 @@ Every interactive element needs an **accessible name** that matches or contains 
 
 Follow `references/patterns.md` for code. In short:
 
-| Widget | Use | Key requirements |
-|---|---|---|
-| Disclosure / accordion | `<details>/<summary>` or `<button aria-expanded aria-controls>` | Enter/Space toggles |
-| Dialog | `<dialog>` + `showModal()` or library | focus in, trap, Escape, return focus, labelled by its heading |
-| Tabs | library or APG tabs | `role=tablist/tab/tabpanel`, arrows move, one Tab stop |
-| Dropdown menu of actions | library | `role=menu` only for app-style action menus — **not** for site navigation (use a `<nav>` list of links + disclosure button) |
-| Combobox / autocomplete | library (React Aria, Downshift, Radix) | very hard to get right by hand |
-| Tooltip | library or `aria-describedby` | appears on focus too, dismissible with Escape, hoverable, never holds essential info |
-| Toast | live region | see section 7 |
-| Carousel | prefer a static grid/scroll-snap list | if used: pause button, prev/next buttons with labels, slide "x of y" |
-| Data table | `<table>` with `<th scope>`, `<caption>` | sortable headers: `<button>` inside `<th>` + `aria-sort` |
-| Pagination | `<nav aria-label>` + links | `aria-current="page"` on current |
-| Breadcrumbs | `<nav aria-label>` + `<ol>` | `aria-current="page"` on last |
+| Widget                   | Use                                                             | Key requirements                                                                                                            |
+|--------------------------|-----------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| Disclosure / accordion   | `<details>/<summary>` or `<button aria-expanded aria-controls>` | Enter/Space toggles                                                                                                         |
+| Dialog                   | `<dialog>` + `showModal()` or library                           | focus in, trap, Escape, return focus, labelled by its heading                                                               |
+| Tabs                     | library or APG tabs                                             | `role=tablist/tab/tabpanel`, arrows move, one Tab stop                                                                      |
+| Dropdown menu of actions | library                                                         | `role=menu` only for app-style action menus — **not** for site navigation (use a `<nav>` list of links + disclosure button) |
+| Combobox / autocomplete  | library (React Aria, Downshift, Radix)                          | very hard to get right by hand                                                                                              |
+| Tooltip                  | library or `aria-describedby`                                   | appears on focus too, dismissible with Escape, hoverable, never holds essential info                                        |
+| Toast                    | live region                                                     | see section 7                                                                                                               |
+| Carousel                 | prefer a static grid/scroll-snap list                           | if used: pause button, prev/next buttons with labels, slide "x of y"                                                        |
+| Data table               | `<table>` with `<th scope>`, `<caption>`                        | sortable headers: `<button>` inside `<th>` + `aria-sort`                                                                    |
+| Pagination               | `<nav aria-label>` + links                                      | `aria-current="page"` on current                                                                                            |
+| Breadcrumbs              | `<nav aria-label>` + `<ol>`                                     | `aria-current="page"` on last                                                                                               |
 
 ## 12. Testing
 
