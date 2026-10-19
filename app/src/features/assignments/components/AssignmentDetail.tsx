@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import type { ChangeEvent } from 'react'
-import Avatar from '@/components/ui/Avatar'
-import Button from '@/components/ui/Button'
-import TaskChecklist from '@/features/assignments/components/TaskChecklist'
-import DueLabel from '@/features/assignments/components/DueLabel'
-import ProgressStepper from '@/features/assignments/components/ProgressStepper'
-import StudentProfile from '@/features/students/components/StudentProfile'
-import StatusBadge from '@/features/assignments/components/StatusBadge'
+import { Avatar } from '@/shared/components/Avatar'
+import { Button } from '@/shared/components/Button'
+import { TaskChecklist } from '@/features/assignments/components/TaskChecklist'
+import { DueLabel } from '@/features/assignments/components/DueLabel'
+import { ProgressStepper } from '@/features/assignments/components/ProgressStepper'
+import { StudentProfile } from '@/features/students'
+import { StatusBadge } from '@/features/assignments/components/StatusBadge'
 import { formatDate } from '@/features/assignments/lib/dates'
 import type { Assignment, FileType } from '@/features/assignments/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   assignment: Assignment
@@ -25,7 +25,7 @@ const extensions: Record<FileType, string[]> = {
 
 const card = 'rounded-xl border border-line bg-surface p-5 shadow-sm'
 
-export default function AssignmentDetail({ assignment: a, onSubmit }: Props) {
+export function AssignmentDetail({ assignment: a, onSubmit }: Props) {
   const { t, locale } = useI18n()
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -53,7 +53,10 @@ export default function AssignmentDetail({ assignment: a, onSubmit }: Props) {
   }
 
   const submit = () => {
-    if (!file) return setError(t('error.noFile'))
+    if (!file) {
+      setError(t('error.noFile'))
+      return
+    }
     onSubmit(a.id, file.name)
     setFile(null)
   }

@@ -1,25 +1,25 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence } from 'motion/react'
-import Button from '@/components/ui/Button'
-import DeleteDialog from '@/components/ui/DeleteDialog'
-import Dropdown from '@/components/ui/Dropdown'
-import { PlusIcon, SearchIcon } from '@/components/ui/icons'
-import SelectionBar from '@/components/ui/SelectionBar'
-import { useToast } from '@/components/ui/Toast'
-import ViewSwitch from '@/components/ui/ViewSwitch'
-import type { ViewMode } from '@/components/ui/ViewSwitch'
-import ClassCard from '@/features/classes/components/ClassCard'
-import ClassForm from '@/features/classes/components/ClassForm'
-import ClassesTable from '@/features/classes/components/ClassesTable'
-import JoinRequestsPanel from '@/features/classes/components/JoinRequestsPanel'
-import { useClassesQuery, useCreateClass, useDeleteClasses, useUpdateClass } from '@/features/classes/hooks/useClasses'
+import { Button } from '@/shared/components/Button'
+import { DeleteDialog } from '@/shared/components/DeleteDialog'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { PlusIcon, SearchIcon } from '@/shared/components/icons'
+import { SelectionBar } from '@/shared/components/SelectionBar'
+import { useToast } from '@/shared/components/Toast'
+import { ViewSwitch } from '@/shared/components/ViewSwitch'
+import type { ViewMode } from '@/shared/components/ViewSwitch'
+import { ClassCard } from '@/features/classes/components/ClassCard'
+import { ClassForm } from '@/features/classes/components/ClassForm'
+import { ClassesTable } from '@/features/classes/components/ClassesTable'
+import { JoinRequestsPanel } from '@/features/classes/components/JoinRequestsPanel'
+import { useClassesQuery, useCreateClass, useDeleteClasses, useUpdateClass } from '@/features/classes/api/useClasses'
 import type { ClassFormErrors, ClassInput, SchoolClass } from '@/features/classes/types'
-import { teachersActions } from '@/features/teachers/store/teachersStore'
-import { useCurrentTeacher } from '@/features/teachers/hooks/useCurrentTeacher'
-import { useViewMode } from '@/hooks/useViewMode'
-import { ApiError } from '@/lib/apiClient'
-import TableEmpty from '@/components/ui/TableEmpty'
-import { useI18n } from '@/lib/i18n'
+import { teachersActions } from '@/features/teachers'
+import { useCurrentTeacher } from '@/features/teachers'
+import { useViewMode } from '@/shared/hooks/useViewMode'
+import { ApiError } from '@/shared/api/http'
+import { TableEmpty } from '@/shared/components/TableEmpty'
+import { useI18n } from '@/shared/i18n'
 
 type Dialog =
   | { type: 'none' }
@@ -32,7 +32,7 @@ const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
 // How many cards show at first, and how many more each "Show more" adds.
 const PAGE_SIZE = 6
 
-export default function ClassesPage() {
+export function ClassesPage() {
   const { t } = useI18n()
   const { notify } = useToast()
   // The API only returns the classes this person may see.

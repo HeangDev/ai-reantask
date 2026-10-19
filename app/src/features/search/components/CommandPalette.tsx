@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
-import { SearchIcon } from '@/components/ui/icons'
+import { SearchIcon } from '@/shared/components/icons'
 import { useSearchItems } from '@/features/search/hooks/useSearchItems'
 import { groupOrder, searchItems, toTerms } from '@/features/search/lib/searchItems'
 import type { SearchGroup } from '@/features/search/types'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 const groupTitles: Record<SearchGroup, TranslationKey> = {
   pages: 'search.pages',
@@ -23,6 +23,8 @@ function Highlight({ text, terms }: { text: string; terms: string[] }) {
     <>
       {parts.map((part, i) =>
         i % 2 === 1 ? (
+          // The parts come from one split and are never reordered, so the position is their identity.
+          // eslint-disable-next-line react/no-array-index-key
           <mark key={i} className="bg-transparent font-semibold text-accent-fg">{part}</mark>
         ) : (
           part
@@ -32,6 +34,7 @@ function Highlight({ text, terms }: { text: string; terms: string[] }) {
   )
 }
 
+const ESC_KEY = 'Esc'
 const kbd = 'rounded border border-line bg-surface px-1.5 py-0.5 text-[10px] font-medium text-muted'
 
 interface Props {
@@ -39,9 +42,10 @@ interface Props {
 }
 
 /** Global search. Mounted only while open, so its state resets every time it is shown. */
-export default function CommandPalette({ onClose }: Props) {
+export function CommandPalette({ onClose }: Props) {
   const { t } = useI18n()
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
 
@@ -53,6 +57,7 @@ export default function CommandPalette({ onClose }: Props) {
   useEffect(() => {
     const dialog = dialogRef.current
     if (dialog && !dialog.open) dialog.showModal()
+    inputRef.current?.focus()
     return () => dialog?.close()
   }, [])
 
@@ -75,6 +80,7 @@ export default function CommandPalette({ onClose }: Props) {
   }
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- the backdrop click is a pointer shortcut; Escape closes the native dialog
     <dialog
       ref={dialogRef}
       onCancel={(e) => {
@@ -97,7 +103,7 @@ export default function CommandPalette({ onClose }: Props) {
             aria-label={t('header.search')}
             autoComplete="off"
             spellCheck={false}
-            autoFocus
+            ref={inputRef}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
@@ -107,7 +113,7 @@ export default function CommandPalette({ onClose }: Props) {
             placeholder={t('header.search')}
             className="h-10 min-w-0 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-muted"
           />
-          <kbd className={kbd}>Esc</kbd>
+          <kbd className={kbd}>{ESC_KEY}</kbd>
         </div>
 
         <div id="search-results" role="listbox" aria-label={t('header.search')} className="min-h-0 flex-1 overflow-y-auto p-1.5">
@@ -126,9 +132,12 @@ export default function CommandPalette({ onClose }: Props) {
                     const index = results.indexOf(item)
                     const selected = index === active
                     return (
+                      // Keyboard use goes through the combobox input (aria-activedescendant), so the option itself is not tabbable.
+                      // eslint-disable-next-line jsx-a11y/click-events-have-key-events
                       <div
                         key={item.id}
                         id={`result-${index}`}
+                        tabIndex={-1}
                         role="option"
                         aria-selected={selected}
                         onMouseMove={() => setActive(index)}
@@ -166,7 +175,7 @@ export default function CommandPalette({ onClose }: Props) {
         <div className="hidden items-center gap-3 border-t border-line bg-sunken px-3 py-1.5 text-[10px] text-muted sm:flex">
           <span className="flex items-center gap-1.5"><kbd className={kbd}>↑</kbd><kbd className={kbd}>↓</kbd>{t('search.navigate')}</span>
           <span className="flex items-center gap-1.5"><kbd className={kbd}>↵</kbd>{t('search.open')}</span>
-          <span className="flex items-center gap-1.5"><kbd className={kbd}>Esc</kbd>{t('search.close')}</span>
+          <span className="flex items-center gap-1.5"><kbd className={kbd}>{ESC_KEY}</kbd>{t('search.close')}</span>
         </div>
       </div>
     </dialog>

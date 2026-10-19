@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useI18n } from '@/lib/i18n'
+import { env } from '@/shared/config/env'
+import { useI18n } from '@/shared/i18n'
 
 function GoogleLogo() {
   return (
@@ -12,7 +13,7 @@ function GoogleLogo() {
   )
 }
 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
+const CLIENT_ID = env.VITE_GOOGLE_CLIENT_ID
 const SCRIPT_SRC = 'https://accounts.google.com/gsi/client'
 
 let scriptPromise: Promise<void> | null = null
@@ -49,14 +50,16 @@ const looks =
  * sign-in, so that button is laid over this one, invisible but clickable; the page below it is what people see.
  * It stays visible but disabled when no client ID is configured or Google could not load.
  */
-export default function GoogleAuthButton({ text, disabled = false, onCredential }: Props) {
+export function GoogleAuthButton({ text, disabled = false, onCredential }: Props) {
   const { t, language } = useI18n()
   const wrapper = useRef<HTMLDivElement>(null)
   const overlay = useRef<HTMLDivElement>(null)
   const [loadFailed, setLoadFailed] = useState(false)
   // The callback is read at click time so the button is not re-rendered when the parent's handler changes.
   const handler = useRef(onCredential)
-  handler.current = onCredential
+  useEffect(() => {
+    handler.current = onCredential
+  })
   const unavailable = !CLIENT_ID || loadFailed
 
   useEffect(() => {

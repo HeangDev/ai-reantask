@@ -1,6 +1,6 @@
 import type { AssignmentPhase } from '@/features/assignments/types'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 export const phases: { value: AssignmentPhase; labelKey: TranslationKey }[] = [
   { value: 'in-progress', labelKey: 'asg.phaseInProgress' },
@@ -15,7 +15,7 @@ const styles: Record<AssignmentPhase, { badge: string; dot: string }> = {
 }
 
 /** Dot plus label, so the state never relies on colour alone. */
-export default function PhaseBadge({ phase }: { phase: AssignmentPhase }) {
+export function PhaseBadge({ phase }: { phase: AssignmentPhase }) {
   const { t } = useI18n()
   const label = phases.find((p) => p.value === phase)?.labelKey ?? 'asg.phaseInProgress'
   return (

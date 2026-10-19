@@ -1,15 +1,16 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { integrationNavItem, navItemsFor } from '@/components/layout/navItems'
-import { AssignmentsIcon, GlobeIcon, MoonIcon, SettingsIcon, SunIcon, TasksIcon } from '@/components/ui/icons'
-import { useAssignments } from '@/features/assignments/store/assignmentsStore'
-import { useSession } from '@/features/auth/store/authStore'
-import { useClassNameScope } from '@/features/classes/hooks/useVisibleClasses'
+import { integrationNavItem, navItemsFor } from '@/shared/config/navItems'
+import { AssignmentsIcon, GlobeIcon, MoonIcon, SettingsIcon, SunIcon, TasksIcon } from '@/shared/components/icons'
+import { useAssignments } from '@/features/assignments'
+import { useSession } from '@/shared/store/authStore'
+import { useClassNameScope } from '@/features/classes'
 import type { SearchItem } from '@/features/search/types'
-import { sampleTasks } from '@/features/tasks/data/sampleTasks'
-import { useTheme } from '@/hooks/useTheme'
-import { languageNames, useI18n } from '@/lib/i18n'
-import type { Language } from '@/lib/i18n'
+import { sampleTasks } from '@/features/tasks'
+import { useTheme } from '@/shared/hooks/useTheme'
+import { languageNames, useI18n } from '@/shared/i18n'
+import type { Language } from '@/shared/i18n'
+import { paths } from '@/shared/config/paths'
 
 /** Builds everything the global search can find. Selecting an item closes the search, then runs it. */
 export function useSearchItems(close: () => void): SearchItem[] {
@@ -23,7 +24,7 @@ export function useSearchItems(close: () => void): SearchItem[] {
   return useMemo(() => {
     const go = (to: string) => () => {
       close()
-      navigate(to)
+      void navigate(to)
     }
     const run = (action: () => void) => () => {
       close()
@@ -39,14 +40,14 @@ export function useSearchItems(close: () => void): SearchItem[] {
         keywords: n.to.slice(1),
         onSelect: go(n.to),
       })),
-      {
+      ...(role === 'student' ? [] : [{
         id: 'page:/settings',
         group: 'pages',
         label: t('nav.settings'),
         icon: <SettingsIcon />,
         keywords: `settings ${t('settings.appearance')} ${t('settings.accent')} color ${t('header.language')}`,
-        onSelect: go('/settings'),
-      },
+        onSelect: go(paths.settings),
+      } satisfies SearchItem]),
     ]
 
     // Admins do not work with assignments, so they are not searchable for them.
@@ -57,17 +58,17 @@ export function useSearchItems(close: () => void): SearchItem[] {
       description: `${a.className} · ${t(`status.${a.status}` as const)}`,
       icon: <AssignmentsIcon />,
       keywords: [a.description, a.feedback, a.submittedFile, a.allowedFileTypes.join(' ')].filter(Boolean).join(' '),
-      onSelect: go(role === 'teacher' ? '/assign' : `/assignments?q=${encodeURIComponent(a.title)}`),
+      onSelect: go(role === 'teacher' ? paths.assign : `${paths.classAssignments}?q=${encodeURIComponent(a.title)}`),
     }))
 
-    const tasks: SearchItem[] = sampleTasks.map((task) => ({
+    const tasks: SearchItem[] = (role === 'student' ? [] : sampleTasks).map((task) => ({
       id: `task:${task.id}`,
       group: 'tasks',
       label: task.title,
       description: t('nav.tasks'),
       icon: <TasksIcon />,
       keywords: '',
-      onSelect: go('/tasks'),
+      onSelect: go(paths.tasks),
     }))
 
     const languageActions: SearchItem[] = (Object.keys(languageNames) as Language[])

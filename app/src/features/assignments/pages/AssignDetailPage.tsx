@@ -1,18 +1,20 @@
+import { CHECK_MARK } from '@/shared/lib/glyphs'
 import { Link, useParams } from 'react-router-dom'
-import Avatar from '@/components/ui/Avatar'
-import AvatarGroup from '@/components/ui/AvatarGroup'
-import { ArrowLeftIcon, CodeIcon, EyeIcon } from '@/components/ui/icons'
-import RepositoryCard from '@/features/assignments/components/RepositoryCard'
-import PhaseBadge from '@/features/assignments/components/PhaseBadge'
+import { Avatar } from '@/shared/components/Avatar'
+import { AvatarGroup } from '@/shared/components/AvatarGroup'
+import { ArrowLeftIcon, CodeIcon, EyeIcon } from '@/shared/components/icons'
+import { RepositoryCard } from '@/features/assignments/components/RepositoryCard'
+import { PhaseBadge } from '@/features/assignments/components/PhaseBadge'
 import { useAssignments } from '@/features/assignments/store/assignmentsStore'
-import { formatDate } from '@/lib/dates'
-import { useI18n } from '@/lib/i18n'
+import { formatDate } from '@/shared/lib/dates'
+import { useI18n } from '@/shared/i18n'
+import { paths } from '@/shared/config/paths'
 
 const card = 'rounded-xl border border-line bg-surface p-5'
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent'
 
 /** The teacher's view of one assignment: what was set, who has it, and the work handed in. */
-export default function AssignDetailPage() {
+export function AssignDetailPage() {
   const { t, locale } = useI18n()
   const { id } = useParams()
   const assignments = useAssignments()
@@ -20,7 +22,7 @@ export default function AssignDetailPage() {
 
   const back = (
     <Link
-      to="/assign"
+      to={paths.assign}
       className={`mb-4 inline-flex items-center gap-1.5 rounded text-sm font-medium text-accent-fg hover:underline ${focusRing} [&>svg]:h-4 [&>svg]:w-4`}
     >
       <ArrowLeftIcon />
@@ -144,7 +146,7 @@ export default function AssignDetailPage() {
                       {submission ? formatDate(submission.submittedAt, locale) : t('asg.notSubmitted')}
                       {submission?.verifiedAt && (
                         <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
-                          ✓ {t('asg.verified')}
+                          {CHECK_MARK} {t('asg.verified')}
                         </span>
                       )}
                     </td>

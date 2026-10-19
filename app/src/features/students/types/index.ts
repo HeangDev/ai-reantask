@@ -1,4 +1,4 @@
-import type { ActiveStatus } from '@/components/ui/StatusBadge'
+import type { ActiveStatus } from '@/shared/components/StatusBadge'
 
 export type Sex = 'male' | 'female'
 

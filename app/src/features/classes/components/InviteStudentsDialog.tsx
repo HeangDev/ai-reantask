@@ -1,17 +1,17 @@
 import { useId, useState } from 'react'
-import type { FormEvent, KeyboardEvent } from 'react'
-import Button from '@/components/ui/Button'
-import { CloseIcon, MailIcon } from '@/components/ui/icons'
-import Modal from '@/components/ui/Modal'
-import { useToast } from '@/components/ui/Toast'
-import RegistrationBadge from '@/features/classes/components/RegistrationBadge'
+import type { SubmitEvent, KeyboardEvent } from 'react'
+import { Button } from '@/shared/components/Button'
+import { CloseIcon, MailIcon } from '@/shared/components/icons'
+import { Modal } from '@/shared/components/Modal'
+import { useToast } from '@/shared/components/Toast'
+import { RegistrationBadge } from '@/features/classes/components/RegistrationBadge'
 import { useEmailRegistration } from '@/features/classes/hooks/useEmailRegistration'
 import { parseEmails } from '@/features/classes/lib/inviteEmails'
 import { invitationsActions, invitationsOfClass, useInvitations } from '@/features/classes/store/invitationsStore'
 import type { SchoolClass } from '@/features/classes/types'
-import { formatTimeAgo } from '@/lib/timeAgo'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { formatTimeAgo } from '@/shared/lib/timeAgo'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 interface Props {
   schoolClass: SchoolClass
@@ -27,7 +27,7 @@ const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-
 const smallButton = `rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-hover hover:text-fg ${focusRing}`
 
 /** The teacher invites students to a class by email: type or paste addresses, review them as chips, then send. */
-export default function InviteStudentsDialog({ schoolClass, onClose }: Props) {
+export function InviteStudentsDialog({ schoolClass, onClose }: Props) {
   const { t, locale } = useI18n()
   const { notify } = useToast()
   const inputId = useId()
@@ -49,8 +49,8 @@ export default function InviteStudentsDialog({ schoolClass, onClose }: Props) {
     const next = [...chips, ...valid]
     setChips(next)
     setDraft(invalid.join(', '))
-    if (invalid.length > 0) setError({ key: 'cls.inviteErrInvalid', email: invalid[0] })
-    else if (duplicates.length > 0) setError({ key: 'cls.inviteErrDup', email: duplicates[0] })
+    if (invalid.length > 0) setError({ key: 'cls.inviteErrInvalid', email: invalid[0] ?? '' })
+    else if (duplicates.length > 0) setError({ key: 'cls.inviteErrDup', email: duplicates[0] ?? '' })
     else setError(null)
     return invalid.length > 0 ? chips : next
   }
@@ -64,7 +64,7 @@ export default function InviteStudentsDialog({ schoolClass, onClose }: Props) {
     }
   }
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     const toSend = draft.trim() ? commitDraft() : chips
     // Text that is not an email is still in the input, so nothing is sent until the teacher fixes or clears it.

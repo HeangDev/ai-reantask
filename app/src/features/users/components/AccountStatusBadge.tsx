@@ -1,6 +1,6 @@
 import type { AccountStatus } from '@/features/users/types'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 const styles: Record<AccountStatus, { badge: string; dot: string; label: TranslationKey }> = {
   PENDING: { badge: 'text-amber-700 dark:text-amber-300', dot: 'bg-amber-500', label: 'usr.pending' },
@@ -10,7 +10,7 @@ const styles: Record<AccountStatus, { badge: string; dot: string; label: Transla
 }
 
 /** Dot plus label, so the state never relies on colour alone. */
-export default function AccountStatusBadge({ status }: { status: AccountStatus }) {
+export function AccountStatusBadge({ status }: { status: AccountStatus }) {
   const { t } = useI18n()
   return (
     <span className={`inline-flex items-center gap-1.5 ${styles[status].badge}`}>

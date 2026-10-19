@@ -1,14 +1,14 @@
-import Button from '@/components/ui/Button'
-import { useProfile } from '@/features/account/store/accountStore'
-import { useSession } from '@/features/auth/store/authStore'
-import AdminDashboard from '@/features/dashboard/components/AdminDashboard'
-import StudentDashboard from '@/features/dashboard/components/StudentDashboard'
-import TeacherDashboard from '@/features/dashboard/components/TeacherDashboard'
+import { Button } from '@/shared/components/Button'
+import { useProfile } from '@/features/auth'
+import { useSession } from '@/shared/store/authStore'
+import { AdminDashboard } from '@/features/dashboard/components/AdminDashboard'
+import { StudentDashboard } from '@/features/dashboard/components/StudentDashboard'
+import { TeacherDashboard } from '@/features/dashboard/components/TeacherDashboard'
 import { useDashboard } from '@/features/dashboard/hooks/useDashboard'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 /** Each role gets its own dashboard; both bring their own greeting heading. */
-export default function DashboardPage() {
+export function DashboardPage() {
   const { t } = useI18n()
   const { state, retry } = useDashboard()
   const role = useSession()?.role

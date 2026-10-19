@@ -1,25 +1,25 @@
 import { useMemo, useState } from 'react'
-import Button from '@/components/ui/Button'
-import DeleteDialog from '@/components/ui/DeleteDialog'
-import Dropdown from '@/components/ui/Dropdown'
-import { PlusIcon, SearchIcon, TrashIcon } from '@/components/ui/icons'
-import { useToast } from '@/components/ui/Toast'
-import PendingStudentsPanel from '@/features/users/components/PendingStudentsPanel'
-import UserDetail from '@/features/users/components/UserDetail'
-import UserForm from '@/features/users/components/UserForm'
-import UsersTable from '@/features/users/components/UsersTable'
-import { roleLabelKey } from '@/features/auth/lib/roleLabels'
-import { roles } from '@/features/auth/types'
-import { useCreateUser, useDeleteUsers, useUpdateUser, useUsersList } from '@/features/users/hooks/useUsers'
+import { Button } from '@/shared/components/Button'
+import { DeleteDialog } from '@/shared/components/DeleteDialog'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { PlusIcon, SearchIcon, TrashIcon } from '@/shared/components/icons'
+import { useToast } from '@/shared/components/Toast'
+import { PendingStudentsPanel } from '@/features/users/components/PendingStudentsPanel'
+import { UserDetail } from '@/features/users/components/UserDetail'
+import { UserForm } from '@/features/users/components/UserForm'
+import { UsersTable } from '@/features/users/components/UsersTable'
+import { roleLabelKey } from '@/features/auth'
+import { roles } from '@/features/auth'
+import { useCreateUser, useDeleteUsers, useUpdateUser, useUsersList } from '@/features/users/api/useUsers'
 import { serverFieldErrors } from '@/features/users/lib/validation'
-import { useDebouncedValue } from '@/hooks/useDebouncedValue'
-import { ApiError } from '@/lib/apiClient'
-import { teachersActions } from '@/features/teachers/store/teachersStore'
-import type { TeacherDetails } from '@/features/teachers/types'
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
+import { ApiError } from '@/shared/api/http'
+import { teachersActions } from '@/features/teachers'
+import type { TeacherDetails } from '@/features/teachers'
 import { accountStatuses } from '@/features/users/types'
 import type { UserFormErrors, UserSaveInput } from '@/features/users/types'
-import TableEmpty from '@/components/ui/TableEmpty'
-import { useI18n } from '@/lib/i18n'
+import { TableEmpty } from '@/shared/components/TableEmpty'
+import { useI18n } from '@/shared/i18n'
 
 type Dialog =
   | { type: 'none' }
@@ -30,7 +30,7 @@ type Dialog =
 const NO_DIALOG: Dialog = { type: 'none' }
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
 
-export default function UsersPage() {
+export function UsersPage() {
   const { t } = useI18n()
   const { notify } = useToast()
   const [query, setQuery] = useState('')

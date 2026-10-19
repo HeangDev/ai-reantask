@@ -1,26 +1,26 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
-import Avatar from '@/components/ui/Avatar'
-import Button from '@/components/ui/Button'
-import DateField from '@/components/ui/DateField'
-import Dropdown from '@/components/ui/Dropdown'
-import FormDialog from '@/components/ui/FormDialog'
-import type { Sex } from '@/features/students/types'
-import { useSubjects } from '@/features/subjects/hooks/useSubjects'
-import { pickableSubjectNames } from '@/features/subjects/lib/pickable'
-import { validateTeacher } from '@/features/teachers/lib/validation'
-import { useTeachers } from '@/features/teachers/store/teachersStore'
-import type { TeacherDetails } from '@/features/teachers/types'
-import { roleLabelKey } from '@/features/auth/lib/roleLabels'
-import type { Role } from '@/features/auth/types'
-import { useRoles } from '@/features/users/hooks/useUsers'
+import type { SubmitEvent } from 'react'
+import { Avatar } from '@/shared/components/Avatar'
+import { Button } from '@/shared/components/Button'
+import { DateField } from '@/shared/components/DateField'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { FormDialog } from '@/shared/components/FormDialog'
+import type { Sex } from '@/features/students'
+import { useSubjects } from '@/features/subjects'
+import { pickableSubjectNames } from '@/features/subjects'
+import { validateTeacher } from '@/features/teachers'
+import { useTeachers } from '@/features/teachers'
+import type { TeacherDetails } from '@/features/teachers'
+import { roleLabelKey } from '@/features/auth'
+import type { Role } from '@/features/auth'
+import { useRoles } from '@/features/users/api/useUsers'
 import { validateUser } from '@/features/users/lib/validation'
 import { accountStatuses } from '@/features/users/types'
 import type { AccountStatus, User, UserFormErrors, UserInput, UserSaveInput } from '@/features/users/types'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
-import { todayIso } from '@/lib/dates'
-import { usernameFromEmail } from '@/lib/validation'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
+import { todayIso } from '@/shared/lib/dates'
+import { usernameFromEmail } from '@/shared/lib/validation'
 
 interface Props {
   /** The user being edited, or null when creating. */
@@ -47,7 +47,7 @@ const statusLabel: Record<AccountStatus, TranslationKey> = {
 const fieldClass =
   'w-full rounded-lg border bg-sunken px-3 py-2 text-sm text-fg focus-visible:outline-2 focus-visible:outline-accent'
 
-export default function UserForm({ user, users, onSave, onClose, serverErrors, saving = false, lockedRole }: Props) {
+export function UserForm({ user, users, onSave, onClose, serverErrors, saving = false, lockedRole }: Props) {
   const { t } = useI18n()
   const subjects = useSubjects()
   const teachers = useTeachers()
@@ -87,7 +87,7 @@ export default function UserForm({ user, users, onSave, onClose, serverErrors, s
     setEdited((fields) => new Set(fields).add(field))
   }
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     if (saving) return
     const found = validateUser(

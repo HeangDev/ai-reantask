@@ -1,27 +1,28 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import Avatar from '@/components/ui/Avatar'
-import { CheckIcon, ChevronRightIcon, ClassIcon, StudentsIcon, SubjectIcon, TeachersIcon } from '@/components/ui/icons'
-import StatusBadge from '@/components/ui/StatusBadge'
-import { useProfile } from '@/features/account/store/accountStore'
-import { teachingOf } from '@/features/classes/lib/classTeaching'
-import { useClasses } from '@/features/classes/hooks/useClasses'
+import { Avatar } from '@/shared/components/Avatar'
+import { CheckIcon, ChevronRightIcon, ClassIcon, StudentsIcon, SubjectIcon, TeachersIcon } from '@/shared/components/icons'
+import { StatusBadge } from '@/shared/components/StatusBadge'
+import { useProfile } from '@/features/auth'
+import { teachingOf } from '@/features/classes'
+import { useClasses } from '@/features/classes'
 import { greetingKey } from '@/features/dashboard/components/DashboardGreeting'
 import { Panel } from '@/features/dashboard/components/DashboardPanels'
-import { sampleStudents } from '@/features/students/data/sampleStudents'
-import { useSubjects } from '@/features/subjects/hooks/useSubjects'
-import { useTeachers } from '@/features/teachers/store/teachersStore'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { sampleStudents } from '@/features/students'
+import { useSubjects } from '@/features/subjects'
+import { useTeachers } from '@/features/teachers'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
+import { paths } from '@/shared/config/paths'
 
 const MAX_ROWS = 5
 
 const shortcuts: { to: string; labelKey: TranslationKey; icon: ReactNode }[] = [
-  { to: '/teachers', labelKey: 'nav.teachers', icon: <TeachersIcon /> },
-  { to: '/subjects', labelKey: 'nav.subjects', icon: <SubjectIcon /> },
-  { to: '/classes', labelKey: 'nav.classes', icon: <ClassIcon /> },
-  { to: '/students', labelKey: 'nav.students', icon: <StudentsIcon /> },
+  { to: paths.teachers, labelKey: 'nav.teachers', icon: <TeachersIcon /> },
+  { to: paths.subjects, labelKey: 'nav.subjects', icon: <SubjectIcon /> },
+  { to: paths.classes, labelKey: 'nav.classes', icon: <ClassIcon /> },
+  { to: paths.students, labelKey: 'nav.students', icon: <StudentsIcon /> },
 ]
 
 // Full class names so Tailwind can see them.
@@ -93,7 +94,7 @@ function SplitBar({ label, active, total }: { label: string; active: number; tot
 }
 
 /** The admin's dashboard: how many teachers, subjects, classes and students there are, and what needs a teacher. */
-export default function AdminDashboard() {
+export function AdminDashboard() {
   const { t, locale } = useI18n()
   const profile = useProfile()
   const teachers = useTeachers()
@@ -157,7 +158,7 @@ export default function AdminDashboard() {
 
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatLink
-          to="/teachers"
+          to={paths.teachers}
           tone="indigo"
           label={t('adash.statTeachers')}
           value={teachers.length}
@@ -165,7 +166,7 @@ export default function AdminDashboard() {
           icon={<TeachersIcon />}
         />
         <StatLink
-          to="/subjects"
+          to={paths.subjects}
           tone="violet"
           label={t('adash.statSubjects')}
           value={activeSubjects}
@@ -173,7 +174,7 @@ export default function AdminDashboard() {
           icon={<SubjectIcon />}
         />
         <StatLink
-          to="/classes"
+          to={paths.classes}
           tone="emerald"
           label={t('tdash.statClasses')}
           value={activeClasses}
@@ -181,7 +182,7 @@ export default function AdminDashboard() {
           icon={<ClassIcon />}
         />
         <StatLink
-          to="/students"
+          to={paths.students}
           tone="amber"
           label={t('tdash.statStudents')}
           value={sampleStudents.length}
@@ -192,7 +193,7 @@ export default function AdminDashboard() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Panel title={t('adash.workload')} to="/teachers">
+          <Panel title={t('adash.workload')} to={paths.teachers}>
             {busiest.length === 0 ? (
               <p className="p-6 text-center text-sm text-muted">{t('tch.emptyTitle')}</p>
             ) : (
@@ -231,7 +232,7 @@ export default function AdminDashboard() {
             </div>
           </section>
 
-          <Panel title={t('adash.needsTeacher')} to="/classes">
+          <Panel title={t('adash.needsTeacher')} to={paths.classes}>
             {unassigned.length === 0 ? (
               <p className="flex flex-col items-center gap-2 p-6 text-center text-sm text-muted">
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 [&>svg]:h-4 [&>svg]:w-4">

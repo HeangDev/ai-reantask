@@ -1,13 +1,13 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
-import Button from '@/components/ui/Button'
-import { ArrowLeftIcon, RolesIcon } from '@/components/ui/icons'
-import TextField from '@/components/ui/TextField'
-import { isValidCode } from '@/features/account/lib/validation'
-import { verifyTotp } from '@/features/account/lib/totp'
-import { getTwoFactorSecret } from '@/features/account/store/accountStore'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useEffect, useRef, useState } from 'react'
+import type { SubmitEvent } from 'react'
+import { Button } from '@/shared/components/Button'
+import { ArrowLeftIcon, RolesIcon } from '@/shared/components/icons'
+import { TextField } from '@/shared/components/TextField'
+import { isValidCode } from '@/features/auth/lib/validation'
+import { verifyTotp } from '@/features/auth/lib/totp'
+import { getTwoFactorSecret } from '@/shared/store/twoFactorStore'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 interface Props {
   onVerified: () => void
@@ -15,13 +15,18 @@ interface Props {
 }
 
 /** The second step of signing in, shown after the password when two-factor authentication is on. */
-export default function TwoFactorStep({ onVerified, onBack }: Props) {
+export function TwoFactorStep({ onVerified, onBack }: Props) {
   const { t } = useI18n()
   const [code, setCode] = useState('')
   const [error, setError] = useState<TranslationKey>()
   const [checking, setChecking] = useState(false)
+  const codeRef = useRef<HTMLInputElement>(null)
 
-  const submit = async (e: FormEvent) => {
+  useEffect(() => {
+    codeRef.current?.focus()
+  }, [])
+
+  const submit = async (e: SubmitEvent) => {
     e.preventDefault()
     if (checking) return
     if (!isValidCode(code)) {
@@ -54,7 +59,7 @@ export default function TwoFactorStep({ onVerified, onBack }: Props) {
           label={t('acct.twoFactorCode')}
           inputMode="numeric"
           autoComplete="one-time-code"
-          autoFocus
+          ref={codeRef}
           maxLength={6}
           placeholder="123456"
           value={code}

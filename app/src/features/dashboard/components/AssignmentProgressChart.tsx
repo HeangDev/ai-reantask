@@ -1,7 +1,7 @@
-import type { AssignmentPhase } from '@/features/assignments/types'
+import type { AssignmentPhase } from '@/features/assignments'
 import type { ProgressRow } from '@/features/dashboard/types'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 // One-hue ordinal ramp, light to dark as the work moves toward done (the colours live in index.css).
 const phases: { phase: AssignmentPhase; labelKey: TranslationKey; color: string }[] = [
@@ -21,7 +21,7 @@ interface Props {
  * Assignment progress: the share completed as the headline number, and a stacked bar per class showing how its
  * assignments split across the three phases. Bar length is the class's assignment count, on one shared scale.
  */
-export default function AssignmentProgressChart({ totals, rows }: Props) {
+export function AssignmentProgressChart({ totals, rows }: Props) {
   const { t } = useI18n()
   const total = totals['in-progress'] + totals['in-review'] + totals.completed
   const percent = total === 0 ? 0 : Math.round((totals.completed / total) * 100)
@@ -78,6 +78,8 @@ export default function AssignmentProgressChart({ totals, rows }: Props) {
                             // The hit area is taller than the 14px mark, so it is easy to hover.
                             <div
                               key={p.phase}
+                              // Focusable so keyboard users can reach the same tooltip that hover shows.
+                              // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
                               tabIndex={0}
                               aria-label={`${row.className}: ${phaseLabel(p.labelKey)} ${count}`}
                               className="group relative flex h-7 items-center outline-offset-2 focus-visible:outline-2 focus-visible:outline-accent"

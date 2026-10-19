@@ -28,7 +28,7 @@ const logos: Record<IntegrationId, ReactNode> = {
   ),
 }
 
-export default function IntegrationLogo({ id, className = 'h-6 w-6' }: { id: IntegrationId; className?: string }) {
+export function IntegrationLogo({ id, className = 'h-6 w-6' }: { id: IntegrationId; className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
       {logos[id]}

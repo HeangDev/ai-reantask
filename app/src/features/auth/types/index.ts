@@ -1,26 +1,7 @@
-export type Role = 'admin' | 'teacher' | 'student'
+export { roles } from '@/shared/types/auth'
+export type { Role } from '@/shared/types/auth'
 
-export const roles: Role[] = ['teacher', 'student', 'admin']
-
-export interface AuthUser {
-  id: number
-  fullname: string
-  username: string
-  email: string
-  /** Empty for an account created with Google, which shares no phone number. */
-  phone: string | null
-  avatar: string | null
-  status: string
-  created_at: string
-  role: { id: number; name: Role }
-}
-
-export interface AuthResult {
-  token: string
-  token_type: string
-  expires_at: string | null
-  user: AuthUser
-}
+export type { AuthResult, AuthUser } from '@/features/auth/schemas/auth.schemas'
 
 export interface LoginInput {
   email: string

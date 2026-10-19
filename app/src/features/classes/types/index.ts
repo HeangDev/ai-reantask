@@ -1,5 +1,5 @@
-import type { ActiveStatus } from '@/components/ui/StatusBadge'
-import type { TranslationKey } from '@/lib/i18n'
+import type { ActiveStatus } from '@/shared/components/StatusBadge'
+import type { TranslationKey } from '@/shared/i18n'
 
 export type ClassStatus = ActiveStatus
 

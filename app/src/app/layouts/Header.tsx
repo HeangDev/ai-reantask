@@ -1,0 +1,67 @@
+import { useCallback, useEffect, useState } from 'react'
+import { IntegrationStatus } from '@/app/layouts/IntegrationStatus'
+import { NotificationMenu } from '@/app/layouts/NotificationMenu'
+import { ProfileMenu } from '@/app/layouts/ProfileMenu'
+import { MenuIcon, SearchIcon } from '@/shared/components/icons'
+import { useSession } from '@/shared/store/authStore'
+import { CommandPalette } from '@/features/search'
+import { useI18n } from '@/shared/i18n'
+
+const SHORTCUT = { mac: '⌘ K', other: 'Ctrl K' }
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
+
+export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
+  const { t } = useI18n()
+  const role = useSession()?.role
+  const [searchOpen, setSearchOpen] = useState(false)
+  const closeSearch = useCallback(() => setSearchOpen(false), [])
+
+  // Ctrl/⌘ + K opens the global search from anywhere.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  return (
+    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-line bg-surface px-3 sm:px-4">
+      <button
+        type="button"
+        onClick={onOpenMenu}
+        aria-label={t('nav.openMenu')}
+        aria-haspopup="dialog"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent md:hidden [&>svg]:h-5 [&>svg]:w-5"
+      >
+        <MenuIcon />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setSearchOpen(true)}
+        aria-haspopup="dialog"
+        aria-label={t('header.search')}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-line bg-sunken text-sm sm:w-full sm:max-w-md sm:justify-start sm:gap-2.5 sm:px-3 text-muted transition-colors hover:border-accent/50 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+      >
+        <span className="[&>svg]:h-4 [&>svg]:w-4" aria-hidden="true"><SearchIcon /></span>
+        <span className="hidden min-w-0 flex-1 truncate text-left sm:block">{t('header.search')}</span>
+        <kbd className="hidden rounded border border-line bg-surface px-1.5 py-0.5 text-[10px] font-medium sm:block" aria-hidden="true">
+          {isMac ? SHORTCUT.mac : SHORTCUT.other}
+        </kbd>
+      </button>
+
+      <div className="ml-auto flex items-center gap-3">
+        {role === 'teacher' && <IntegrationStatus />}
+        <NotificationMenu />
+        <span className="h-5 w-px bg-line" aria-hidden="true" />
+        <ProfileMenu />
+      </div>
+
+      {searchOpen && <CommandPalette onClose={closeSearch} />}
+    </header>
+  )
+}

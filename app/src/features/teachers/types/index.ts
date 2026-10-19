@@ -1,4 +1,4 @@
-import type { Sex } from '@/features/students/types'
+import type { Sex } from '@/features/students'
 
 export interface Teacher {
   id: string
@@ -15,6 +15,9 @@ export interface Teacher {
 
 export type TeacherInput = Omit<Teacher, 'id'>
 
+/** What the form edits: the sex is empty until one is chosen, and validation rejects that before saving. */
+export type TeacherFormValues = Omit<TeacherInput, 'sex'> & { sex: Sex | '' }
+
 /** What a teacher has beyond a user account; asked for when an admin adds a user as a teacher. */
 export type TeacherDetails = Pick<TeacherInput, 'sex' | 'dateOfBirth' | 'subject'>
 
@@ -27,4 +30,4 @@ export type TeacherErrorKey =
   | 'stu.errSex'
   | 'stu.errPhone'
 
-export type TeacherFormErrors = Partial<Record<keyof TeacherInput, TeacherErrorKey>>
+export type TeacherFormErrors = Partial<Record<keyof TeacherFormValues, TeacherErrorKey>>

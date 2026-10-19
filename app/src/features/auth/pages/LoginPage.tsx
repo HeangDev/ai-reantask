@@ -1,24 +1,26 @@
+import { APP_NAME } from '@/shared/hooks/useDocumentTitle'
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import Button from '@/components/ui/Button'
-import { ClockIcon } from '@/components/ui/icons'
-import TextField from '@/components/ui/TextField'
-import { getTwoFactorSecret } from '@/features/account/store/accountStore'
-import AuthLayout from '@/features/auth/components/AuthLayout'
-import GoogleAuthButton from '@/features/auth/components/GoogleAuthButton'
-import OrDivider from '@/features/auth/components/OrDivider'
-import PasswordField from '@/features/auth/components/PasswordField'
-import TwoFactorStep from '@/features/auth/components/TwoFactorStep'
+import { Button } from '@/shared/components/Button'
+import { ClockIcon } from '@/shared/components/icons'
+import { TextField } from '@/shared/components/TextField'
+import { getTwoFactorSecret } from '@/shared/store/twoFactorStore'
+import { AuthLayout } from '@/features/auth/components/AuthLayout'
+import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton'
+import { OrDivider } from '@/features/auth/components/OrDivider'
+import { PasswordField } from '@/features/auth/components/PasswordField'
+import { TwoFactorStep } from '@/features/auth/components/TwoFactorStep'
 import { roleHome } from '@/features/auth/lib/access'
-import { useGoogleAuth, useLogin } from '@/features/auth/hooks/useAuthMutations'
-import { authActions } from '@/features/auth/store/authStore'
+import { useGoogleAuth, useLogin } from '@/features/auth/api/useAuthMutations'
+import { authActions } from '@/shared/store/authStore'
 import type { AuthResult } from '@/features/auth/types'
-import { getDeviceName } from '@/lib/deviceName'
-import { ApiError } from '@/lib/apiClient'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
-import { isValidEmail } from '@/lib/validation'
+import { getDeviceName } from '@/shared/lib/deviceName'
+import { ApiError } from '@/shared/api/http'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
+import { isValidEmail } from '@/shared/lib/validation'
+import { paths } from '@/shared/config/paths'
 
 interface Errors {
   email?: TranslationKey
@@ -28,7 +30,7 @@ interface Errors {
 const linkClass =
   'rounded font-medium text-accent-fg hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
-export default function LoginPage() {
+export function LoginPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -46,7 +48,7 @@ export default function LoginPage() {
 
   const finishSignIn = (auth: AuthResult) => {
     authActions.signIn(auth.user.role.name, auth.user.email, auth.token)
-    navigate(roleHome[auth.user.role.name])
+    void navigate(roleHome[auth.user.role.name])
   }
 
   // After the password or Google, a teacher with two-factor authentication on still has to enter the code.
@@ -78,7 +80,7 @@ export default function LoginPage() {
     )
   }
 
-  const submit = async (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     if (submitting) return
     const found: Errors = {}
@@ -113,7 +115,7 @@ export default function LoginPage() {
             aria-hidden="true"
             className="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-accent-strong to-violet-500 text-lg font-bold text-white shadow-sm lg:hidden"
           >
-            R
+            {APP_NAME.charAt(0)}
           </span>
           <h1 className="mt-4 text-2xl font-bold lg:mt-0">{t('login.welcome')}</h1>
           <p className="mt-1 text-sm text-muted">{t('login.subtitle')}</p>
@@ -159,7 +161,7 @@ export default function LoginPage() {
               label={t('acct.email')}
               type="email"
               autoComplete="email"
-              placeholder="you@example.com"
+              placeholder={t('field.emailPh')}
               value={email}
               onChange={(v) => {
                 setEmail(v)
@@ -179,7 +181,7 @@ export default function LoginPage() {
                 error={errors.password}
               />
               <p className="mt-2 text-right text-sm">
-                <Link to="/forgot-password" className={linkClass}>
+                <Link to={paths.forgotPassword} className={linkClass}>
                   {t('login.forgot')}
                 </Link>
               </p>
@@ -195,7 +197,7 @@ export default function LoginPage() {
 
           <p className="mt-5 text-center text-sm text-muted">
             {t('login.noAccount')}{' '}
-            <Link to="/register" className={linkClass}>
+            <Link to={paths.register} className={linkClass}>
               {t('login.createAccount')}
             </Link>
           </p>

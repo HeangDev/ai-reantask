@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import DataTable from '@/components/ui/DataTable'
-import type { Column } from '@/components/ui/DataTable'
+import { DataTable } from '@/shared/components/DataTable'
+import type { Column } from '@/shared/components/DataTable'
 import type { ScoreRow } from '@/features/reports/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   rows: ScoreRow[]
@@ -26,7 +26,7 @@ function Average({ percent }: { percent: number | null }) {
   )
 }
 
-export default function ScoreTable({ rows, emptyMessage }: Props) {
+export function ScoreTable({ rows, emptyMessage }: Props) {
   const { t } = useI18n()
 
   const columns = useMemo<Column<ScoreRow>[]>(

@@ -1,11 +1,13 @@
-import { CheckIcon, CloseIcon } from '@/components/ui/icons'
-import TaskProgressBar from '@/features/assignments/components/TaskProgressBar'
+import { CheckIcon, CloseIcon } from '@/shared/components/icons'
+import { TaskProgressBar } from '@/features/assignments/components/TaskProgressBar'
 import { taskProgress } from '@/features/assignments/lib/tasks'
 import type { AssignmentTask, TaskResult } from '@/features/assignments/types'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
-const results: Record<TaskResult | 'unchecked', { labelKey: TranslationKey; tone: string }> = {
+const UNCHECKED = 'unchecked'
+
+const results: Record<TaskResult | typeof UNCHECKED, { labelKey: TranslationKey; tone: string }> = {
   correct: { labelKey: 'task.correct', tone: 'text-emerald-700 dark:text-emerald-300' },
   incorrect: { labelKey: 'task.incorrect', tone: 'text-red-700 dark:text-red-300' },
   unchecked: { labelKey: 'task.unchecked', tone: 'text-muted' },
@@ -23,7 +25,7 @@ function ResultIcon({ result }: { result?: TaskResult }) {
 }
 
 /** The assignment's tasks with the teacher's verdict on each, and the overall percentage correct. */
-export default function TaskChecklist({ tasks }: { tasks: AssignmentTask[] }) {
+export function TaskChecklist({ tasks }: { tasks: AssignmentTask[] }) {
   const { t } = useI18n()
   const progress = taskProgress(tasks)
   const checked = progress.correct + progress.incorrect > 0
@@ -53,7 +55,7 @@ export default function TaskChecklist({ tasks }: { tasks: AssignmentTask[] }) {
 
       <ul className="mt-4 divide-y divide-line">
         {tasks.map((task) => {
-          const status = results[task.result ?? 'unchecked']
+          const status = results[task.result ?? UNCHECKED]
           return (
             <li key={task.id} className="flex items-center gap-3 py-2 text-sm">
               <ResultIcon result={task.result} />

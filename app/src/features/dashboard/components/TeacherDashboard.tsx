@@ -1,25 +1,26 @@
 import { Link } from 'react-router-dom'
-import Avatar from '@/components/ui/Avatar'
-import { AssignmentsIcon, CheckIcon, ClassIcon, StudentsIcon, TasksIcon } from '@/components/ui/icons'
-import NotificationIcon from '@/components/ui/NotificationIcon'
-import StatusBadge from '@/components/ui/StatusBadge'
-import { useNotifications } from '@/components/ui/Toast'
-import { formatDate as formatShortDate } from '@/features/assignments/lib/dates'
-import { useProfile } from '@/features/account/store/accountStore'
-import AssignmentProgressChart from '@/features/dashboard/components/AssignmentProgressChart'
-import DashboardGreeting from '@/features/dashboard/components/DashboardGreeting'
+import { Avatar } from '@/shared/components/Avatar'
+import { AssignmentsIcon, CheckIcon, ClassIcon, StudentsIcon, TasksIcon } from '@/shared/components/icons'
+import { NotificationIcon } from '@/shared/components/NotificationIcon'
+import { StatusBadge } from '@/shared/components/StatusBadge'
+import { useNotifications } from '@/shared/components/Toast'
+import { formatDate as formatShortDate } from '@/features/assignments'
+import { useProfile } from '@/features/auth'
+import { AssignmentProgressChart } from '@/features/dashboard/components/AssignmentProgressChart'
+import { DashboardGreeting } from '@/features/dashboard/components/DashboardGreeting'
 import { Panel } from '@/features/dashboard/components/DashboardPanels'
 import { StatCard } from '@/features/dashboard/components/StatCards'
 import { useTeacherDashboard } from '@/features/dashboard/hooks/useTeacherDashboard'
-import { useI18n } from '@/lib/i18n'
-import { formatTimeAgo } from '@/lib/timeAgo'
+import { useI18n } from '@/shared/i18n'
+import { formatTimeAgo } from '@/shared/lib/timeAgo'
+import { paths } from '@/shared/config/paths'
 
 const MAX_ROWS = 5
 
 const emptyClass = 'p-6 text-center text-sm text-muted'
 
 /** The teacher's dashboard: what needs reviewing, how the assignments are going, and the classes at a glance. */
-export default function TeacherDashboard() {
+export function TeacherDashboard() {
   const { t, locale } = useI18n()
   const profile = useProfile()
   const { stats, phases: phaseCounts, progressByClass, reviews, classes } = useTeacherDashboard()
@@ -66,7 +67,7 @@ export default function TeacherDashboard() {
       <AssignmentProgressChart totals={phaseCounts} rows={progressByClass} />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        <Panel title={t('tdash.needsReview')} to="/assign">
+        <Panel title={t('tdash.needsReview')} to={paths.assign}>
           {reviews.length === 0 ? (
             <p className={`${emptyClass} flex flex-col items-center gap-2`}>
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 [&>svg]:h-4 [&>svg]:w-4">
@@ -97,7 +98,7 @@ export default function TeacherDashboard() {
           )}
         </Panel>
 
-        <Panel title={t('nav.classes')} to="/classes">
+        <Panel title={t('nav.classes')} to={paths.classes}>
           {classes.length === 0 ? (
             <p className={emptyClass}>{t('cls.emptyTitle')}</p>
           ) : (
@@ -117,7 +118,7 @@ export default function TeacherDashboard() {
           )}
         </Panel>
 
-        <Panel title={t('tdash.recentActivity')} to="/notifications">
+        <Panel title={t('tdash.recentActivity')} to={paths.notifications}>
           {notifications.length === 0 ? (
             <p className={emptyClass}>{t('notif.emptyTitle')}</p>
           ) : (

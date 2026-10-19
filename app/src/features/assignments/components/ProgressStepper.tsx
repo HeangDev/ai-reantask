@@ -1,5 +1,6 @@
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { CHECK_MARK } from '@/shared/lib/glyphs'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 import type { AssignmentStatus } from '@/features/assignments/types'
 
 const steps: TranslationKey[] = ['step.assigned', 'status.submitted', 'status.graded']
@@ -7,7 +8,7 @@ const steps: TranslationKey[] = ['step.assigned', 'status.submitted', 'status.gr
 // Index of the step the student is currently on.
 const currentStep: Record<AssignmentStatus, number> = { pending: 1, late: 1, resubmit: 1, submitted: 2, graded: 3 }
 
-export default function ProgressStepper({ status }: { status: AssignmentStatus }) {
+export function ProgressStepper({ status }: { status: AssignmentStatus }) {
   const { t } = useI18n()
   const current = currentStep[status]
 
@@ -20,7 +21,7 @@ export default function ProgressStepper({ status }: { status: AssignmentStatus }
           <li key={key} aria-current={active ? 'step' : undefined} className="flex min-w-0 flex-1 flex-col gap-1.5">
             <span className={`h-1 rounded-full ${done ? 'bg-accent' : active ? 'bg-accent/40' : 'bg-line'}`} aria-hidden="true" />
             <span className={`truncate text-xs ${done || active ? 'font-medium text-fg' : 'text-muted'}`}>
-              {done && <span aria-hidden="true">✓ </span>}
+              {done && <span aria-hidden="true">{CHECK_MARK} </span>}
               {t(key)}
             </span>
           </li>

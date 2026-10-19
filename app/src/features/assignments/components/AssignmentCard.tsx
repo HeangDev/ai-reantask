@@ -1,11 +1,11 @@
-import AvatarGroup from '@/components/ui/AvatarGroup'
-import { AttachmentIcon } from '@/components/ui/icons'
-import DueLabel from '@/features/assignments/components/DueLabel'
-import StatusBadge, { statusStyles } from '@/features/assignments/components/StatusBadge'
+import { AvatarGroup } from '@/shared/components/AvatarGroup'
+import { AttachmentIcon } from '@/shared/components/icons'
+import { DueLabel } from '@/features/assignments/components/DueLabel'
+import { StatusBadge, statusStyles } from '@/features/assignments/components/StatusBadge'
 import { formatDate } from '@/features/assignments/lib/dates'
 import { needsAction } from '@/features/assignments/lib/status'
 import type { Assignment } from '@/features/assignments/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   assignment: Assignment
@@ -13,7 +13,7 @@ interface Props {
 }
 
 /** One assignment on the board: what it is, when it is due or how it went, and any teacher feedback. */
-export default function AssignmentCard({ assignment: a, onOpen }: Props) {
+export function AssignmentCard({ assignment: a, onOpen }: Props) {
   const { t, locale } = useI18n()
   const open = needsAction(a)
 

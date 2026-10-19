@@ -1,9 +1,9 @@
-import Avatar from '@/components/ui/Avatar'
-import { EditIcon, TrashIcon } from '@/components/ui/icons'
-import Modal from '@/components/ui/Modal'
+import { Avatar } from '@/shared/components/Avatar'
+import { EditIcon, TrashIcon } from '@/shared/components/icons'
+import { Modal } from '@/shared/components/Modal'
 import type { Teacher } from '@/features/teachers/types'
-import { ageFrom, formatDate } from '@/lib/dates'
-import { useI18n } from '@/lib/i18n'
+import { ageFrom, formatDate } from '@/shared/lib/dates'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   teacher: Teacher
@@ -19,7 +19,7 @@ interface Props {
 const actionClass =
   'flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4'
 
-export default function TeacherDetail({ teacher, studentCount, classNames, onEdit, onDelete, onClose }: Props) {
+export function TeacherDetail({ teacher, studentCount, classNames, onEdit, onDelete, onClose }: Props) {
   const { t, locale } = useI18n()
 
   return (

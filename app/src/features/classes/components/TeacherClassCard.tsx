@@ -1,10 +1,10 @@
 import { motion, useReducedMotion } from 'motion/react'
-import GradientBanner from '@/components/ui/GradientBanner'
-import { ClassIcon, MailIcon } from '@/components/ui/icons'
-import StatusBadge from '@/components/ui/StatusBadge'
+import { GradientBanner } from '@/shared/components/GradientBanner'
+import { ClassIcon, MailIcon } from '@/shared/components/icons'
+import { StatusBadge } from '@/shared/components/StatusBadge'
 import type { ClassOverview } from '@/features/classes/hooks/useClassOverview'
 import type { SchoolClass } from '@/features/classes/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   schoolClass: SchoolClass
@@ -15,7 +15,7 @@ interface Props {
 }
 
 /** A class as the teacher sees it: its name, subject and how many students it has. */
-export default function TeacherClassCard({ schoolClass: c, overview, onInvite, index = 0 }: Props) {
+export function TeacherClassCard({ schoolClass: c, overview, onInvite, index = 0 }: Props) {
   const { t } = useI18n()
   const reduceMotion = useReducedMotion()
 

@@ -1,17 +1,18 @@
 import { Link } from 'react-router-dom'
-import StatusBadge from '@/components/ui/StatusBadge'
-import DueLabel from '@/features/assignments/components/DueLabel'
-import type { Assignment } from '@/features/assignments/types'
-import { teachingOf } from '@/features/classes/lib/classTeaching'
-import { useClasses } from '@/features/classes/hooks/useClasses'
-import { useJoinedClassIds } from '@/features/classes/store/joinRequestsStore'
-import DashboardGreeting from '@/features/dashboard/components/DashboardGreeting'
+import { StatusBadge } from '@/shared/components/StatusBadge'
+import { DueLabel } from '@/features/assignments'
+import type { Assignment } from '@/features/assignments'
+import { teachingOf } from '@/features/classes'
+import { useClasses } from '@/features/classes'
+import { useJoinedClassIds } from '@/features/classes'
+import { DashboardGreeting } from '@/features/dashboard/components/DashboardGreeting'
 import { Panel, Row } from '@/features/dashboard/components/DashboardPanels'
-import StatCards from '@/features/dashboard/components/StatCards'
+import { StatCards } from '@/features/dashboard/components/StatCards'
 import type { DashboardData } from '@/features/dashboard/types'
-import { useTeachers } from '@/features/teachers/store/teachersStore'
-import { formatDate } from '@/lib/dates'
-import { useI18n } from '@/lib/i18n'
+import { useTeachers } from '@/features/teachers'
+import { formatDate } from '@/shared/lib/dates'
+import { useI18n } from '@/shared/i18n'
+import { paths } from '@/shared/config/paths'
 
 const MAX_CLASSES = 4
 
@@ -66,7 +67,7 @@ function MyClassesPanel() {
   const mine = classes.filter((c) => joined.has(c.id)).slice(0, MAX_CLASSES)
 
   return (
-    <Panel title={t('nav.myClasses')} to="/my-classes">
+    <Panel title={t('nav.myClasses')} to={paths.classes}>
       {mine.length === 0 ? (
         <p className="p-6 text-center text-sm text-muted">{t('sc.emptyTitle')}</p>
       ) : (
@@ -90,7 +91,7 @@ function MyClassesPanel() {
 }
 
 /** The student's dashboard: a greeting, what is due next, grades at a glance, and their classes. */
-export default function StudentDashboard({ data, name, attention }: { data: DashboardData; name: string; attention: number }) {
+export function StudentDashboard({ data, name, attention }: { data: DashboardData; name: string; attention: number }) {
   const { t } = useI18n()
   const { stats, upcoming, recent } = data
 

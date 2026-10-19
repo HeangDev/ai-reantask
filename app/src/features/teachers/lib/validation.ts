@@ -1,8 +1,8 @@
-import type { Teacher, TeacherFormErrors, TeacherInput } from '@/features/teachers/types'
-import { isValidDateOfBirth, isValidEmail, isValidPhone } from '@/lib/validation'
+import type { Teacher, TeacherFormErrors, TeacherFormValues } from '@/features/teachers/types'
+import { isValidDateOfBirth, isValidEmail, isValidPhone } from '@/shared/lib/validation'
 
 /** Client-side rules: required fields, valid email, and no duplicate email among other teachers. */
-export function validateTeacher(input: TeacherInput, others: Teacher[]): TeacherFormErrors {
+export function validateTeacher(input: TeacherFormValues, others: Teacher[]): TeacherFormErrors {
   const errors: TeacherFormErrors = {}
   const email = input.email.trim().toLowerCase()
 

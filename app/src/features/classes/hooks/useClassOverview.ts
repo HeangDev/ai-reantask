@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { teachingOf } from '@/features/classes/lib/classTeaching'
 import { membersOfClass, useJoinRequests } from '@/features/classes/store/joinRequestsStore'
 import type { SchoolClass } from '@/features/classes/types'
-import { useTeachers } from '@/features/teachers/store/teachersStore'
+import { useTeachers } from '@/features/teachers'
 
 export interface ClassOverview {
   /** Subjects taught in the class, joined with commas; empty when none is known. */

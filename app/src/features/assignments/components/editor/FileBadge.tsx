@@ -12,7 +12,7 @@ const badges: Record<string, { label: string; tone: string }> = {
 }
 
 /** A tiny coloured label for a file type, like the icons in a code editor's explorer. */
-export default function FileBadge({ path }: { path: string }) {
+export function FileBadge({ path }: { path: string }) {
   const badge = badges[extensionOf(path)] ?? { label: '·', tone: 'text-muted' }
   return (
     <span className={`w-5 shrink-0 text-center text-[10px] font-bold leading-none ${badge.tone}`} aria-hidden="true">

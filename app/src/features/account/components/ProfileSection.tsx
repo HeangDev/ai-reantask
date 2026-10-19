@@ -1,23 +1,23 @@
 import { useRef, useState } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
-import Button from '@/components/ui/Button'
-import { CameraIcon, UserIcon } from '@/components/ui/icons'
-import { useToast } from '@/components/ui/Toast'
-import SectionCard from '@/features/account/components/SectionCard'
-import TextField from '@/components/ui/TextField'
+import type { ChangeEvent, SubmitEvent } from 'react'
+import { Button } from '@/shared/components/Button'
+import { CameraIcon, UserIcon } from '@/shared/components/icons'
+import { useToast } from '@/shared/components/Toast'
+import { SectionCard } from '@/features/account/components/SectionCard'
+import { TextField } from '@/shared/components/TextField'
 import { validateAvatar, validateName } from '@/features/account/lib/validation'
-import { accountActions, useProfile } from '@/features/account/store/accountStore'
-import { useMe } from '@/features/auth/hooks/useMe'
-import { roleLabelKey } from '@/features/auth/lib/roleLabels'
-import { useSession } from '@/features/auth/store/authStore'
-import { DEFAULT_AVATAR_URL } from '@/lib/currentUser'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useProfileStore } from '@/shared/store/profileStore'
+import { useMe, useProfile } from '@/features/auth'
+import { roleLabelKey } from '@/features/auth'
+import { useSession } from '@/shared/store/authStore'
+import { DEFAULT_AVATAR_URL } from '@/shared/lib/currentUser'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 const outlineButton =
   'rounded-lg border border-line px-3 py-1.5 text-xs font-medium transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40'
 
-export default function ProfileSection() {
+export function ProfileSection() {
   const { t } = useI18n()
   const me = useMe()
 
@@ -65,16 +65,16 @@ function ProfileForm() {
     setAvatarError(error)
     if (error) return
     const reader = new FileReader()
-    reader.onload = () => setAvatar(String(reader.result))
+    reader.onload = () => setAvatar(typeof reader.result === 'string' ? reader.result : '')
     reader.readAsDataURL(file)
   }
 
-  const save = (e: FormEvent) => {
+  const save = (e: SubmitEvent) => {
     e.preventDefault()
     const error = validateName(name)
     setNameError(error)
     if (error) return
-    accountActions.updateProfile({ fullName: name.trim(), avatarUrl: avatar })
+    useProfileStore.getState().update({ fullName: name.trim(), avatarUrl: avatar })
     setName(name.trim())
     notify({ variant: 'info', title: t('acct.profileSaved'), subtitle: t('acct.profileSavedDesc') })
   }

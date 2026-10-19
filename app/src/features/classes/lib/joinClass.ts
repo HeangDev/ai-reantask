@@ -1,6 +1,6 @@
 import { CLASS_CODE_LENGTH, normalizeClassCode } from '@/features/classes/lib/classCode'
 import type { SchoolClass } from '@/features/classes/types'
-import type { TranslationKey } from '@/lib/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 export type JoinResult = { ok: true; schoolClass: SchoolClass } | { ok: false; error: TranslationKey }
 

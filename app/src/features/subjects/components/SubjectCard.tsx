@@ -1,10 +1,10 @@
 import { motion, useReducedMotion } from 'motion/react'
-import GradientBanner from '@/components/ui/GradientBanner'
-import { EditIcon, SubjectIcon, TrashIcon } from '@/components/ui/icons'
-import StatusBadge from '@/components/ui/StatusBadge'
-import Switch from '@/components/ui/Switch'
+import { GradientBanner } from '@/shared/components/GradientBanner'
+import { EditIcon, SubjectIcon, TrashIcon } from '@/shared/components/icons'
+import { StatusBadge } from '@/shared/components/StatusBadge'
+import { Switch } from '@/shared/components/Switch'
 import type { Subject } from '@/features/subjects/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   subject: Subject
@@ -18,7 +18,7 @@ interface Props {
 const bannerButton =
   'rounded-lg bg-white/20 p-1.5 text-white backdrop-blur-sm transition-colors hover:bg-white/35 focus-visible:outline-2 focus-visible:outline-white [&>svg]:h-4 [&>svg]:w-4'
 
-export default function SubjectCard({ subject: s, onToggleStatus, onEdit, onDelete, index = 0 }: Props) {
+export function SubjectCard({ subject: s, onToggleStatus, onEdit, onDelete, index = 0 }: Props) {
   const { t } = useI18n()
   const reduceMotion = useReducedMotion()
 

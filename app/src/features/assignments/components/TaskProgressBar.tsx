@@ -1,7 +1,7 @@
 import type { TaskProgress } from '@/features/assignments/lib/tasks'
 
 /** A single progress bar filled to the share of tasks the teacher marked correct. */
-export default function TaskProgressBar({ progress, label }: { progress: TaskProgress; label: string }) {
+export function TaskProgressBar({ progress, label }: { progress: TaskProgress; label: string }) {
   return (
     <div
       className="h-2 w-full overflow-hidden rounded-full bg-line"

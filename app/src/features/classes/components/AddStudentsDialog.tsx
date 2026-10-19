@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
-import Button from '@/components/ui/Button'
-import Modal from '@/components/ui/Modal'
-import MultiSelect from '@/components/ui/MultiSelect'
-import { useToast } from '@/components/ui/Toast'
+import type { SubmitEvent } from 'react'
+import { Button } from '@/shared/components/Button'
+import { Modal } from '@/shared/components/Modal'
+import { MultiSelect } from '@/shared/components/MultiSelect'
+import { useToast } from '@/shared/components/Toast'
 import { joinRequestsActions, membersOfClass, useJoinRequests } from '@/features/classes/store/joinRequestsStore'
 import type { SchoolClass } from '@/features/classes/types'
-import { sampleStudents } from '@/features/students/data/sampleStudents'
-import { useI18n } from '@/lib/i18n'
+import { sampleStudents } from '@/features/students'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   schoolClass: SchoolClass
@@ -15,7 +15,7 @@ interface Props {
 }
 
 /** The teacher puts students straight into a class, without waiting for them to use the class code. */
-export default function AddStudentsDialog({ schoolClass, onClose }: Props) {
+export function AddStudentsDialog({ schoolClass, onClose }: Props) {
   const { t } = useI18n()
   const { notify } = useToast()
   const requests = useJoinRequests()
@@ -25,7 +25,7 @@ export default function AddStudentsDialog({ schoolClass, onClose }: Props) {
   const memberIds = new Set(members.map((m) => m.studentId))
   const available = sampleStudents.filter((s) => !memberIds.has(s.id))
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     const students = available.filter((s) => chosen.includes(s.id)).map((s) => ({ id: s.id, name: s.fullName }))
     if (students.length === 0) return

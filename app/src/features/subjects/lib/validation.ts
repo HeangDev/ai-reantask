@@ -1,5 +1,5 @@
 import type { Subject, SubjectFormErrors, SubjectInput } from '@/features/subjects/types'
-import { MAX_DESCRIPTION_LENGTH } from '@/lib/validation'
+import { MAX_DESCRIPTION_LENGTH } from '@/shared/lib/validation'
 
 /** Client-side rules: a name that no other subject uses, and a description that is not too long. */
 export function validateSubject(input: SubjectInput, others: Subject[]): SubjectFormErrors {

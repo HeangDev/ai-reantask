@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
-import { useAssignments } from '@/features/assignments/store/assignmentsStore'
-import { useClassNameScope, useVisibleClasses } from '@/features/classes/hooks/useVisibleClasses'
-import { membersOfClass, useJoinRequests } from '@/features/classes/store/joinRequestsStore'
+import { useAssignments } from '@/features/assignments'
+import { useClassNameScope, useVisibleClasses } from '@/features/classes'
+import { membersOfClass, useJoinRequests } from '@/features/classes'
 import type { Student } from '@/features/students/types'
-import { useCurrentTeacher } from '@/features/teachers/hooks/useCurrentTeacher'
-import { useSession } from '@/features/auth/store/authStore'
+import { useCurrentTeacher } from '@/features/teachers'
+import { useSession } from '@/shared/store/authStore'
 
 /**
  * Tells whether a student is one of the signed-in teacher's own: the teacher is theirs, or the student is in one

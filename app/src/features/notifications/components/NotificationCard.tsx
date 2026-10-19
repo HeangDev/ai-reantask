@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
-import { CheckIcon, CloseIcon } from '@/components/ui/icons'
-import NotificationIcon from '@/components/ui/NotificationIcon'
-import type { NotificationVariant } from '@/components/ui/NotificationIcon'
-import { useNotifications } from '@/components/ui/Toast'
-import type { AppNotification } from '@/components/ui/Toast'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
-import { formatTimeAgo } from '@/lib/timeAgo'
+import { CheckIcon, CloseIcon } from '@/shared/components/icons'
+import { NotificationIcon } from '@/shared/components/NotificationIcon'
+import type { NotificationVariant } from '@/shared/components/NotificationIcon'
+import { useNotifications } from '@/shared/components/Toast'
+import type { AppNotification } from '@/shared/components/Toast'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
+import { formatTimeAgo } from '@/shared/lib/timeAgo'
 
 export const kindLabelKeys: Record<NotificationVariant, TranslationKey> = {
   success: 'notif.kindSuccess',
@@ -25,7 +25,7 @@ const iconButton =
   'rounded-lg p-1.5 text-muted transition-colors hover:bg-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4'
 
 /** Full-size notification row for the Notifications page. */
-export default function NotificationCard({ notification: n }: { notification: AppNotification }) {
+export function NotificationCard({ notification: n }: { notification: AppNotification }) {
   const { t, locale } = useI18n()
   const { markRead, remove } = useNotifications()
   const reduceMotion = useReducedMotion()

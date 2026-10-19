@@ -12,7 +12,7 @@ interface Props {
 }
 
 /** Titled card used by every section of the Account page. */
-export default function SectionCard({ title, description, icon, danger = false, badge, children }: Props) {
+export function SectionCard({ title, description, icon, danger = false, badge, children }: Props) {
   const tone = danger
     ? 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400'
     : 'bg-accent-soft text-accent-fg'

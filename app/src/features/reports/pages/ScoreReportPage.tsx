@@ -1,22 +1,22 @@
 import { useMemo, useState } from 'react'
-import Dropdown from '@/components/ui/Dropdown'
-import ExportMenu from '@/components/ui/ExportMenu'
-import { DownloadIcon, FileIcon, PrintIcon, SearchIcon, StarIcon, StudentsIcon, TasksIcon } from '@/components/ui/icons'
-import TableEmpty from '@/components/ui/TableEmpty'
-import { useToast } from '@/components/ui/Toast'
-import { useAssignableClassNames } from '@/features/classes/hooks/useAssignableClassNames'
-import { StatCard } from '@/features/dashboard/components/StatCards'
-import PrintableScoreReport from '@/features/reports/components/PrintableScoreReport'
-import ScoreTable from '@/features/reports/components/ScoreTable'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { ExportMenu } from '@/shared/components/ExportMenu'
+import { DownloadIcon, FileIcon, PrintIcon, SearchIcon, StarIcon, StudentsIcon, TasksIcon } from '@/shared/components/icons'
+import { TableEmpty } from '@/shared/components/TableEmpty'
+import { useToast } from '@/shared/components/Toast'
+import { useAssignableClassNames } from '@/features/classes'
+import { StatCard } from '@/features/dashboard'
+import { PrintableScoreReport } from '@/features/reports/components/PrintableScoreReport'
+import { ScoreTable } from '@/features/reports/components/ScoreTable'
 import { useScoreReport } from '@/features/reports/hooks/useScoreReport'
-import { downloadCsv } from '@/lib/csv'
-import { useI18n } from '@/lib/i18n'
-import { printWithTitle } from '@/lib/print'
+import { downloadCsv } from '@/shared/lib/csv'
+import { useI18n } from '@/shared/i18n'
+import { printWithTitle } from '@/shared/lib/print'
 
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
 
 /** The teacher's report of how each student is scoring. */
-export default function ScoreReportPage() {
+export function ScoreReportPage() {
   const { t } = useI18n()
   const { notify } = useToast()
   const report = useScoreReport()

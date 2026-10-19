@@ -1,6 +1,6 @@
-import { isAcceptablePassword } from '@/features/account/lib/validation'
+import { isAcceptablePassword } from '@/features/auth'
 import type { User, UserFormErrors, UserInput } from '@/features/users/types'
-import { isValidEmail, isValidPhone } from '@/lib/validation'
+import { isValidEmail, isValidPhone } from '@/shared/lib/validation'
 
 /**
  * Client-side rules: required fields, valid email, and no duplicate email among the loaded users.

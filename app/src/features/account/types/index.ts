@@ -1,4 +1,4 @@
-import type { TranslationKey } from '@/lib/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 /** One signed-in device, from `GET /users/{user}/sessions`. */
 export interface LoginSession {

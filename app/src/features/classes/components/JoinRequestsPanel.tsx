@@ -1,16 +1,17 @@
-import Avatar from '@/components/ui/Avatar'
-import { CheckIcon, CloseIcon } from '@/components/ui/icons'
-import { useToast } from '@/components/ui/Toast'
-import { useSession } from '@/features/auth/store/authStore'
-import { useTeacherClassScope } from '@/features/teachers/hooks/useCurrentTeacher'
-import { useClasses } from '@/features/classes/hooks/useClasses'
+import { Avatar } from '@/shared/components/Avatar'
+import { CheckIcon, CloseIcon } from '@/shared/components/icons'
+import { useToast } from '@/shared/components/Toast'
+import { useSession } from '@/shared/store/authStore'
+import { useTeacherClassScope } from '@/features/teachers'
+import { useClasses } from '@/features/classes/api/useClasses'
 import { joinRequestsActions, useJoinRequests } from '@/features/classes/store/joinRequestsStore'
 import type { JoinRequest } from '@/features/classes/store/joinRequestsStore'
-import { useI18n } from '@/lib/i18n'
-import { formatTimeAgo } from '@/lib/timeAgo'
+import { useI18n } from '@/shared/i18n'
+import { formatTimeAgo } from '@/shared/lib/timeAgo'
+import { paths } from '@/shared/config/paths'
 
 /** Students waiting to join a class. The teacher approves or declines, and the student is told either way. */
-export default function JoinRequestsPanel() {
+export function JoinRequestsPanel() {
   const { t, locale } = useI18n()
   const { notify, notifyRole } = useToast()
   const role = useSession()?.role
@@ -32,7 +33,7 @@ export default function JoinRequestsPanel() {
     notifyRole('student', {
       title: t('join.approvedTitle'),
       subtitle: t('join.approvedDesc', { name }),
-      to: '/my-classes',
+      to: paths.classes,
     })
   }
 

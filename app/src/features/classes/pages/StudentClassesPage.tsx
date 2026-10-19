@@ -1,20 +1,22 @@
+import { Link } from 'react-router-dom'
 import { useMemo, useState } from 'react'
-import Button from '@/components/ui/Button'
-import { PlusIcon, SearchIcon } from '@/components/ui/icons'
-import JoinClassDialog from '@/features/classes/components/JoinClassDialog'
-import StudentClassesTable from '@/features/classes/components/StudentClassesTable'
+import { Button } from '@/shared/components/Button'
+import { PlusIcon, SearchIcon } from '@/shared/components/icons'
+import { JoinClassDialog } from '@/features/classes/components/JoinClassDialog'
+import { StudentClassesTable } from '@/features/classes/components/StudentClassesTable'
 import { teachingOf } from '@/features/classes/lib/classTeaching'
 import type { ClassTeaching } from '@/features/classes/lib/classTeaching'
-import { useClasses } from '@/features/classes/hooks/useClasses'
+import { useClasses } from '@/features/classes/api/useClasses'
 import { useJoinedClassIds, usePendingClassIds } from '@/features/classes/store/joinRequestsStore'
-import { useTeachers } from '@/features/teachers/store/teachersStore'
-import TableEmpty from '@/components/ui/TableEmpty'
-import { useI18n } from '@/lib/i18n'
+import { useTeachers } from '@/features/teachers'
+import { TableEmpty } from '@/shared/components/TableEmpty'
+import { paths } from '@/shared/config/paths'
+import { useI18n } from '@/shared/i18n'
 
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
 
 /** The classes the signed-in student has joined. */
-export default function StudentClassesPage() {
+export function StudentClassesPage() {
   const { t } = useI18n()
   const classes = useClasses()
   const teachers = useTeachers()
@@ -35,7 +37,7 @@ export default function StudentClassesPage() {
     const q = query.trim().toLowerCase()
     return mine.filter((c) => {
       const info = teaching[c.id]
-      return `${c.name} ${c.description} ${info.teachers.join(' ')} ${info.subjects.join(' ')}`.toLowerCase().includes(q)
+      return `${c.name} ${c.description} ${info?.teachers.join(' ') ?? ''} ${info?.subjects.join(' ') ?? ''}`.toLowerCase().includes(q)
     })
   }, [mine, teaching, query])
 
@@ -46,6 +48,13 @@ export default function StudentClassesPage() {
           <h1 className="text-2xl font-bold">{t('nav.myClasses')}</h1>
           <p className="mt-1 text-sm text-muted">{t('sc.desc')}</p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <Link
+          to={paths.classAssignments}
+          className="inline-flex min-h-9 items-center rounded-lg border border-line px-3 text-sm font-medium transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {t('sc.viewAssignments')}
+        </Link>
         <Button
           type="button"
           size="sm"
@@ -56,6 +65,7 @@ export default function StudentClassesPage() {
           <PlusIcon />
           {t('join.button')}
         </Button>
+        </div>
       </div>
 
       {waiting.length > 0 && (

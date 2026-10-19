@@ -11,5 +11,5 @@ export function generateClassCode(existing: ReadonlySet<string>): string {
   }
 }
 
-/** What a student typed, ready to compare: no spaces, upper case. */
-export const normalizeClassCode = (input: string) => input.replace(/\s/g, '').toUpperCase()
+/** What a student typed, ready to compare: no spaces or hyphens, upper case (R-CL1). */
+export const normalizeClassCode = (input: string) => input.replace(/[\s-]/g, '').toUpperCase()

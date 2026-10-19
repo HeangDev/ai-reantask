@@ -1,5 +1,5 @@
 import type { ClassFormErrors, ClassInput, SchoolClass } from '@/features/classes/types'
-import { MAX_DESCRIPTION_LENGTH } from '@/lib/validation'
+import { MAX_DESCRIPTION_LENGTH } from '@/shared/lib/validation'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 

@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import Dropdown from '@/components/ui/Dropdown'
-import Modal from '@/components/ui/Modal'
-import AssignmentCard from '@/features/assignments/components/AssignmentCard'
-import AssignmentDetail from '@/features/assignments/components/AssignmentDetail'
-import MyClasses from '@/features/classes/components/MyClasses'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { Modal } from '@/shared/components/Modal'
+import { AssignmentCard } from '@/features/assignments/components/AssignmentCard'
+import { AssignmentDetail } from '@/features/assignments/components/AssignmentDetail'
+import { MyClasses } from '@/features/classes'
 import { assignmentsActions, useAssignments } from '@/features/assignments/store/assignmentsStore'
 import { needsAction } from '@/features/assignments/lib/status'
 import type { Assignment } from '@/features/assignments/types'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 type Sort = 'due' | 'class' | 'title'
 
@@ -28,7 +28,7 @@ const lanes: { id: string; titleKey: TranslationKey; dot: string; includes: (a: 
   { id: 'graded', titleKey: 'board.graded', dot: 'bg-emerald-500', includes: (a) => a.status === 'graded' },
 ]
 
-export default function AssignmentsPage() {
+export function AssignmentsPage() {
   const { t } = useI18n()
   const [params] = useSearchParams()
   const query = (params.get('q') ?? '').trim().toLowerCase()

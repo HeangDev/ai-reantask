@@ -1,5 +1,6 @@
-import { useMemo, useSyncExternalStore } from 'react'
-import { currentUser } from '@/lib/currentUser'
+import { useMemo } from 'react'
+import { createMockResource } from '@/shared/api/mockResource'
+import { currentUser } from '@/shared/lib/currentUser'
 
 export type JoinRequestStatus = 'pending' | 'approved' | 'declined'
 
@@ -19,37 +20,26 @@ export interface JoinRequest {
 export const ME = 'me'
 
 // A student joins a class only after the teacher approves their request, so membership is simply the approved
-// requests. A minimal in-memory store until a join API is documented. It starts with the student already in
+// requests. A mock resource until a join API is documented. It starts with the student already in
 // "Web Development", and another student waiting for approval to join "Web Development II".
-let requests: JoinRequest[] = [
+const requests = createMockResource<JoinRequest[]>('join-requests', [
   { id: 'req-1', classId: '4', studentId: ME, student: currentUser.fullName, status: 'approved', createdAt: Date.now() - 6 * 24 * 3_600_000 },
   { id: 'req-2', classId: '7', studentId: 'sokha', student: 'Sokha Chan', status: 'pending', createdAt: Date.now() - 25 * 60_000 },
-]
-const listeners = new Set<() => void>()
+])
 
-function commit(next: JoinRequest[]) {
-  requests = next
-  listeners.forEach((listener) => listener())
-}
-
-const subscribe = (listener: () => void) => {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
-
-export const useJoinRequests = () => useSyncExternalStore(subscribe, () => requests)
+export const useJoinRequests = requests.useValue
 
 export const joinRequestsActions = {
   /** The signed-in student asks to join a class. Returns the request. */
   request: (classId: string, student: string): JoinRequest => {
     const next: JoinRequest = { id: crypto.randomUUID(), classId, studentId: ME, student, status: 'pending', createdAt: Date.now() }
-    commit([...requests, next])
+    requests.set([...requests.get(), next])
     return next
   },
 
   /** The teacher puts students straight into a class. A student who was waiting is simply approved. */
   addMembers: (classId: string, students: { id: string; name: string }[]) => {
-    let next = requests
+    let next = requests.get()
     for (const student of students) {
       const existing = next.find((r) => r.classId === classId && r.studentId === student.id)
       if (existing?.status === 'approved') continue
@@ -60,11 +50,11 @@ export const joinRequestsActions = {
             { id: crypto.randomUUID(), classId, studentId: student.id, student: student.name, status: 'approved', createdAt: Date.now() },
           ]
     }
-    commit(next)
+    requests.set(next)
   },
 
   resolve: (id: string, status: Exclude<JoinRequestStatus, 'pending'>) =>
-    commit(requests.map((r) => (r.id === id ? { ...r, status } : r))),
+    requests.set(requests.get().map((r) => (r.id === id ? { ...r, status } : r))),
 }
 
 /** The students approved into a class, whether they joined by code or the teacher added them. */

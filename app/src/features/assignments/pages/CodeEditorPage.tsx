@@ -1,20 +1,23 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeftIcon, ChevronDownIcon, CloseIcon, CodeIcon, SparklesIcon } from '@/components/ui/icons'
-import AiAnalyzerPanel from '@/features/assignments/components/editor/AiAnalyzerPanel'
-import CodeView from '@/features/assignments/components/editor/CodeView'
-import FileBadge from '@/features/assignments/components/editor/FileBadge'
-import FileExplorer from '@/features/assignments/components/editor/FileExplorer'
+import { ArrowLeftIcon, ChevronDownIcon, CloseIcon, CodeIcon, SparklesIcon } from '@/shared/components/icons'
+import { AiAnalyzerPanel } from '@/features/assignments/components/editor/AiAnalyzerPanel'
+import { CodeView } from '@/features/assignments/components/editor/CodeView'
+import { FileBadge } from '@/features/assignments/components/editor/FileBadge'
+import { FileExplorer } from '@/features/assignments/components/editor/FileExplorer'
 import { buildTree, extensionOf } from '@/features/assignments/lib/fileTree'
 import { languageNames } from '@/features/assignments/lib/syntax'
 import { assignmentsActions, useAssignments } from '@/features/assignments/store/assignmentsStore'
 import type { CodeFile } from '@/features/assignments/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import { paths } from '@/shared/config/paths'
 
 const focusRing = 'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent'
 
-const defaultFile = (files: CodeFile[]) => (files.find((f) => f.path === 'src/App.tsx') ?? files[0]).path
+const ENCODING = 'UTF-8'
+
+const defaultFile = (files: CodeFile[]) => (files.find((f) => f.path === 'src/App.tsx') ?? files[0])?.path ?? null
 
 /** A read-only code editor for one student's project. */
 interface JumpRequest {
@@ -27,7 +30,7 @@ interface JumpRequest {
 function Workspace({ files, panel, jump }: { files: CodeFile[]; panel?: ReactNode; jump?: JumpRequest }) {
   const { t } = useI18n()
   const tree = useMemo(() => buildTree(files), [files])
-  const [tabs, setTabs] = useState<string[]>(() => [defaultFile(files)])
+  const [tabs, setTabs] = useState<string[]>(() => { const first = defaultFile(files); return first ? [first] : [] })
   const [active, setActive] = useState<string | null>(() => defaultFile(files))
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [lineByFile, setLineByFile] = useState<Record<string, number>>({})
@@ -50,16 +53,18 @@ function Workspace({ files, panel, jump }: { files: CodeFile[]; panel?: ReactNod
     const index = tabs.indexOf(path)
     const remaining = tabs.filter((p) => p !== path)
     setTabs(remaining)
-    if (path === active) setActive(remaining.length > 0 ? remaining[Math.min(index, remaining.length - 1)] : null)
+    if (path === active) setActive(remaining.length > 0 ? remaining[Math.min(index, remaining.length - 1)] ?? null : null)
   }
 
-  // Showing a problem from the analyzer opens its file and moves the cursor to the line.
-  useEffect(() => {
-    if (!jump) return
+  // Showing a problem from the analyzer opens its file and moves the cursor to the line. The request is
+  // handled while rendering (not in an effect), once per request, so no extra render pass is needed.
+  const [handledJump, setHandledJump] = useState<JumpRequest | undefined>()
+  if (jump && jump !== handledJump) {
+    setHandledJump(jump)
     setTabs((current) => (current.includes(jump.path) ? current : [...current, jump.path]))
     setActive(jump.path)
     setLineByFile((current) => ({ ...current, [jump.path]: jump.line }))
-  }, [jump])
+  }
 
   const toggle = (path: string) =>
     setCollapsed((current) => {
@@ -116,6 +121,8 @@ function Workspace({ files, panel, jump }: { files: CodeFile[]; panel?: ReactNod
             <>
               <nav aria-label={t('asg.files')} className="flex shrink-0 items-center gap-1 border-b border-line bg-surface px-4 py-1 text-xs text-muted">
                 {active.split('/').map((part, i, all) => (
+                  // Path segments are positional and never reordered.
+                  // eslint-disable-next-line react/no-array-index-key
                   <span key={i} className="flex items-center gap-1">
                     {i > 0 && <span className="-rotate-90 [&>svg]:h-3 [&>svg]:w-3" aria-hidden="true"><ChevronDownIcon /></span>}
                     <span className={i === all.length - 1 ? 'text-fg' : ''}>{part}</span>
@@ -162,7 +169,7 @@ function Workspace({ files, panel, jump }: { files: CodeFile[]; panel?: ReactNod
         <span>{file ? t('asg.statusLine', { line: String(currentLine), total: String(totalLines) }) : t('asg.noFileOpen')}</span>
         <span className="flex items-center gap-4">
           {file && <span>{languageNames[extension] ?? extension.toUpperCase()}</span>}
-          {file && <span>UTF-8</span>}
+          {file && <span>{ENCODING}</span>}
           <span>{t('asg.filesCount', { count: String(files.length) })}</span>
         </span>
       </footer>
@@ -171,7 +178,7 @@ function Workspace({ files, panel, jump }: { files: CodeFile[]; panel?: ReactNod
 }
 
 /** One student's project opened like a code editor, on its own page. */
-export default function CodeEditorPage() {
+export function CodeEditorPage() {
   const { t } = useI18n()
   const { id } = useParams()
   const [params] = useSearchParams()
@@ -187,7 +194,7 @@ export default function CodeEditorPage() {
 
   const back = (
     <Link
-      to="/assign"
+      to={paths.assign}
       className={`flex shrink-0 items-center gap-1.5 rounded text-sm font-medium text-accent-fg hover:underline ${focusRing} [&>svg]:h-4 [&>svg]:w-4`}
     >
       <ArrowLeftIcon />

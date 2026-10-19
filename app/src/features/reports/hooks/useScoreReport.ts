@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
-import { useAssignments } from '@/features/assignments/store/assignmentsStore'
-import type { Assignment, Submission } from '@/features/assignments/types'
-import { useClassNameScope } from '@/features/classes/hooks/useVisibleClasses'
+import { useAssignments } from '@/features/assignments'
+import type { Assignment, Submission } from '@/features/assignments'
+import { useClassNameScope } from '@/features/classes'
 import type { ScoreRow } from '@/features/reports/types'
 
 /**

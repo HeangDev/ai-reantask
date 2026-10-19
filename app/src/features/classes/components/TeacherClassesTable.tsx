@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import DataTable from '@/components/ui/DataTable'
-import type { Column } from '@/components/ui/DataTable'
-import { MailIcon } from '@/components/ui/icons'
-import StatusBadge from '@/components/ui/StatusBadge'
+import { DataTable } from '@/shared/components/DataTable'
+import type { Column } from '@/shared/components/DataTable'
+import { MailIcon } from '@/shared/components/icons'
+import { StatusBadge } from '@/shared/components/StatusBadge'
 import type { ClassOverview } from '@/features/classes/hooks/useClassOverview'
 import type { SchoolClass } from '@/features/classes/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   /** Shown inside the table when it has no rows. */
@@ -20,7 +20,7 @@ interface Props {
 const pad = (n: number) => String(n).padStart(6, '0')
 
 /** A read-only list of the teacher's classes: name, subject and total students. */
-export default function TeacherClassesTable({ classes, overviews, emptyMessage, onInvite }: Props) {
+export function TeacherClassesTable({ classes, overviews, emptyMessage, onInvite }: Props) {
   const { t } = useI18n()
 
   const columns = useMemo<Column<SchoolClass>[]>(

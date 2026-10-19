@@ -129,7 +129,7 @@ export default function App() {
   {
     path: 'src/components/TodoForm.tsx',
     code: `import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 
 interface Props {
   onAdd: (title: string) => void
@@ -138,7 +138,7 @@ interface Props {
 export default function TodoForm({ onAdd }: Props) {
   const [title, setTitle] = useState('')
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     if (!title.trim()) return
     onAdd(title.trim())

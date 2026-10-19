@@ -1,4 +1,4 @@
-import { isValidEmail } from '@/lib/validation'
+import { isValidEmail } from '@/shared/lib/validation'
 
 export interface ParsedEmails {
   /** Valid, lower-case, without repeats, and not in `skip`. */

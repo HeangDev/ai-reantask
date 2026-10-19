@@ -1,6 +1,6 @@
 import { extensionOf } from '@/features/assignments/lib/fileTree'
 import type { AssignmentTask, CodeFile, TaskResult } from '@/features/assignments/types'
-import type { TranslationKey } from '@/lib/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 export type Severity = 'error' | 'warning' | 'info'
 

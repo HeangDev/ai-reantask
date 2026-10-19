@@ -1,21 +1,21 @@
 import { useMemo, useState } from 'react'
-import DeleteDialog from '@/components/ui/DeleteDialog'
-import Dropdown from '@/components/ui/Dropdown'
-import { SearchIcon, TrashIcon } from '@/components/ui/icons'
-import TableEmpty from '@/components/ui/TableEmpty'
-import { useToast } from '@/components/ui/Toast'
-import { useSession } from '@/features/auth/store/authStore'
-import PendingStudentsPanel from '@/features/users/components/PendingStudentsPanel'
-import UserDetail from '@/features/users/components/UserDetail'
-import UserForm from '@/features/users/components/UserForm'
-import UsersTable from '@/features/users/components/UsersTable'
-import { useDeleteUsers, useUpdateUser, useUsersList } from '@/features/users/hooks/useUsers'
-import { serverFieldErrors } from '@/features/users/lib/validation'
-import { accountStatuses } from '@/features/users/types'
-import type { UserFormErrors, UserSaveInput } from '@/features/users/types'
-import { useDebouncedValue } from '@/hooks/useDebouncedValue'
-import { ApiError } from '@/lib/apiClient'
-import { useI18n } from '@/lib/i18n'
+import { DeleteDialog } from '@/shared/components/DeleteDialog'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { SearchIcon, TrashIcon } from '@/shared/components/icons'
+import { TableEmpty } from '@/shared/components/TableEmpty'
+import { useToast } from '@/shared/components/Toast'
+import { useSession } from '@/shared/store/authStore'
+import { PendingStudentsPanel } from '@/features/users'
+import { UserDetail } from '@/features/users'
+import { UserForm } from '@/features/users'
+import { UsersTable } from '@/features/users'
+import { useDeleteUsers, useUpdateUser, useUsersList } from '@/features/users'
+import { serverFieldErrors } from '@/features/users'
+import { accountStatuses } from '@/features/users'
+import type { UserFormErrors, UserSaveInput } from '@/features/users'
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
+import { ApiError } from '@/shared/api/http'
+import { useI18n } from '@/shared/i18n'
 
 type Dialog =
   | { type: 'none' }
@@ -29,7 +29,7 @@ const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
  * The students: users whose role is student. Listing, editing and deleting users is for admins in the API, so a
  * teacher only gets the list of students waiting for approval, which teachers may approve.
  */
-export default function StudentsPage() {
+export function StudentsPage() {
   const { t } = useI18n()
   const { notify } = useToast()
   const role = useSession()?.role

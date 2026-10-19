@@ -1,12 +1,12 @@
 import { motion, useReducedMotion } from 'motion/react'
-import GradientBanner from '@/components/ui/GradientBanner'
-import { ClassIcon, EditIcon, TrashIcon } from '@/components/ui/icons'
-import StatusBadge from '@/components/ui/StatusBadge'
-import Switch from '@/components/ui/Switch'
-import CopyCodeButton from '@/features/classes/components/CopyCodeButton'
+import { GradientBanner } from '@/shared/components/GradientBanner'
+import { ClassIcon, EditIcon, TrashIcon } from '@/shared/components/icons'
+import { StatusBadge } from '@/shared/components/StatusBadge'
+import { Switch } from '@/shared/components/Switch'
+import { CopyCodeButton } from '@/features/classes/components/CopyCodeButton'
 import type { SchoolClass } from '@/features/classes/types'
-import { formatDate } from '@/lib/dates'
-import { useI18n } from '@/lib/i18n'
+import { formatDate } from '@/shared/lib/dates'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   schoolClass: SchoolClass
@@ -20,7 +20,7 @@ interface Props {
 const bannerButton =
   'rounded-lg bg-white/20 p-1.5 text-white backdrop-blur-sm transition-colors hover:bg-white/35 focus-visible:outline-2 focus-visible:outline-white [&>svg]:h-4 [&>svg]:w-4'
 
-export default function ClassCard({ schoolClass: c, onToggleStatus, onEdit, onDelete, index = 0 }: Props) {
+export function ClassCard({ schoolClass: c, onToggleStatus, onEdit, onDelete, index = 0 }: Props) {
   const { t, locale } = useI18n()
   const reduceMotion = useReducedMotion()
 

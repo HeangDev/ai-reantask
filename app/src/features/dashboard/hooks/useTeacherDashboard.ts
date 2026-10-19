@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
-import { daysUntil } from '@/features/assignments/lib/dates'
-import { useAssignments } from '@/features/assignments/store/assignmentsStore'
-import type { AssignmentPhase } from '@/features/assignments/types'
-import { sampleStudents } from '@/features/students/data/sampleStudents'
-import { useOwnStudentFilter } from '@/features/students/hooks/useOwnStudents'
-import { useClassNameScope, useVisibleClasses } from '@/features/classes/hooks/useVisibleClasses'
-import { membersOfClass, useJoinRequests } from '@/features/classes/store/joinRequestsStore'
+import { daysUntil } from '@/features/assignments'
+import { useAssignments } from '@/features/assignments'
+import type { AssignmentPhase } from '@/features/assignments'
+import { sampleStudents } from '@/features/students'
+import { useOwnStudentFilter } from '@/features/students'
+import { useClassNameScope, useVisibleClasses } from '@/features/classes'
+import { membersOfClass, useJoinRequests } from '@/features/classes'
 import type { ProgressRow, TeacherDashboardData } from '@/features/dashboard/types'
 
 /**

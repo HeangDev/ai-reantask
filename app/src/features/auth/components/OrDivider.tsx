@@ -1,7 +1,7 @@
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 /** A rule with "or" in the middle, between the password form and the Google button. */
-export default function OrDivider() {
+export function OrDivider() {
   const { t } = useI18n()
   return (
     <div className="my-5 flex items-center gap-3 text-xs uppercase text-muted" role="separator">

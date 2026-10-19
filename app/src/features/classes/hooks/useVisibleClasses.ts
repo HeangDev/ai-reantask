@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { useSession } from '@/features/auth/store/authStore'
-import { useClasses } from '@/features/classes/hooks/useClasses'
+import { useSession } from '@/shared/store/authStore'
+import { useClasses } from '@/features/classes/api/useClasses'
 import type { SchoolClass } from '@/features/classes/types'
 
 /** The classes the signed-in person may see. The API already limits a teacher or student to their own classes. */

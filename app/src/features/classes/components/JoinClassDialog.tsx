@@ -1,19 +1,20 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
-import Button from '@/components/ui/Button'
-import Modal from '@/components/ui/Modal'
-import TextField from '@/components/ui/TextField'
-import { useToast } from '@/components/ui/Toast'
-import { useProfile } from '@/features/account/store/accountStore'
+import type { SubmitEvent } from 'react'
+import { Button } from '@/shared/components/Button'
+import { Modal } from '@/shared/components/Modal'
+import { TextField } from '@/shared/components/TextField'
+import { useToast } from '@/shared/components/Toast'
+import { useProfile } from '@/features/auth'
 import { CLASS_CODE_LENGTH, normalizeClassCode } from '@/features/classes/lib/classCode'
 import { checkJoinCode } from '@/features/classes/lib/joinClass'
-import { useClasses } from '@/features/classes/hooks/useClasses'
+import { useClasses } from '@/features/classes/api/useClasses'
 import { joinedClassIds, joinRequestsActions, pendingClassIds, useJoinRequests } from '@/features/classes/store/joinRequestsStore'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
+import { paths } from '@/shared/config/paths'
 
 /** A student enters a class code; the teacher still has to approve before they are in the class. */
-export default function JoinClassDialog({ onClose }: { onClose: () => void }) {
+export function JoinClassDialog({ onClose }: { onClose: () => void }) {
   const { t } = useI18n()
   const { notify, notifyRole } = useToast()
   const profile = useProfile()
@@ -22,7 +23,7 @@ export default function JoinClassDialog({ onClose }: { onClose: () => void }) {
   const [code, setCode] = useState('')
   const [error, setError] = useState<TranslationKey>()
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     const result = checkJoinCode(code, classes, joinedClassIds(requests), pendingClassIds(requests))
     if (!result.ok) {
@@ -38,7 +39,7 @@ export default function JoinClassDialog({ onClose }: { onClose: () => void }) {
       variant: 'info',
       title: t('join.reqTitle'),
       subtitle: t('join.reqDesc', { student: profile.fullName, name }),
-      to: '/classes',
+      to: paths.classes,
     })
     onClose()
   }
@@ -53,7 +54,7 @@ export default function JoinClassDialog({ onClose }: { onClose: () => void }) {
           autoCapitalize="characters"
           spellCheck={false}
           maxLength={CLASS_CODE_LENGTH}
-          placeholder="ABC123"
+          placeholder={t('join.codePh')}
           value={code}
           onChange={(v) => {
             setCode(normalizeClassCode(v))

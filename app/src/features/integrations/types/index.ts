@@ -1,4 +1,4 @@
-import type { TranslationKey } from '@/lib/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 export type IntegrationId = 'github' | 'gitlab' | 'bitbucket'
 

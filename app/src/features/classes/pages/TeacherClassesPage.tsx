@@ -1,23 +1,23 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence } from 'motion/react'
-import { SearchIcon } from '@/components/ui/icons'
-import TableEmpty from '@/components/ui/TableEmpty'
-import ViewSwitch from '@/components/ui/ViewSwitch'
-import type { ViewMode } from '@/components/ui/ViewSwitch'
-import InviteStudentsDialog from '@/features/classes/components/InviteStudentsDialog'
-import TeacherClassCard from '@/features/classes/components/TeacherClassCard'
-import TeacherClassesTable from '@/features/classes/components/TeacherClassesTable'
+import { SearchIcon } from '@/shared/components/icons'
+import { TableEmpty } from '@/shared/components/TableEmpty'
+import { ViewSwitch } from '@/shared/components/ViewSwitch'
+import type { ViewMode } from '@/shared/components/ViewSwitch'
+import { InviteStudentsDialog } from '@/features/classes/components/InviteStudentsDialog'
+import { TeacherClassCard } from '@/features/classes/components/TeacherClassCard'
+import { TeacherClassesTable } from '@/features/classes/components/TeacherClassesTable'
 import { useClassOverview } from '@/features/classes/hooks/useClassOverview'
-import { useClassesQuery } from '@/features/classes/hooks/useClasses'
-import { useViewMode } from '@/hooks/useViewMode'
-import { useI18n } from '@/lib/i18n'
+import { useClassesQuery } from '@/features/classes/api/useClasses'
+import { useViewMode } from '@/shared/hooks/useViewMode'
+import { useI18n } from '@/shared/i18n'
 
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
 // How many cards show at first, and how many more each "Show more" adds.
 const PAGE_SIZE = 6
 
 /** The teacher's classes, as cards or a table: class name, subject and total students, with a way to invite students. */
-export default function TeacherClassesPage() {
+export function TeacherClassesPage() {
   const { t } = useI18n()
   // The API only returns the classes this teacher teaches.
   const classesQuery = useClassesQuery()

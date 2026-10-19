@@ -1,14 +1,14 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import AvatarGroup from '@/components/ui/AvatarGroup'
-import { EyeIcon } from '@/components/ui/icons'
-import DataTable from '@/components/ui/DataTable'
-import type { Column } from '@/components/ui/DataTable'
-import PhaseBadge, { phases } from '@/features/assignments/components/PhaseBadge'
+import { AvatarGroup } from '@/shared/components/AvatarGroup'
+import { EyeIcon } from '@/shared/components/icons'
+import { DataTable } from '@/shared/components/DataTable'
+import type { Column } from '@/shared/components/DataTable'
+import { PhaseBadge, phases } from '@/features/assignments/components/PhaseBadge'
 import type { Assignment } from '@/features/assignments/types'
-import { formatDate } from '@/lib/dates'
-import { useI18n } from '@/lib/i18n'
+import { formatDate } from '@/shared/lib/dates'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   /** Shown inside the table when it has no rows. */
@@ -22,7 +22,7 @@ interface Props {
   onDelete: (id: string) => void
 }
 
-export default function AssignTable({ assignments, ...handlers }: Props) {
+export function AssignTable({ assignments, ...handlers }: Props) {
   const { t, locale } = useI18n()
 
   const columns = useMemo<Column<Assignment>[]>(

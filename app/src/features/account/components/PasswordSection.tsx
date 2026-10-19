@@ -1,16 +1,16 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
-import Button from '@/components/ui/Button'
-import { LockIcon } from '@/components/ui/icons'
-import { useToast } from '@/components/ui/Toast'
-import SectionCard from '@/features/account/components/SectionCard'
-import TextField from '@/components/ui/TextField'
+import type { SubmitEvent } from 'react'
+import { Button } from '@/shared/components/Button'
+import { LockIcon } from '@/shared/components/icons'
+import { useToast } from '@/shared/components/Toast'
+import { SectionCard } from '@/features/account/components/SectionCard'
+import { TextField } from '@/shared/components/TextField'
 import { passwordStrength, validatePassword } from '@/features/account/lib/validation'
-import { useChangePassword } from '@/features/account/hooks/useChangePassword'
+import { useChangePassword } from '@/features/account/api/useChangePassword'
 import type { PasswordErrors, PasswordField, PasswordValues } from '@/features/account/types'
-import { useI18n } from '@/lib/i18n'
-import { ApiError } from '@/lib/apiClient'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import { ApiError } from '@/shared/api/http'
+import type { TranslationKey } from '@/shared/i18n'
 
 const EMPTY: PasswordValues = { current: '', next: '', confirm: '' }
 
@@ -23,7 +23,7 @@ const strengthLabels: TranslationKey[] = [
 ]
 const strengthColors = ['bg-line', 'bg-red-500', 'bg-amber-500', 'bg-lime-500', 'bg-emerald-500']
 
-export default function PasswordSection() {
+export function PasswordSection() {
   const { t } = useI18n()
   const { notify } = useToast()
   const [values, setValues] = useState<PasswordValues>(EMPTY)
@@ -36,7 +36,7 @@ export default function PasswordSection() {
     setErrors((e) => ({ ...e, [field]: undefined }))
   }
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     if (saving) return
     const found = validatePassword(values)
@@ -91,7 +91,7 @@ export default function PasswordSection() {
                   ))}
                 </div>
                 <p className="mt-1 text-xs text-muted">
-                  {t('acct.strength')}: {t(strengthLabels[strength])}
+                  {t('acct.strength')}: {t(strengthLabels[strength] ?? strengthLabels[0] ?? 'acct.strength')}
                 </p>
               </div>
             )}

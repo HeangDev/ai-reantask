@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { TrashIcon } from '@/components/ui/icons'
-import Modal from '@/components/ui/Modal'
-import { useToast } from '@/components/ui/Toast'
-import SectionCard from '@/features/account/components/SectionCard'
-import TextField from '@/components/ui/TextField'
-import { accountService } from '@/features/account/services/accountService'
-import { authActions } from '@/features/auth/store/authStore'
-import { useI18n } from '@/lib/i18n'
+import { TrashIcon } from '@/shared/components/icons'
+import { Modal } from '@/shared/components/Modal'
+import { useToast } from '@/shared/components/Toast'
+import { SectionCard } from '@/features/account/components/SectionCard'
+import { TextField } from '@/shared/components/TextField'
+import { accountService } from '@/features/account/api/account.api'
+import { authActions } from '@/shared/store/authStore'
+import { useI18n } from '@/shared/i18n'
+import { paths } from '@/shared/config/paths'
 
 // Typed literally (not translated) so the confirmation is the same in every language.
 const CONFIRM_WORD = 'DELETE'
@@ -21,7 +22,7 @@ function DeleteModal({ onClose }: { onClose: () => void }) {
   const [deleting, setDeleting] = useState(false)
   const ready = typed === CONFIRM_WORD
 
-  const submit = async (e: FormEvent) => {
+  const submit = async (e: SubmitEvent) => {
     e.preventDefault()
     if (!ready || deleting) return
     setDeleting(true)
@@ -29,7 +30,7 @@ function DeleteModal({ onClose }: { onClose: () => void }) {
       await accountService.deleteAccount()
       notify({ variant: 'danger', title: t('acct.accountDeleted'), subtitle: t('acct.accountDeletedDesc') })
       authActions.signOut()
-      navigate('/login')
+      void navigate(paths.login)
     } finally {
       setDeleting(false)
     }
@@ -66,7 +67,7 @@ function DeleteModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-export default function DeleteAccountSection() {
+export function DeleteAccountSection() {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
 

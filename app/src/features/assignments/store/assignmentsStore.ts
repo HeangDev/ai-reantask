@@ -1,37 +1,26 @@
-import { useSyncExternalStore } from 'react'
 import { sampleAssignments } from '@/features/assignments/data/sampleAssignments'
 import type { Assignment } from '@/features/assignments/types'
-import { todayIso } from '@/lib/dates'
+import { createMockResource } from '@/shared/api/mockResource'
+import { todayIso } from '@/shared/lib/dates'
 
 // Assignments are shared by the teacher's "Set assignments" page and the student's board, so what a
-// teacher sets shows up for students. This is a minimal in-memory store until an API is documented.
-let assignments: Assignment[] = sampleAssignments
-const listeners = new Set<() => void>()
+// teacher sets shows up for students. A mock resource until an API is documented.
+const assignments = createMockResource<Assignment[]>('assignments', sampleAssignments)
 
-function commit(next: Assignment[]) {
-  assignments = next
-  listeners.forEach((listener) => listener())
-}
-
-const subscribe = (listener: () => void) => {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
-
-export const useAssignments = () => useSyncExternalStore(subscribe, () => assignments)
+export const useAssignments = assignments.useValue
 
 export const assignmentsActions = {
-  add: (assignment: Assignment) => commit([...assignments, assignment]),
+  add: (assignment: Assignment) => assignments.set([...assignments.get(), assignment]),
 
   update: (id: string, changes: Partial<Assignment>) =>
-    commit(assignments.map((a) => (a.id === id ? { ...a, ...changes } : a))),
+    assignments.set(assignments.get().map((a) => (a.id === id ? { ...a, ...changes } : a))),
 
-  remove: (ids: ReadonlySet<string>) => commit(assignments.filter((a) => !ids.has(a.id))),
+  remove: (ids: ReadonlySet<string>) => assignments.set(assignments.get().filter((a) => !ids.has(a.id))),
 
   /** The teacher verifies a student's work, or withdraws that verification. */
   setVerified: (id: string, student: string, verified: boolean) =>
-    commit(
-      assignments.map((a) =>
+    assignments.set(
+      assignments.get().map((a) =>
         a.id === id
           ? {
               ...a,
@@ -45,9 +34,9 @@ export const assignmentsActions = {
 
   /** A student hands in a file; a late assignment stays late. */
   submitWork: (id: string, fileName: string) =>
-    commit(
-      assignments.map((a) =>
-        a.id === id ? { ...a, submittedFile: fileName, status: a.status === 'late' ? 'late' : 'submitted' } : a,
-      ),
+    assignments.set(
+      assignments
+        .get()
+        .map((a) => (a.id === id ? { ...a, submittedFile: fileName, status: a.status === 'late' ? 'late' : 'submitted' } : a)),
     ),
 }

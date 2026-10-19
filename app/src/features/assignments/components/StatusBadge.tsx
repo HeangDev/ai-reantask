@@ -1,4 +1,4 @@
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 import type { AssignmentStatus } from '@/features/assignments/types'
 
 export const statusStyles: Record<AssignmentStatus, { badge: string; dot: string }> = {
@@ -9,7 +9,7 @@ export const statusStyles: Record<AssignmentStatus, { badge: string; dot: string
   resubmit: { badge: 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300', dot: 'bg-purple-500' },
 }
 
-export default function StatusBadge({ status }: { status: AssignmentStatus }) {
+export function StatusBadge({ status }: { status: AssignmentStatus }) {
   const { t } = useI18n()
   return (
     <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${statusStyles[status].badge}`}>

@@ -1,6 +1,6 @@
 import type { RegistrationStatus } from '@/features/classes/lib/registration'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 const styles: Record<RegistrationStatus | 'checking', { key: TranslationKey; className: string }> = {
   checking: { key: 'cls.regChecking', className: 'bg-sunken text-muted' },
@@ -10,7 +10,7 @@ const styles: Record<RegistrationStatus | 'checking', { key: TranslationKey; cla
 }
 
 /** A small text label saying whether an invited email already has an account. */
-export default function RegistrationBadge({ status }: { status: RegistrationStatus | undefined }) {
+export function RegistrationBadge({ status }: { status: RegistrationStatus | undefined }) {
   const { t } = useI18n()
   const { key, className } = styles[status ?? 'checking']
   return <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${className}`}>{t(key)}</span>

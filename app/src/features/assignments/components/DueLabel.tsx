@@ -1,8 +1,8 @@
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 import { daysUntil } from '@/features/assignments/lib/dates'
 
 /** Relative deadline, e.g. "Due in 4 days". Colour hints urgency; the text carries the meaning. */
-export default function DueLabel({ deadline, className = '' }: { deadline: string; className?: string }) {
+export function DueLabel({ deadline, className = '' }: { deadline: string; className?: string }) {
   const { t } = useI18n()
   const days = daysUntil(deadline)
 

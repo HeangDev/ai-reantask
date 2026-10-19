@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { LockIcon, MonitorIcon, TrashIcon, UserIcon } from '@/components/ui/icons'
-import DeleteAccountSection from '@/features/account/components/DeleteAccountSection'
-import PasswordSection from '@/features/account/components/PasswordSection'
-import ProfileSection from '@/features/account/components/ProfileSection'
-import SessionsSection from '@/features/account/components/SessionsSection'
-import TwoFactorSection from '@/features/account/components/TwoFactorSection'
-import { useProfile } from '@/features/account/store/accountStore'
-import { roleLabelKey } from '@/features/auth/lib/roleLabels'
-import { useSession } from '@/features/auth/store/authStore'
+import { LockIcon, MonitorIcon, TrashIcon, UserIcon } from '@/shared/components/icons'
+import { DeleteAccountSection } from '@/features/account/components/DeleteAccountSection'
+import { PasswordSection } from '@/features/account/components/PasswordSection'
+import { ProfileSection } from '@/features/account/components/ProfileSection'
+import { SessionsSection } from '@/features/account/components/SessionsSection'
+import { TwoFactorSection } from '@/features/account/components/TwoFactorSection'
+import { useProfile } from '@/features/auth'
+import { roleLabelKey } from '@/features/auth'
+import { useSession } from '@/shared/store/authStore'
 import type { AccountTab } from '@/features/account/types'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 const tabs: { value: AccountTab; labelKey: TranslationKey; icon: ReactNode }[] = [
   { value: 'profile', labelKey: 'acct.tabProfile', icon: <UserIcon /> },
@@ -20,7 +20,7 @@ const tabs: { value: AccountTab; labelKey: TranslationKey; icon: ReactNode }[] =
   { value: 'delete', labelKey: 'acct.tabDelete', icon: <TrashIcon /> },
 ]
 
-export default function AccountPage() {
+export function AccountPage() {
   const { t } = useI18n()
   const profile = useProfile()
   const role = useSession()?.role

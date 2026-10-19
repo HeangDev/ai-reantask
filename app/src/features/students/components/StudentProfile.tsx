@@ -1,7 +1,7 @@
-import Avatar from '@/components/ui/Avatar'
-import Modal from '@/components/ui/Modal'
+import { Avatar } from '@/shared/components/Avatar'
+import { Modal } from '@/shared/components/Modal'
 import { sampleStudents } from '@/features/students/data/sampleStudents'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   /** Full name of the classmate; matched against the student directory. */
@@ -13,7 +13,7 @@ interface Props {
  * Read-only profile of a classmate, for a student looking at who they work with.
  * It shows how to reach and place them, not private details such as date of birth or phone.
  */
-export default function StudentProfile({ name, onClose }: Props) {
+export function StudentProfile({ name, onClose }: Props) {
   const { t } = useI18n()
   const student = sampleStudents.find((s) => s.fullName === name)
 

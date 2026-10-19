@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useState } from 'react'
-import { needsAction } from '@/features/assignments/lib/status'
-import { useAssignments } from '@/features/assignments/store/assignmentsStore'
-import { daysUntil } from '@/features/assignments/lib/dates'
-import type { Assignment, AssignmentStatus } from '@/features/assignments/types'
+import { useCallback, useMemo } from 'react'
+import { needsAction } from '@/features/assignments'
+import { useAssignments } from '@/features/assignments'
+import { daysUntil } from '@/features/assignments'
+import type { Assignment, AssignmentStatus } from '@/features/assignments'
 import type { DashboardData, DashboardState } from '@/features/dashboard/types'
 
 const UPCOMING_LIMIT = 5
@@ -50,14 +50,13 @@ function buildDashboard(assignments: Assignment[]): DashboardData {
 // The state shape already covers loading and error, so the page won't change once a real query replaces this.
 export function useDashboard(): { state: DashboardState; retry: () => void } {
   const assignments = useAssignments()
-  const [attempt, setAttempt] = useState(0)
 
   const state = useMemo<DashboardState>(() => {
-    void attempt
     if (assignments.length === 0) return { status: 'empty' }
     return { status: 'success', data: buildDashboard(assignments) }
-  }, [attempt, assignments])
+  }, [assignments])
 
-  const retry = useCallback(() => setAttempt((n) => n + 1), [])
+  // Nothing can fail while the data is derived locally; a real query's refetch goes here.
+  const retry = useCallback(() => undefined, [])
   return { state, retry }
 }

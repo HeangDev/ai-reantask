@@ -1,22 +1,23 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import LogoutDialog from '@/components/layout/LogoutDialog'
-import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import { LogoutIcon, MonitorIcon, PhoneIcon } from '@/components/ui/icons'
-import { useToast } from '@/components/ui/Toast'
-import SectionCard from '@/features/account/components/SectionCard'
-import { useSessions } from '@/features/account/hooks/useSessions'
-import { useLogoutAll } from '@/features/auth/hooks/useAuthMutations'
-import { useMe } from '@/features/auth/hooks/useMe'
-import { authActions } from '@/features/auth/store/authStore'
-import { useI18n } from '@/lib/i18n'
-import { formatTimeAgo } from '@/lib/timeAgo'
+import { LogoutDialog } from '@/features/auth'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { LogoutIcon, MonitorIcon, PhoneIcon } from '@/shared/components/icons'
+import { useToast } from '@/shared/components/Toast'
+import { SectionCard } from '@/features/account/components/SectionCard'
+import { useSessions } from '@/features/account/api/useSessions'
+import { useLogoutAll } from '@/features/auth'
+import { useMe } from '@/features/auth'
+import { authActions } from '@/shared/store/authStore'
+import { useI18n } from '@/shared/i18n'
+import { formatTimeAgo } from '@/shared/lib/timeAgo'
+import { paths } from '@/shared/config/paths'
 
 const outlineButton =
   'rounded-lg border border-line px-3 py-1.5 text-xs font-medium transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:pointer-events-none disabled:opacity-40'
 
-export default function SessionsSection() {
+export function SessionsSection() {
   const { t, locale } = useI18n()
   const me = useMe()
   const sessionsQuery = useSessions(me.data?.id)
@@ -35,7 +36,7 @@ export default function SessionsSection() {
         setConfirmingAll(false)
         authActions.signOut()
         queryClient.clear()
-        navigate('/login')
+        void navigate(paths.login)
       },
       onError: () => {
         setConfirmingAll(false)

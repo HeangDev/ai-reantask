@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import DataTable from '@/components/ui/DataTable'
-import type { Column, ServerPaging } from '@/components/ui/DataTable'
-import { roleLabelKey } from '@/features/auth/lib/roleLabels'
-import AccountStatusBadge from '@/features/users/components/AccountStatusBadge'
+import { DataTable } from '@/shared/components/DataTable'
+import type { Column, ServerPaging } from '@/shared/components/DataTable'
+import { roleLabelKey } from '@/features/auth'
+import { AccountStatusBadge } from '@/features/users/components/AccountStatusBadge'
 import type { User } from '@/features/users/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   /** Shown inside the table when it has no rows. */
@@ -22,7 +22,7 @@ interface Props {
   onDelete: (id: string) => void
 }
 
-export default function UsersTable({ users, showRole = true, ...handlers }: Props) {
+export function UsersTable({ users, showRole = true, ...handlers }: Props) {
   const { t } = useI18n()
 
   const columns = useMemo<Column<User>[]>(

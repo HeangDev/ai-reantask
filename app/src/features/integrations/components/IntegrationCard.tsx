@@ -1,8 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import Switch from '@/components/ui/Switch'
-import IntegrationLogo from '@/features/integrations/components/IntegrationLogo'
+import { Switch } from '@/shared/components/Switch'
+import { IntegrationLogo } from '@/features/integrations/components/IntegrationLogo'
 import type { Integration } from '@/features/integrations/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   integration: Integration
@@ -14,7 +14,7 @@ interface Props {
 
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
-export default function IntegrationCard({ integration, connected, onToggle, index = 0 }: Props) {
+export function IntegrationCard({ integration, connected, onToggle, index = 0 }: Props) {
   const { t } = useI18n()
   const reduceMotion = useReducedMotion()
   const motionOn = !reduceMotion

@@ -1,10 +1,11 @@
+import { APP_NAME } from '@/shared/hooks/useDocumentTitle'
 import type { ReactNode } from 'react'
-import RouteTitle from '@/app/RouteTitle'
-import Dropdown from '@/components/ui/Dropdown'
-import LogoMark from '@/components/ui/LogoMark'
-import { AssignmentsIcon, CheckIcon, GlobeIcon, TasksIcon } from '@/components/ui/icons'
-import { languageNames, useI18n } from '@/lib/i18n'
-import type { Language } from '@/lib/i18n'
+import { RouteTitle } from '@/shared/components/RouteTitle'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { LogoMark } from '@/shared/components/LogoMark'
+import { AssignmentsIcon, CheckIcon, GlobeIcon, TasksIcon } from '@/shared/components/icons'
+import { languageNames, useI18n } from '@/shared/i18n'
+import type { Language } from '@/shared/i18n'
 
 const features = [
   { icon: <AssignmentsIcon />, key: 'login.feature1' },
@@ -13,7 +14,7 @@ const features = [
 ] as const
 
 /** The shell shared by the sign-in, register and forgot-password pages: a brand panel, a language picker and a centred form. */
-export default function AuthLayout({ children }: { children: ReactNode }) {
+export function AuthLayout({ children }: { children: ReactNode }) {
   const { t, language, setLanguage } = useI18n()
 
   return (
@@ -31,7 +32,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           >
             <LogoMark className="h-6 w-6" />
           </span>
-          <span className="text-xl font-semibold">ReanTask</span>
+          <span className="text-xl font-semibold">{APP_NAME}</span>
         </div>
 
         <div className="relative max-w-md">
@@ -52,7 +53,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           </ul>
         </div>
 
-        <p className="relative text-xs text-white/60">© ReanTask</p>
+        <p className="relative text-xs text-white/60">{t('auth.copyright', { name: APP_NAME })}</p>
       </aside>
 
       <main className="flex flex-col p-4 sm:p-8">

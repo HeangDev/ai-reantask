@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useSession } from '@/features/auth/store/authStore'
+import { useSession } from '@/shared/store/authStore'
 import { useTeachers } from '@/features/teachers/store/teachersStore'
 import type { Teacher } from '@/features/teachers/types'
 

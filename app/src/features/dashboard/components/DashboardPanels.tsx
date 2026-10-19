@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { statusStyles } from '@/features/assignments/components/StatusBadge'
-import type { Assignment } from '@/features/assignments/types'
-import { useSession } from '@/features/auth/store/authStore'
-import { useI18n } from '@/lib/i18n'
+import { statusStyles } from '@/features/assignments'
+import type { Assignment } from '@/features/assignments'
+import { useSession } from '@/shared/store/authStore'
+import { useI18n } from '@/shared/i18n'
+import { paths } from '@/shared/config/paths'
 
 /** Titled card on the dashboard, with a "View all" link to the assignments. */
 export function Panel({ title, to, children }: { title: string; to?: string; children: ReactNode }) {
   const { t } = useI18n()
   const role = useSession()?.role
-  const link = to ?? (role === 'teacher' ? '/assign' : '/assignments')
+  const link = to ?? (role === 'teacher' ? paths.assign : paths.classAssignments)
 
   return (
     <section className="rounded-xl border border-line bg-surface">

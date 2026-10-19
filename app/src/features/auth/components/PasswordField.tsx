@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { EyeIcon, EyeOffIcon } from '@/components/ui/icons'
-import TextField from '@/components/ui/TextField'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { EyeIcon, EyeOffIcon } from '@/shared/components/icons'
+import { TextField } from '@/shared/components/TextField'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 interface Props {
   label: string
@@ -14,7 +14,7 @@ interface Props {
 }
 
 /** A password input with a button that shows or hides what was typed. */
-export default function PasswordField({ label, value, onChange, error, hint, autoComplete }: Props) {
+export function PasswordField({ label, value, onChange, error, hint, autoComplete }: Props) {
   const { t } = useI18n()
   const [shown, setShown] = useState(false)
 

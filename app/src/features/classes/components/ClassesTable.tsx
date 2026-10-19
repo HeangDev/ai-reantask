@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import DataTable from '@/components/ui/DataTable'
-import type { Column } from '@/components/ui/DataTable'
-import StatusBadge from '@/components/ui/StatusBadge'
-import CopyCodeButton from '@/features/classes/components/CopyCodeButton'
+import { DataTable } from '@/shared/components/DataTable'
+import type { Column } from '@/shared/components/DataTable'
+import { StatusBadge } from '@/shared/components/StatusBadge'
+import { CopyCodeButton } from '@/features/classes/components/CopyCodeButton'
 import type { SchoolClass } from '@/features/classes/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   /** Shown inside the table when it has no rows. */
@@ -19,7 +19,7 @@ interface Props {
   onDelete: (id: string) => void
 }
 
-export default function ClassesTable({ classes, ...handlers }: Props) {
+export function ClassesTable({ classes, ...handlers }: Props) {
   const { t } = useI18n()
 
   const columns = useMemo<Column<SchoolClass>[]>(

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { sampleTasks } from '@/features/tasks/data/sampleTasks'
-import TaskItem from '@/features/tasks/components/TaskItem'
+import { TaskItem } from '@/features/tasks/components/TaskItem'
 import type { Task } from '@/features/tasks/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
-export default function TasksPage() {
+export function TasksPage() {
   const { t } = useI18n()
   const [tasks, setTasks] = useState<Task[]>(sampleTasks)
 

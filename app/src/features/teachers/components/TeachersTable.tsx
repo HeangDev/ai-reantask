@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import DataTable from '@/components/ui/DataTable'
-import type { Column } from '@/components/ui/DataTable'
+import { DataTable } from '@/shared/components/DataTable'
+import type { Column } from '@/shared/components/DataTable'
 import type { Teacher } from '@/features/teachers/types'
-import { ageFrom, formatDate } from '@/lib/dates'
-import { useI18n } from '@/lib/i18n'
+import { ageFrom, formatDate } from '@/shared/lib/dates'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   /** Shown inside the table when it has no rows. */
@@ -22,7 +22,7 @@ interface Props {
   onDelete: (id: string) => void
 }
 
-export default function TeachersTable({ teachers, studentCounts, classNames, ...handlers }: Props) {
+export function TeachersTable({ teachers, studentCounts, classNames, ...handlers }: Props) {
   const { t, locale } = useI18n()
 
   const columns = useMemo<Column<Teacher>[]>(

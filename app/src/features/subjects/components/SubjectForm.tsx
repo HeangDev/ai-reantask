@@ -1,18 +1,18 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
-import Button from '@/components/ui/Button'
-import Dropdown from '@/components/ui/Dropdown'
-import FormDialog from '@/components/ui/FormDialog'
-import GradientBanner from '@/components/ui/GradientBanner'
-import { SubjectIcon } from '@/components/ui/icons'
-import StatusBadge from '@/components/ui/StatusBadge'
-import type { ActiveStatus } from '@/components/ui/StatusBadge'
-import TextAreaField from '@/components/ui/TextAreaField'
-import TextField from '@/components/ui/TextField'
+import type { SubmitEvent } from 'react'
+import { Button } from '@/shared/components/Button'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { FormDialog } from '@/shared/components/FormDialog'
+import { GradientBanner } from '@/shared/components/GradientBanner'
+import { SubjectIcon } from '@/shared/components/icons'
+import { StatusBadge } from '@/shared/components/StatusBadge'
+import type { ActiveStatus } from '@/shared/components/StatusBadge'
+import { TextAreaField } from '@/shared/components/TextAreaField'
+import { TextField } from '@/shared/components/TextField'
 import { validateSubject } from '@/features/subjects/lib/validation'
 import type { Subject, SubjectFormErrors, SubjectInput } from '@/features/subjects/types'
-import { useI18n } from '@/lib/i18n'
-import { MAX_DESCRIPTION_LENGTH } from '@/lib/validation'
+import { useI18n } from '@/shared/i18n'
+import { MAX_DESCRIPTION_LENGTH } from '@/shared/lib/validation'
 
 interface Props {
   /** The subject being edited, or null when creating. */
@@ -26,7 +26,7 @@ interface Props {
   saving?: boolean
 }
 
-export default function SubjectForm({ subject, subjects, onSave, onClose, serverErrors, saving = false }: Props) {
+export function SubjectForm({ subject, subjects, onSave, onClose, serverErrors, saving = false }: Props) {
   const { t } = useI18n()
   const [values, setValues] = useState<SubjectInput>({
     name: subject?.name ?? '',
@@ -50,7 +50,7 @@ export default function SubjectForm({ subject, subjects, onSave, onClose, server
   }
   const fieldError = (field: keyof SubjectInput) => errors[field] ?? (edited.has(field) ? undefined : serverErrors?.[field])
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     if (saving) return
     const found = validateSubject(values, subjects.filter((x) => x.id !== subject?.id))

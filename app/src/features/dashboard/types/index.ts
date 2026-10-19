@@ -1,5 +1,5 @@
-import type { ActiveStatus } from '@/components/ui/StatusBadge'
-import type { Assignment, AssignmentPhase, AssignmentStatus } from '@/features/assignments/types'
+import type { ActiveStatus } from '@/shared/components/StatusBadge'
+import type { Assignment, AssignmentPhase, AssignmentStatus } from '@/features/assignments'
 
 export interface DashboardStats {
   total: number

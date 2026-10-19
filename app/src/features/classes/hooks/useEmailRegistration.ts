@@ -1,7 +1,8 @@
 import { useQueries, useQueryClient } from '@tanstack/react-query'
 import type { RegistrationStatus } from '@/features/classes/lib/registration'
-import { sampleStudents } from '@/features/students/data/sampleStudents'
-import { fetchPendingStudents } from '@/features/users/services/usersService'
+import { sampleStudents } from '@/features/students'
+import { fetchPendingStudents } from '@/features/users'
+import { userKeys } from '@/features/users'
 
 const STALE_MS = 60_000
 
@@ -20,7 +21,7 @@ export function useEmailRegistration(emails: string[]): Record<string, Registrat
       staleTime: STALE_MS,
       queryFn: async (): Promise<RegistrationStatus> => {
         const pending = await queryClient
-          .fetchQuery({ queryKey: ['users', 'pending'], queryFn: fetchPendingStudents, staleTime: STALE_MS })
+          .query({ queryKey: userKeys.pending(), queryFn: ({ signal }) => fetchPendingStudents(signal), staleTime: STALE_MS })
           .catch(() => [])
         if (pending.some((u) => u.email.toLowerCase() === email)) return 'pending'
         if (sampleStudents.some((s) => s.email.toLowerCase() === email)) return 'registered'

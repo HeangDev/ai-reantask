@@ -1,20 +1,20 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
-import Avatar from '@/components/ui/Avatar'
-import Button from '@/components/ui/Button'
-import DatePicker from '@/components/ui/DatePicker'
-import Dropdown from '@/components/ui/Dropdown'
-import FormDialog from '@/components/ui/FormDialog'
-import MultiSelect from '@/components/ui/MultiSelect'
-import { useClasses } from '@/features/classes/hooks/useClasses'
-import { pickableClasses } from '@/features/classes/lib/pickable'
-import { useSubjects } from '@/features/subjects/hooks/useSubjects'
-import { pickableSubjectNames } from '@/features/subjects/lib/pickable'
+import type { SubmitEvent } from 'react'
+import { Avatar } from '@/shared/components/Avatar'
+import { Button } from '@/shared/components/Button'
+import { DatePicker } from '@/shared/components/DatePicker'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { FormDialog } from '@/shared/components/FormDialog'
+import { MultiSelect } from '@/shared/components/MultiSelect'
+import { useClasses } from '@/features/classes'
+import { pickableClasses } from '@/features/classes'
+import { useSubjects } from '@/features/subjects'
+import { pickableSubjectNames } from '@/features/subjects'
 import { validateTeacher } from '@/features/teachers/lib/validation'
-import type { Teacher, TeacherFormErrors, TeacherInput } from '@/features/teachers/types'
-import type { Sex } from '@/features/students/types'
-import { ageFrom, todayIso } from '@/lib/dates'
-import { useI18n } from '@/lib/i18n'
+import type { Teacher, TeacherFormErrors, TeacherFormValues, TeacherInput } from '@/features/teachers/types'
+import type { Sex } from '@/features/students'
+import { ageFrom, todayIso } from '@/shared/lib/dates'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   /** The teacher being edited, or null when creating. */
@@ -28,37 +28,36 @@ interface Props {
 const fieldClass =
   'w-full rounded-lg border bg-sunken px-3 py-2 text-sm text-fg focus-visible:outline-2 focus-visible:outline-accent'
 
-export default function TeacherForm({ teacher, teachers, onSave, onClose }: Props) {
+export function TeacherForm({ teacher, teachers, onSave, onClose }: Props) {
   const { t } = useI18n()
   const subjects = useSubjects()
   const classes = useClasses()
-  const [values, setValues] = useState<TeacherInput>({
+  const [values, setValues] = useState<TeacherFormValues>({
     fullName: teacher?.fullName ?? '',
     email: teacher?.email ?? '',
     phone: teacher?.phone ?? '',
-    // Empty until chosen; validation rejects it before it can be saved.
-    sex: teacher?.sex ?? ('' as Sex),
+    sex: teacher?.sex ?? '',
     dateOfBirth: teacher?.dateOfBirth ?? '',
     subject: teacher?.subject ?? '',
     classes: teacher?.classes ?? [],
   })
   const [errors, setErrors] = useState<TeacherFormErrors>({})
 
-  const set = <K extends keyof TeacherInput>(field: K, value: TeacherInput[K]) => {
+  const set = <K extends keyof TeacherFormValues>(field: K, value: TeacherFormValues[K]) => {
     setValues((v) => ({ ...v, [field]: value }))
     setErrors((e) => ({ ...e, [field]: undefined }))
   }
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     const found = validateTeacher(values, teachers.filter((x) => x.id !== teacher?.id))
     setErrors(found)
-    if (Object.keys(found).length > 0) return
-    onSave({ ...values, fullName: values.fullName.trim(), email: values.email.trim(), phone: values.phone.trim() })
+    if (Object.keys(found).length > 0 || values.sex === '') return
+    onSave({ ...values, sex: values.sex, fullName: values.fullName.trim(), email: values.email.trim(), phone: values.phone.trim() })
   }
 
   const field = (
-    name: keyof TeacherInput,
+    name: keyof TeacherFormValues,
     label: string,
     input: (props: object) => React.ReactNode,
     hint?: string,

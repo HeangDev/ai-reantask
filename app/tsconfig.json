@@ -13,6 +13,8 @@
     "noEmit": true,
     "paths": { "@/*": ["./src/*"] },
     "strict": true,
+    "resolveJsonModule": true,
+    "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,

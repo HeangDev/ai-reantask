@@ -1,9 +1,9 @@
-import Avatar from '@/components/ui/Avatar'
+import { Avatar } from '@/shared/components/Avatar'
 import { planRepository } from '@/features/assignments/lib/repoNames'
 import { setUpRepository } from '@/features/assignments/services/setUpRepository'
 import type { Assignment, RepoStatus } from '@/features/assignments/types'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 const status: Record<RepoStatus, { labelKey: TranslationKey; tone: string }> = {
   creating: { labelKey: 'asg.repoCreating', tone: 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300' },
@@ -15,7 +15,7 @@ const button =
   'rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 /** The GitHub repository set up for an assignment, with the branch each student works on. */
-export default function RepositoryCard({ assignment }: { assignment: Assignment }) {
+export function RepositoryCard({ assignment }: { assignment: Assignment }) {
   const { t } = useI18n()
   const { repo } = assignment
   const assignees = assignment.assignees ?? []

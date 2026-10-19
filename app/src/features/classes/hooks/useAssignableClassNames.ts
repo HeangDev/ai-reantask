@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { assignmentClasses } from '@/features/assignments/data/sampleAssignments'
+import { assignmentClasses } from '@/features/assignments'
 import { useClassNameScope } from '@/features/classes/hooks/useVisibleClasses'
 
 /** The class names an assignment can be set for: a teacher's own classes, otherwise every class that has assignments. */

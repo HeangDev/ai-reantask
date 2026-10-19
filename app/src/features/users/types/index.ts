@@ -1,4 +1,4 @@
-import type { Role } from '@/features/auth/types'
+import type { Role } from '@/features/auth'
 
 export type AccountStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
 

@@ -1,5 +1,5 @@
-import { useSyncExternalStore } from 'react'
 import type { RegistrationStatus } from '@/features/classes/lib/registration'
+import { createMockResource } from '@/shared/api/mockResource'
 
 export interface ClassInvitation {
   id: string
@@ -12,36 +12,27 @@ export interface ClassInvitation {
   sentAt: number
 }
 
-// A minimal in-memory store until an invitation API is documented in docs/api.md. Nothing is emailed yet.
-let invitations: ClassInvitation[] = []
-const listeners = new Set<() => void>()
+// A mock resource until an invitation API is documented. Nothing is emailed yet.
+const invitations = createMockResource<ClassInvitation[]>('invitations', [])
 
-function commit(next: ClassInvitation[]) {
-  invitations = next
-  listeners.forEach((listener) => listener())
-}
-
-const subscribe = (listener: () => void) => {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
-
-export const useInvitations = () => useSyncExternalStore(subscribe, () => invitations)
+export const useInvitations = invitations.useValue
 
 export const invitationsActions = {
   /** Invites each address to the class; an address already invited to it is left alone. */
   invite: (classId: string, entries: { email: string; registration: RegistrationStatus }[]) => {
-    const taken = new Set(invitations.filter((i) => i.classId === classId).map((i) => i.email))
+    const current = invitations.get()
+    const taken = new Set(current.filter((i) => i.classId === classId).map((i) => i.email))
     const fresh = entries.filter((entry) => !taken.has(entry.email))
-    commit([
-      ...invitations,
+    invitations.set([
+      ...current,
       ...fresh.map((entry) => ({ id: crypto.randomUUID(), classId, ...entry, sentAt: Date.now() })),
     ])
   },
 
-  resend: (id: string) => commit(invitations.map((i) => (i.id === id ? { ...i, sentAt: Date.now() } : i))),
+  resend: (id: string) =>
+    invitations.set(invitations.get().map((i) => (i.id === id ? { ...i, sentAt: Date.now() } : i))),
 
-  revoke: (id: string) => commit(invitations.filter((i) => i.id !== id)),
+  revoke: (id: string) => invitations.set(invitations.get().filter((i) => i.id !== id)),
 }
 
 export const invitationsOfClass = (all: ClassInvitation[], classId: string) =>

@@ -1,22 +1,22 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence } from 'motion/react'
-import Button from '@/components/ui/Button'
-import DeleteDialog from '@/components/ui/DeleteDialog'
-import Dropdown from '@/components/ui/Dropdown'
-import { PlusIcon, SearchIcon } from '@/components/ui/icons'
-import SelectionBar from '@/components/ui/SelectionBar'
-import { useToast } from '@/components/ui/Toast'
-import ViewSwitch from '@/components/ui/ViewSwitch'
-import type { ViewMode } from '@/components/ui/ViewSwitch'
-import SubjectCard from '@/features/subjects/components/SubjectCard'
-import SubjectForm from '@/features/subjects/components/SubjectForm'
-import SubjectsTable from '@/features/subjects/components/SubjectsTable'
-import { useCreateSubject, useDeleteSubjects, useSubjectsQuery, useUpdateSubject } from '@/features/subjects/hooks/useSubjects'
+import { Button } from '@/shared/components/Button'
+import { DeleteDialog } from '@/shared/components/DeleteDialog'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { PlusIcon, SearchIcon } from '@/shared/components/icons'
+import { SelectionBar } from '@/shared/components/SelectionBar'
+import { useToast } from '@/shared/components/Toast'
+import { ViewSwitch } from '@/shared/components/ViewSwitch'
+import type { ViewMode } from '@/shared/components/ViewSwitch'
+import { SubjectCard } from '@/features/subjects/components/SubjectCard'
+import { SubjectForm } from '@/features/subjects/components/SubjectForm'
+import { SubjectsTable } from '@/features/subjects/components/SubjectsTable'
+import { useCreateSubject, useDeleteSubjects, useSubjectsQuery, useUpdateSubject } from '@/features/subjects/api/useSubjects'
 import type { Subject, SubjectFormErrors, SubjectInput } from '@/features/subjects/types'
-import { useViewMode } from '@/hooks/useViewMode'
-import { ApiError } from '@/lib/apiClient'
-import TableEmpty from '@/components/ui/TableEmpty'
-import { useI18n } from '@/lib/i18n'
+import { useViewMode } from '@/shared/hooks/useViewMode'
+import { ApiError } from '@/shared/api/http'
+import { TableEmpty } from '@/shared/components/TableEmpty'
+import { useI18n } from '@/shared/i18n'
 
 type Dialog = { type: 'none' } | { type: 'create' } | { type: 'deleteSelected' } | { type: 'edit' | 'delete'; id: string }
 
@@ -25,7 +25,7 @@ const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
 // How many cards show at first, and how many more each "Show more" adds.
 const PAGE_SIZE = 6
 
-export default function SubjectsPage() {
+export function SubjectsPage() {
   const { t } = useI18n()
   const { notify } = useToast()
   const subjectsQuery = useSubjectsQuery()

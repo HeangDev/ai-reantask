@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { CheckIcon, CloseIcon, SparklesIcon } from '@/components/ui/icons'
+import { CheckIcon, CloseIcon, SparklesIcon } from '@/shared/components/icons'
 import { analyzeProject, compareRuns, taskIssues } from '@/features/assignments/lib/analyzer'
 import type { Problem, Severity, TaskIssue } from '@/features/assignments/lib/analyzer'
 import type { AssignmentTask, CodeFile, TaskResult } from '@/features/assignments/types'
-import { formatDate } from '@/lib/dates'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { formatDate } from '@/shared/lib/dates'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 interface Props {
   /** The project as the student first handed it in. */
@@ -87,7 +87,7 @@ function Working({ label, file }: { label: string; file?: string }) {
  * It analyses the project and checks the tasks. If anything is wrong or a task is not complete and correct, the work
  * goes back to the student and is checked again. When everything is correct it shows the result for the teacher to verify.
  */
-export default function AiAnalyzerPanel({
+export function AiAnalyzerPanel({
   files,
   fixedFiles,
   tasks,
@@ -183,7 +183,7 @@ export default function AiAnalyzerPanel({
   const problemList = (list: Problem[], detail: (p: Problem) => React.ReactNode) => (
     <ul className="space-y-2">
       {list.map((p) => (
-        <li key={p.key + p.line} className="rounded-lg border border-line bg-surface p-3">
+        <li key={`${p.key}:${p.line}`} className="rounded-lg border border-line bg-surface p-3">
           <div className="flex items-start gap-2">
             <SeverityBadge level={p.severity} />
             <p className="min-w-0 flex-1 text-[13px] leading-snug">{t(p.messageKey)}</p>
@@ -431,7 +431,7 @@ export default function AiAnalyzerPanel({
                   onClick={() => reachable && setStage(s)}
                   disabled={!reachable}
                   aria-current={s === stage ? 'step' : undefined}
-                  aria-label={t(STAGES[s - 1].labelKey)}
+                  aria-label={t(STAGES[s - 1]?.labelKey ?? 'app.loading')}
                   className={`block h-1.5 w-full rounded-full transition-colors ${focusRing} ${
                     s === stage ? 'bg-accent' : done ? 'bg-accent/50' : 'bg-line'
                   } ${reachable ? 'cursor-pointer' : 'cursor-default'}`}
@@ -441,7 +441,7 @@ export default function AiAnalyzerPanel({
           })}
         </ol>
         <p className="mt-2 flex items-baseline justify-between text-xs">
-          <span className="font-semibold">{t(STAGES[stage - 1].labelKey)}</span>
+          <span className="font-semibold">{t(STAGES[stage - 1]?.labelKey ?? 'app.loading')}</span>
           <span className="text-muted">{t('ai.stepOf', { n: String(stage) })}</span>
         </p>
       </nav>

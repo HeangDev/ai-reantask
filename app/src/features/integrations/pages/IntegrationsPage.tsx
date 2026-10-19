@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
-import { SearchIcon } from '@/components/ui/icons'
-import { useToast } from '@/components/ui/Toast'
-import IntegrationCard from '@/features/integrations/components/IntegrationCard'
+import { SearchIcon } from '@/shared/components/icons'
+import { useToast } from '@/shared/components/Toast'
+import { IntegrationCard } from '@/features/integrations/components/IntegrationCard'
 import { integrations } from '@/features/integrations/data/integrations'
 import { integrationsActions, useConnectedIntegrations } from '@/features/integrations/store/integrationsStore'
 import type { IntegrationFilter, IntegrationId } from '@/features/integrations/types'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 const tabs: { value: IntegrationFilter; labelKey: TranslationKey }[] = [
   { value: 'all', labelKey: 'int.tabAll' },
@@ -16,7 +16,7 @@ const tabs: { value: IntegrationFilter; labelKey: TranslationKey }[] = [
 
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
 
-export default function IntegrationsPage() {
+export function IntegrationsPage() {
   const { t } = useI18n()
   const { notify } = useToast()
   const connected = useConnectedIntegrations()

@@ -1,22 +1,24 @@
+import { APP_NAME } from '@/shared/hooks/useDocumentTitle'
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import Button from '@/components/ui/Button'
-import { CheckIcon } from '@/components/ui/icons'
-import TextField from '@/components/ui/TextField'
-import { isAcceptablePassword } from '@/features/account/lib/validation'
-import AuthLayout from '@/features/auth/components/AuthLayout'
-import GoogleAuthButton from '@/features/auth/components/GoogleAuthButton'
-import OrDivider from '@/features/auth/components/OrDivider'
-import PasswordField from '@/features/auth/components/PasswordField'
+import { Button } from '@/shared/components/Button'
+import { CheckIcon } from '@/shared/components/icons'
+import { TextField } from '@/shared/components/TextField'
+import { isAcceptablePassword } from '@/features/auth/lib/validation'
+import { AuthLayout } from '@/features/auth/components/AuthLayout'
+import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton'
+import { OrDivider } from '@/features/auth/components/OrDivider'
+import { PasswordField } from '@/features/auth/components/PasswordField'
 import { roleHome } from '@/features/auth/lib/access'
-import { useGoogleAuth, useRegister } from '@/features/auth/hooks/useAuthMutations'
-import { authActions } from '@/features/auth/store/authStore'
-import { getDeviceName } from '@/lib/deviceName'
-import { ApiError } from '@/lib/apiClient'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
-import { isValidEmail, isValidPhone, usernameFromEmail } from '@/lib/validation'
+import { useGoogleAuth, useRegister } from '@/features/auth/api/useAuthMutations'
+import { authActions } from '@/shared/store/authStore'
+import { getDeviceName } from '@/shared/lib/deviceName'
+import { ApiError } from '@/shared/api/http'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
+import { isValidEmail, isValidPhone, usernameFromEmail } from '@/shared/lib/validation'
+import { paths } from '@/shared/config/paths'
 
 interface Values {
   fullName: string
@@ -43,7 +45,7 @@ function validate(values: Values): Errors {
 }
 
 /** Creating an account. Only students register themselves; an admin adds teachers from the Users page. */
-export default function RegisterPage() {
+export function RegisterPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
   const [values, setValues] = useState<Values>(EMPTY)
@@ -69,21 +71,24 @@ export default function RegisterPage() {
       {
         onSuccess: (auth) => {
           // A first-time Google user is created as a pending student and waits for approval, like a password sign-up.
-          if (!('token' in auth)) return setCreatedFor(auth.email)
+          if (!('token' in auth)) {
+            setCreatedFor(auth.email)
+            return
+          }
           // The Google account already belongs to an approved user, so sign in instead.
           authActions.signIn(auth.user.role.name, auth.user.email, auth.token)
-          navigate(roleHome[auth.user.role.name])
+          void navigate(roleHome[auth.user.role.name])
         },
         onError: (error) => {
           // An existing account that is still waiting for approval.
-          if (error instanceof ApiError && error.code === 'ACCOUNT_PENDING') navigate('/login')
+          if (error instanceof ApiError && error.code === 'ACCOUNT_PENDING') void navigate(paths.login)
           else setGoogleFailed(true)
         },
       },
     )
   }
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     if (submitting) return
     const found = validate(values)
@@ -131,7 +136,7 @@ export default function RegisterPage() {
           </span>
           <h1 className="mt-5 text-2xl font-bold">{t('register.successTitle')}</h1>
           <p className="mt-1 text-sm text-muted">{t('register.successDesc', { email: createdFor })}</p>
-          <Button type="button" onClick={() => navigate('/login')} className="mt-6 w-full py-2.5">
+          <Button type="button" onClick={() => navigate(paths.login)} className="mt-6 w-full py-2.5">
             {t('register.goSignIn')}
           </Button>
         </div>
@@ -146,7 +151,7 @@ export default function RegisterPage() {
           aria-hidden="true"
           className="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-accent-strong to-violet-500 text-lg font-bold text-white shadow-sm lg:hidden"
         >
-          R
+          {APP_NAME.charAt(0)}
         </span>
         <h1 className="mt-4 text-2xl font-bold lg:mt-0">{t('register.title')}</h1>
         <p className="mt-1 text-sm text-muted">{t('register.subtitle')}</p>
@@ -181,7 +186,7 @@ export default function RegisterPage() {
             label={t('acct.email')}
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={t('field.emailPh')}
             value={values.email}
             onChange={set('email')}
             error={errors.email}
@@ -220,7 +225,7 @@ export default function RegisterPage() {
 
         <p className="mt-5 text-center text-sm text-muted">
           {t('register.haveAccount')}{' '}
-          <Link to="/login" className={linkClass}>
+          <Link to={paths.login} className={linkClass}>
             {t('login.signIn')}
           </Link>
         </p>

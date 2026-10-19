@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AnimatePresence } from 'motion/react'
-import { BellIcon, CheckIcon, SearchIcon } from '@/components/ui/icons'
-import type { NotificationVariant } from '@/components/ui/NotificationIcon'
-import { NotificationEmpty } from '@/components/ui/NotificationParts'
-import { useNotifications } from '@/components/ui/Toast'
-import NotificationCard, { kindLabelKeys } from '@/features/notifications/components/NotificationCard'
+import { BellIcon, CheckIcon, SearchIcon } from '@/shared/components/icons'
+import type { NotificationVariant } from '@/shared/components/NotificationIcon'
+import { NotificationEmpty } from '@/shared/components/NotificationParts'
+import { useNotifications } from '@/shared/components/Toast'
+import { NotificationCard, kindLabelKeys } from '@/features/notifications/components/NotificationCard'
 import { groupByDay } from '@/features/notifications/lib/groupByDay'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 type Filter = 'all' | 'unread' | NotificationVariant
 
@@ -34,7 +34,7 @@ function StatCard({ label, value, tone, icon }: { label: string; value: number; 
   )
 }
 
-export default function NotificationsPage() {
+export function NotificationsPage() {
   const { t } = useI18n()
   const { notifications, markAllRead, clearAll } = useNotifications()
   const [filter, setFilter] = useState<Filter>('all')

@@ -12,7 +12,7 @@ interface Props {
 }
 
 /** Read-only editor surface: line-number gutter, coloured code, and a highlighted current line. */
-export default function CodeView({ code, extension, currentLine, onSelectLine, revealToken }: Props) {
+export function CodeView({ code, extension, currentLine, onSelectLine, revealToken }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const lines = useMemo(() => code.replace(/\n$/, '').split('\n'), [code])
   const tokens = useMemo(() => lines.map((line) => highlightLine(line, extension)), [lines, extension])
@@ -30,7 +30,11 @@ export default function CodeView({ code, extension, currentLine, onSelectLine, r
           const line = i + 1
           const current = line === currentLine
           return (
+            // Selecting a line is a pointer shortcut; keyboard users move through the file and the problem list.
+            // The lines and tokens come from one pass over the file and are never reordered, so position is identity.
+            // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
             <div
+              // eslint-disable-next-line react/no-array-index-key
               key={i}
               data-line={line}
               onClick={() => onSelectLine(line)}
@@ -47,6 +51,7 @@ export default function CodeView({ code, extension, currentLine, onSelectLine, r
               <span className="whitespace-pre pr-6">
                 {lineTokens.length === 0 || lines[i] === '' ? ' ' : null}
                 {lineTokens.map((token, j) => (
+                  // eslint-disable-next-line react/no-array-index-key
                   <span key={j} className={tokenClass[token.kind]}>
                     {token.text}
                   </span>

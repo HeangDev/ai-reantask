@@ -1,21 +1,21 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Button from '@/components/ui/Button'
-import DeleteDialog from '@/components/ui/DeleteDialog'
-import Dropdown from '@/components/ui/Dropdown'
-import { PlusIcon, SearchIcon, TrashIcon } from '@/components/ui/icons'
-import { useToast } from '@/components/ui/Toast'
-import AssignForm from '@/features/assignments/components/AssignForm'
-import AssignTable from '@/features/assignments/components/AssignTable'
-import { useAssignableClassNames } from '@/features/classes/hooks/useAssignableClassNames'
-import { useClassNameScope } from '@/features/classes/hooks/useVisibleClasses'
+import { Button } from '@/shared/components/Button'
+import { DeleteDialog } from '@/shared/components/DeleteDialog'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { PlusIcon, SearchIcon, TrashIcon } from '@/shared/components/icons'
+import { useToast } from '@/shared/components/Toast'
+import { AssignForm } from '@/features/assignments/components/AssignForm'
+import { AssignTable } from '@/features/assignments/components/AssignTable'
+import { useAssignableClassNames } from '@/features/classes'
+import { useClassNameScope } from '@/features/classes'
 import type { AssignFormValues } from '@/features/assignments/lib/assignValidation'
 import { planRepository } from '@/features/assignments/lib/repoNames'
 import { setUpRepository } from '@/features/assignments/services/setUpRepository'
 import { assignmentsActions, useAssignments } from '@/features/assignments/store/assignmentsStore'
 import type { Assignment, AssignmentTask } from '@/features/assignments/types'
-import TableEmpty from '@/components/ui/TableEmpty'
-import { useI18n } from '@/lib/i18n'
+import { TableEmpty } from '@/shared/components/TableEmpty'
+import { useI18n } from '@/shared/i18n'
 
 type Dialog =
   | { type: 'none' }
@@ -51,7 +51,7 @@ function fromForm(values: AssignFormValues, previous?: Assignment) {
 }
 
 /** The teacher's side: create assignments and choose which students receive them. */
-export default function AssignPage() {
+export function AssignPage() {
   const { t } = useI18n()
   const { notify } = useToast()
   const everyAssignment = useAssignments()

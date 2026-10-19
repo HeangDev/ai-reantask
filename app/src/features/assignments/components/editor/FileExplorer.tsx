@@ -1,5 +1,5 @@
-import { ChevronDownIcon, FolderIcon } from '@/components/ui/icons'
-import FileBadge from '@/features/assignments/components/editor/FileBadge'
+import { ChevronDownIcon, FolderIcon } from '@/shared/components/icons'
+import { FileBadge } from '@/features/assignments/components/editor/FileBadge'
 import type { TreeNode } from '@/features/assignments/lib/fileTree'
 
 const focusRing = 'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent'
@@ -15,7 +15,7 @@ interface Props {
 }
 
 /** The editor's file explorer: folders expand and collapse, files open in a tab. */
-export default function FileExplorer({ nodes, depth = 0, active, collapsed, onOpen, onToggle }: Props) {
+export function FileExplorer({ nodes, depth = 0, active, collapsed, onOpen, onToggle }: Props) {
   return (
     <ul role={depth === 0 ? 'tree' : 'group'}>
       {nodes.map((node) => {

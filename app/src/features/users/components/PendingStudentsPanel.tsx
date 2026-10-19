@@ -1,19 +1,19 @@
 import { useMemo } from 'react'
-import DataTable from '@/components/ui/DataTable'
-import type { Column } from '@/components/ui/DataTable'
-import { CheckIcon } from '@/components/ui/icons'
-import { useToast } from '@/components/ui/Toast'
-import { useSession } from '@/features/auth/store/authStore'
-import { useApproveUser, usePendingStudents } from '@/features/users/hooks/useUsers'
+import { DataTable } from '@/shared/components/DataTable'
+import type { Column } from '@/shared/components/DataTable'
+import { CheckIcon } from '@/shared/components/icons'
+import { useToast } from '@/shared/components/Toast'
+import { useSession } from '@/shared/store/authStore'
+import { useApproveUser, usePendingStudents } from '@/features/users/api/useUsers'
 import type { User } from '@/features/users/types'
-import { useI18n } from '@/lib/i18n'
-import { formatTimeAgo } from '@/lib/timeAgo'
+import { useI18n } from '@/shared/i18n'
+import { formatTimeAgo } from '@/shared/lib/timeAgo'
 
 /**
  * Students who registered and are waiting for approval (`GET /users/pending-students`). An admin or a teacher can
  * approve, so a busy admin does not hold anyone up. Nothing is shown when nobody is waiting.
  */
-export default function PendingStudentsPanel() {
+export function PendingStudentsPanel() {
   const { t, locale } = useI18n()
   const { notify } = useToast()
   const role = useSession()?.role

@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
-import { AssignmentsIcon, CalendarIcon, StarIcon, TasksIcon } from '@/components/ui/icons'
-import { statusStyles } from '@/features/assignments/components/StatusBadge'
-import type { AssignmentStatus } from '@/features/assignments/types'
+import { AssignmentsIcon, CalendarIcon, StarIcon, TasksIcon } from '@/shared/components/icons'
+import { statusStyles } from '@/features/assignments'
+import type { AssignmentStatus } from '@/features/assignments'
 import type { DashboardStats } from '@/features/dashboard/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 const statusOrder: AssignmentStatus[] = ['graded', 'submitted', 'pending', 'resubmit', 'late']
 
@@ -31,7 +31,7 @@ export function StatCard({ label, value, icon, detail }: CardProps) {
   )
 }
 
-export default function StatCards({ stats }: { stats: DashboardStats }) {
+export function StatCards({ stats }: { stats: DashboardStats }) {
   const { t } = useI18n()
   const { total, todo, dueThisWeek, averageScore, byStatus, overdue, gradedPercents, feedbackCount } = stats
 

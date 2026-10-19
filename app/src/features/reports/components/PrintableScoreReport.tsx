@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import type { ScoreRow } from '@/features/reports/types'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   rows: ScoreRow[]
@@ -13,7 +13,7 @@ interface Props {
  * The score report laid out for paper: every row, black on white. It lives outside the app (in the page body) and
  * is only visible when printing, so printing or saving as PDF gives this instead of the screen.
  */
-export default function PrintableScoreReport({ rows, className, average }: Props) {
+export function PrintableScoreReport({ rows, className, average }: Props) {
   const { t, locale } = useI18n()
   const today = new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(new Date())
   const cell = 'border border-neutral-300 px-2 py-1.5 text-left align-top'

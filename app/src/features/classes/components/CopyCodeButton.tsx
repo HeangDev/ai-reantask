@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useI18n } from '@/lib/i18n'
+import { useI18n } from '@/shared/i18n'
 
 /** Copies a class code so the teacher can paste it to students; the label reads "Copied" for a moment. */
-export default function CopyCodeButton({ code, className = '' }: { code: string; className?: string }) {
+export function CopyCodeButton({ code, className = '' }: { code: string; className?: string }) {
   const { t } = useI18n()
   const [copied, setCopied] = useState(false)
 

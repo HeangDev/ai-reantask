@@ -1,5 +1,5 @@
 import type { SchoolClass } from '@/features/classes/types'
-import type { Teacher } from '@/features/teachers/types'
+import type { Teacher } from '@/features/teachers'
 
 export interface ClassTeaching {
   /** Names of the teachers assigned to the class. */

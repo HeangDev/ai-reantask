@@ -9,11 +9,11 @@ import {
   SettingsIcon,
   SunIcon,
   TasksIcon,
-} from '@/components/ui/icons'
-import { DEFAULT_ACCENT, useTheme } from '@/hooks/useTheme'
-import type { ThemePreference } from '@/hooks/useTheme'
-import { languageNames, useI18n } from '@/lib/i18n'
-import type { Language, TranslationKey } from '@/lib/i18n'
+} from '@/shared/components/icons'
+import { DEFAULT_ACCENT, useTheme } from '@/shared/hooks/useTheme'
+import type { ThemePreference } from '@/shared/hooks/useTheme'
+import { languageNames, useI18n } from '@/shared/i18n'
+import type { Language, TranslationKey } from '@/shared/i18n'
 
 const focusRing = 'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent'
 
@@ -154,12 +154,12 @@ function LivePreview() {
             </div>
             <div className="flex-1 space-y-1.5 p-2">
               <div className="rounded-md border-l-2 border-accent bg-accent-soft px-2 py-1.5">
-                <p className="truncate text-[10px] font-medium">Algebra Problem Set 4</p>
-                <p className="truncate text-[9px] text-muted">Mathematics 101</p>
+                <p className="truncate text-[10px] font-medium">{t('settings.previewTitle1')}</p>
+                <p className="truncate text-[9px] text-muted">{t('settings.previewClass1')}</p>
               </div>
               <div className="rounded-md border border-line bg-surface px-2 py-1.5">
-                <p className="truncate text-[10px] font-medium">Poetry Analysis</p>
-                <p className="truncate text-[9px] text-muted">Literature</p>
+                <p className="truncate text-[10px] font-medium">{t('settings.previewTitle2')}</p>
+                <p className="truncate text-[9px] text-muted">{t('settings.previewClass2')}</p>
               </div>
               <div className="flex items-center gap-2 pt-1">
                 <span className="rounded-md bg-accent-strong px-2 py-1 text-[9px] font-medium text-white">{t('detail.submit')}</span>
@@ -246,7 +246,7 @@ const chip =
   'inline-flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3 py-1 text-xs font-medium backdrop-blur [&>svg]:h-3.5 [&>svg]:w-3.5'
 
 // Sized to fit the workspace without scrolling on desktop; it only stacks (and scrolls) on small screens.
-export default function SettingsPage() {
+export function SettingsPage() {
   const { t, language, setLanguage } = useI18n()
   const { theme, preference, setPreference, accent } = useTheme()
 

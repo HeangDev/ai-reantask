@@ -1,5 +1,5 @@
 import type { AssignmentPhase, FileType } from '@/features/assignments/types'
-import { todayIso } from '@/lib/dates'
+import { todayIso } from '@/shared/lib/dates'
 
 /** What the teacher fills in. Numbers are kept as text until validated, like any form input. */
 export interface AssignFormValues {

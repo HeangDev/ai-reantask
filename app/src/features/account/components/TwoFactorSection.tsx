@@ -1,18 +1,18 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
-import Button from '@/components/ui/Button'
-import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import { RolesIcon } from '@/components/ui/icons'
-import Modal from '@/components/ui/Modal'
-import { useToast } from '@/components/ui/Toast'
-import SectionCard from '@/features/account/components/SectionCard'
-import TextField from '@/components/ui/TextField'
-import { verifyTotp } from '@/features/account/lib/totp'
-import { generateSetupKey, isValidCode } from '@/features/account/lib/validation'
-import { accountService } from '@/features/account/services/accountService'
-import { accountActions, useTwoFactorEnabled } from '@/features/account/store/accountStore'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
+import type { SubmitEvent } from 'react'
+import { Button } from '@/shared/components/Button'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { RolesIcon } from '@/shared/components/icons'
+import { Modal } from '@/shared/components/Modal'
+import { useToast } from '@/shared/components/Toast'
+import { SectionCard } from '@/features/account/components/SectionCard'
+import { TextField } from '@/shared/components/TextField'
+import { isValidCode, verifyTotp } from '@/features/auth'
+import { generateSetupKey } from '@/features/account/lib/validation'
+import { accountService } from '@/features/account/api/account.api'
+import { useTwoFactorEnabled, useTwoFactorStore } from '@/shared/store/twoFactorStore'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
 
 const outlineButton =
   'rounded-lg border border-line px-3 py-1.5 text-xs font-medium transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
@@ -36,7 +36,7 @@ function SetupModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const submit = async (e: FormEvent) => {
+  const submit = async (e: SubmitEvent) => {
     e.preventDefault()
     if (saving) return
     if (!isValidCode(code)) {
@@ -51,7 +51,7 @@ function SetupModal({ onClose }: { onClose: () => void }) {
         return
       }
       await accountService.enableTwoFactor(code)
-      accountActions.enableTwoFactor(secret)
+      useTwoFactorStore.getState().enable(secret)
       notify({ title: t('acct.twoFactorEnabled'), subtitle: t('acct.twoFactorEnabledDesc') })
       onClose()
     } finally {
@@ -108,7 +108,7 @@ function SetupModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-export default function TwoFactorSection() {
+export function TwoFactorSection() {
   const { t } = useI18n()
   const { notify } = useToast()
   const enabled = useTwoFactorEnabled()
@@ -117,7 +117,7 @@ export default function TwoFactorSection() {
   const disable = async () => {
     setDialog(null)
     await accountService.disableTwoFactor()
-    accountActions.disableTwoFactor()
+    useTwoFactorStore.getState().disable()
     notify({ variant: 'danger', title: t('acct.twoFactorDisabled'), subtitle: t('acct.twoFactorDisabledDesc') })
   }
 

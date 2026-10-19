@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react'
-import type { FormEvent } from 'react'
-import Button from '@/components/ui/Button'
-import Checkbox from '@/components/ui/Checkbox'
-import DatePicker from '@/components/ui/DatePicker'
-import Dropdown from '@/components/ui/Dropdown'
-import { CloseIcon, PlusIcon } from '@/components/ui/icons'
-import Modal from '@/components/ui/Modal'
-import MultiSelect from '@/components/ui/MultiSelect'
-import NumberInput from '@/components/ui/NumberInput'
+import type { SubmitEvent } from 'react'
+import { Button } from '@/shared/components/Button'
+import { Checkbox } from '@/shared/components/Checkbox'
+import { DatePicker } from '@/shared/components/DatePicker'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { CloseIcon, PlusIcon } from '@/shared/components/icons'
+import { Modal } from '@/shared/components/Modal'
+import { MultiSelect } from '@/shared/components/MultiSelect'
+import { NumberInput } from '@/shared/components/NumberInput'
 import { phases } from '@/features/assignments/components/PhaseBadge'
-import { useAssignableClassNames } from '@/features/classes/hooks/useAssignableClassNames'
+import { useAssignableClassNames } from '@/features/classes'
 import { planRepository } from '@/features/assignments/lib/repoNames'
 import {
   MAX_FILE_SIZE_LIMIT_MB,
@@ -18,9 +18,9 @@ import {
 } from '@/features/assignments/lib/assignValidation'
 import type { AssignFormErrors, AssignFormValues } from '@/features/assignments/lib/assignValidation'
 import type { Assignment, FileType } from '@/features/assignments/types'
-import { sampleStudents } from '@/features/students/data/sampleStudents'
-import { todayIso } from '@/lib/dates'
-import { useI18n } from '@/lib/i18n'
+import { sampleStudents } from '@/features/students'
+import { todayIso } from '@/shared/lib/dates'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   /** The assignment being edited, or null when creating. */
@@ -34,7 +34,7 @@ const fieldClass =
   'w-full rounded-lg border bg-sunken px-3 py-2 text-sm text-fg focus-visible:outline-2 focus-visible:outline-accent'
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent'
 
-export default function AssignForm({ assignment, onSave, onClose }: Props) {
+export function AssignForm({ assignment, onSave, onClose }: Props) {
   const { t } = useI18n()
   const classOptions = useAssignableClassNames()
   const [values, setValues] = useState<AssignFormValues>({
@@ -56,7 +56,7 @@ export default function AssignForm({ assignment, onSave, onClose }: Props) {
     setErrors((e) => ({ ...e, [field]: undefined }))
   }
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     const found = validateAssignment(values)
     setErrors(found)
@@ -187,6 +187,8 @@ export default function AssignForm({ assignment, onSave, onClose }: Props) {
             <legend className="text-sm font-medium">{t('asg.fieldTasks')}</legend>
             <ul className="mt-2 space-y-2">
               {values.tasks.map((task, i) => (
+                // The inputs are controlled and the list is only appended to or trimmed, so position is identity.
+                // eslint-disable-next-line react/no-array-index-key
                 <li key={i} className="flex items-center gap-2">
                   <input
                     type="text"

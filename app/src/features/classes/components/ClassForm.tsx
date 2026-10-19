@@ -1,18 +1,18 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
-import Button from '@/components/ui/Button'
-import DateField from '@/components/ui/DateField'
-import Dropdown from '@/components/ui/Dropdown'
-import FormDialog from '@/components/ui/FormDialog'
-import GradientBanner from '@/components/ui/GradientBanner'
-import { ClassIcon } from '@/components/ui/icons'
-import StatusBadge from '@/components/ui/StatusBadge'
-import TextAreaField from '@/components/ui/TextAreaField'
-import TextField from '@/components/ui/TextField'
+import type { SubmitEvent } from 'react'
+import { Button } from '@/shared/components/Button'
+import { DateField } from '@/shared/components/DateField'
+import { Dropdown } from '@/shared/components/Dropdown'
+import { FormDialog } from '@/shared/components/FormDialog'
+import { GradientBanner } from '@/shared/components/GradientBanner'
+import { ClassIcon } from '@/shared/components/icons'
+import { StatusBadge } from '@/shared/components/StatusBadge'
+import { TextAreaField } from '@/shared/components/TextAreaField'
+import { TextField } from '@/shared/components/TextField'
 import { validateClass } from '@/features/classes/lib/validation'
 import type { ClassFormErrors, ClassInput, ClassStatus, SchoolClass } from '@/features/classes/types'
-import { useI18n } from '@/lib/i18n'
-import { MAX_DESCRIPTION_LENGTH } from '@/lib/validation'
+import { useI18n } from '@/shared/i18n'
+import { MAX_DESCRIPTION_LENGTH } from '@/shared/lib/validation'
 
 interface Props {
   /** The class being edited, or null when creating. */
@@ -26,7 +26,7 @@ interface Props {
   saving?: boolean
 }
 
-export default function ClassForm({ schoolClass, classes, onSave, onClose, serverErrors, saving = false }: Props) {
+export function ClassForm({ schoolClass, classes, onSave, onClose, serverErrors, saving = false }: Props) {
   const { t } = useI18n()
   const [values, setValues] = useState<ClassInput>({
     name: schoolClass?.name ?? '',
@@ -52,7 +52,7 @@ export default function ClassForm({ schoolClass, classes, onSave, onClose, serve
   }
   const fieldError = (field: keyof ClassInput) => errors[field] ?? (edited.has(field) ? undefined : serverErrors?.[field])
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     if (saving) return
     const found = validateClass(values, classes.filter((x) => x.id !== schoolClass?.id))

@@ -40,7 +40,7 @@ function script(line: string): Token[] {
     if (m[1]) return [{ text: m[1], kind: 'comment' }]
     if (m[2]) return [{ text: m[2], kind: 'string' }]
     if (m[3]) return [{ text: m[3], kind: 'number' }]
-    const word = m[4]
+    const word = m[4] ?? ''
     const call = m[5] ?? ''
     const kind: TokenKind = SCRIPT_KEYWORDS.has(word)
       ? 'keyword'
@@ -61,7 +61,7 @@ function json(line: string): Token[] {
       return tokens
     }
     if (m[3]) return [{ text: m[3], kind: 'number' }]
-    return [{ text: m[4], kind: 'keyword' }]
+    return [{ text: m[4] ?? '', kind: 'keyword' }]
   })
 }
 
@@ -70,7 +70,7 @@ function css(line: string): Token[] {
     if (m[1]) return [{ text: m[1], kind: 'comment' }]
     if (m[2]) return [{ text: m[2], kind: 'string' }]
     if (m[3]) return [{ text: m[3], kind: 'number' }]
-    return [{ text: m[4], kind: 'key' }]
+    return [{ text: m[4] ?? '', kind: 'key' }]
   })
 }
 
@@ -78,7 +78,7 @@ function html(line: string): Token[] {
   return scan(line, HTML_PATTERN, (m) => {
     if (m[1]) return [{ text: m[1], kind: 'comment' }]
     if (m[2]) return [{ text: m[2], kind: 'string' }]
-    return [{ text: m[3], kind: 'tag' }]
+    return [{ text: m[3] ?? '', kind: 'tag' }]
   })
 }
 

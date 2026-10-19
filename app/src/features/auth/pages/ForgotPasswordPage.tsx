@@ -1,20 +1,21 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
-import Button from '@/components/ui/Button'
-import { ArrowLeftIcon, LockIcon } from '@/components/ui/icons'
-import TextField from '@/components/ui/TextField'
-import AuthLayout from '@/features/auth/components/AuthLayout'
-import { useForgotPassword } from '@/features/auth/hooks/useAuthMutations'
-import { useI18n } from '@/lib/i18n'
-import type { TranslationKey } from '@/lib/i18n'
-import { isValidEmail } from '@/lib/validation'
+import { Button } from '@/shared/components/Button'
+import { ArrowLeftIcon, LockIcon } from '@/shared/components/icons'
+import { TextField } from '@/shared/components/TextField'
+import { AuthLayout } from '@/features/auth/components/AuthLayout'
+import { useForgotPassword } from '@/features/auth/api/useAuthMutations'
+import { useI18n } from '@/shared/i18n'
+import type { TranslationKey } from '@/shared/i18n'
+import { isValidEmail } from '@/shared/lib/validation'
+import { paths } from '@/shared/config/paths'
 
 const backClass =
   'mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4'
 
 /** Asks for an email and sends a link to reset the password. */
-export default function ForgotPasswordPage() {
+export function ForgotPasswordPage() {
   const { t } = useI18n()
   const [email, setEmail] = useState('')
   const [error, setError] = useState<TranslationKey>()
@@ -23,7 +24,7 @@ export default function ForgotPasswordPage() {
   const submitting = forgot.isPending
   const [sentTo, setSentTo] = useState<string | null>(null)
 
-  const submit = (e: FormEvent) => {
+  const submit = (e: SubmitEvent) => {
     e.preventDefault()
     if (submitting) return
     setFailed(false)
@@ -51,7 +52,7 @@ export default function ForgotPasswordPage() {
           </span>
           <h1 className="mt-5 text-2xl font-bold">{t('forgot.sentTitle')}</h1>
           <p className="mt-1 text-sm text-muted">{t('forgot.sentDesc', { email: sentTo })}</p>
-          <Link to="/login" className={backClass}>
+          <Link to={paths.login} className={backClass}>
             <ArrowLeftIcon />
             {t('login.back')}
           </Link>
@@ -86,7 +87,7 @@ export default function ForgotPasswordPage() {
             label={t('acct.email')}
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={t('field.emailPh')}
             value={email}
             onChange={(v) => {
               setEmail(v)
@@ -99,7 +100,7 @@ export default function ForgotPasswordPage() {
         <Button type="submit" disabled={submitting} className="mt-6 w-full py-2.5">
           {submitting ? t('forgot.sending') : t('forgot.submit')}
         </Button>
-        <Link to="/login" className={backClass}>
+        <Link to={paths.login} className={backClass}>
           <ArrowLeftIcon />
           {t('login.back')}
         </Link>

@@ -1,5 +1,5 @@
-import type { AppNotification } from '@/components/ui/Toast'
-import type { TranslationKey } from '@/lib/i18n'
+import type { AppNotification } from '@/shared/components/Toast'
+import type { TranslationKey } from '@/shared/i18n'
 
 export type DayGroupKey = 'today' | 'yesterday' | 'earlier'
 

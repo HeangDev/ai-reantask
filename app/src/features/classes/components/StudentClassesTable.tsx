@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import DataTable from '@/components/ui/DataTable'
-import type { Column } from '@/components/ui/DataTable'
-import StatusBadge from '@/components/ui/StatusBadge'
+import { DataTable } from '@/shared/components/DataTable'
+import type { Column } from '@/shared/components/DataTable'
+import { StatusBadge } from '@/shared/components/StatusBadge'
 import type { ClassTeaching } from '@/features/classes/lib/classTeaching'
 import type { SchoolClass } from '@/features/classes/types'
-import { formatDate } from '@/lib/dates'
-import { useI18n } from '@/lib/i18n'
+import { formatDate } from '@/shared/lib/dates'
+import { useI18n } from '@/shared/i18n'
 
 interface Props {
   /** Shown inside the table when it has no rows. */
@@ -19,7 +19,7 @@ interface Props {
 const NONE = '—'
 
 /** The student's classes as a read-only table: teacher, class, subject, dates and status. */
-export default function StudentClassesTable({ classes, teaching, emptyMessage }: Props) {
+export function StudentClassesTable({ classes, teaching, emptyMessage }: Props) {
   const { t, locale } = useI18n()
 
   const teacherOf = (c: SchoolClass) => teaching[c.id]?.teachers.join(', ') || NONE
