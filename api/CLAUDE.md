@@ -1,244 +1,281 @@
 # CLAUDE.md
 
-Instructions for Claude when working in this repository.
+Project rules for Claude Code. Follow these on every task in this repository.
 
-@AGENTS.md
+## 1. Project Overview
 
----
+A classroom code-assignment platform. Teachers create assignments with requirements and expected file structures, students submit a Git commit, and the system analyzes the repository and produces scores and issues. Teachers review and verify results.
 
-## Project
+- **Backend:** Spring Boot REST API (Java 21, Maven or Gradle: follow what the repo already uses)
+- **Database:** PostgreSQL 15+
+- **Roles:** `admin`, `teacher`, `student`
+- **Default timezone:** `Asia/Phnom_Penh` (store everything in UTC, convert only at the edge)
 
-**Student Assignment Review AI** is a Laravel REST API that lets teachers create programming assignments, lets students submit work from their Git repositories, and uses AI to review each submission against the assignment's requirements.
+## Rule Files
 
-- **Backend:** Laravel (PHP)
-- **Database:** MySQL
-- **Auth:** Laravel Sanctum bearer tokens
-- **Authorization:** Policies and Gates
-- **Background work:** Laravel Queues (AI analysis on the `analysis` queue)
-- **Tests:** PHPUnit or Pest (check `composer.json`)
+All rules live in `.claude/rules/`. Read the matching file before touching a module.
 
-This repository is the backend API. Every endpoint returns JSON under `/api/v1`.
+**Architecture and general**
 
----
+@.claude/rules/architecture.md
+@.claude/rules/00-general.md
 
-## Commands
+**Modules (DB + Backend per module)**
+
+@.claude/rules/01-users-roles.md
+@.claude/rules/02-classes.md
+@.claude/rules/03-assignments.md
+@.claude/rules/04-git-repositories.md
+@.claude/rules/05-submissions-analysis.md
+
+**Database**
+
+@.claude/rules/10-database-conventions.md
+
+**Backend**
+
+@.claude/rules/20-api-design.md
+@.claude/rules/21-security-and-permissions.md
+@.claude/rules/22-exception-and-error-codes.md
+@.claude/rules/23-validation-dto-mapping.md
+@.claude/rules/24-jpa-and-transactions.md
+@.claude/rules/25-async-events-worker.md
+@.claude/rules/26-config-logging-ops.md
+@.claude/rules/27-testing.md
+@.claude/rules/28-code-style.md
+
+Database migrations: `src/main/resources/db/migration/V1__init_schema.sql` (all 20 tables) and `V2__seed_roles.sql`.
+
+## 2. Tech Stack
+
+| Concern          | Choice                                                               |
+|------------------|----------------------------------------------------------------------|
+| Framework        | Spring Boot 3.x, Spring Web, Spring Data JPA (Hibernate 6)           |
+| Security         | Spring Security, JWT access + refresh tokens, Google OAuth2 sign-in  |
+| Validation       | Jakarta Bean Validation (`@Valid`)                                   |
+| Migrations       | Flyway (`src/main/resources/db/migration`)                           |
+| Mapping          | MapStruct for entity <-> DTO                                         |
+| Boilerplate      | Lombok (no `@Data` on entities)                                      |
+| API docs         | springdoc-openapi                                                    |
+| Testing          | JUnit 5, Mockito, Testcontainers (PostgreSQL)                        |
+
+## 3. Architecture: Layer-Based (Package by Layer)
+
+Classes are grouped by technical layer, not by feature. Full rules, dependency directions, naming and the table-to-class map are in `.claude/rules/architecture.md`.
+
+```text
+com.<org>.<app>
+├── controller/    REST controllers (HTTP only)
+├── service/       service interfaces
+│   └── impl/      business rules, @Transactional
+├── repository/    Spring Data JPA repositories
+├── entity/        JPA entities (+ entity/base/AuditableEntity)
+├── enums/         status and type enums
+├── dto/           request/, response/, common/
+├── mapper/        MapStruct mappers
+├── exception/     custom exceptions + GlobalExceptionHandler
+├── security/      JWT, filters, user details, Google verifier
+├── config/        Security, JPA auditing, async, CORS, OpenAPI, Clock
+├── client/        Git provider clients (GitHub, GitLab)
+├── worker/        async analysis worker
+├── event/         application events + listeners
+├── converter/     JPA AttributeConverters (role name, encrypted tokens)
+├── seeder/        RoleSeeder and other seeders
+└── util/          small stateless helpers
+```
+
+Dependency direction: `controller -> service -> repository -> entity`. Never upward. Controllers use service interfaces only. Entities never leave the service layer.
+
+## 4. PostgreSQL Rules (the source schema was written for MySQL)
+
+Translate MySQL types to PostgreSQL. Never write MySQL-only syntax.
+
+| Schema type             | PostgreSQL / JPA                                                               |
+|-------------------------|--------------------------------------------------------------------------------|
+| `BIGINT AUTO_INCREMENT` | `BIGINT GENERATED ALWAYS AS IDENTITY` + `@GeneratedValue(strategy = IDENTITY)` |
+| `LONGTEXT`              | `TEXT`                                                                         |
+| `JSON`                  | `JSONB` + `@JdbcTypeCode(SqlTypes.JSON)`                                       |
+| `TIMESTAMP`             | `TIMESTAMPTZ` + `Instant` (or `OffsetDateTime`)                                |
+| `DATE`                  | `DATE` + `LocalDate`                                                           |
+| `DECIMAL(5,2)`          | `NUMERIC(5,2)` + `BigDecimal`                                                  |
+| `BOOLEAN`               | `BOOLEAN` + `boolean`/`Boolean`                                                |
+| `CHAR(6)`               | `CHAR(6)`                                                                      |
+| `ENUM`                  | `VARCHAR(30)` + `CHECK` constraint + `@Enumerated(EnumType.STRING)`            |
+
+Conventions:
+
+- Table and column names: `snake_case`, plural table names (match the schema exactly).
+- Use `VARCHAR + CHECK` for enums, not native PG enum types, so migrations stay simple.
+- Index every foreign key column. Add composite indexes for frequent filters (e.g. `(assignment_id, student_id)`, `(status, deleted_at)`).
+- Never use `ddl-auto=update` or `create`. Set `spring.jpa.hibernate.ddl-auto=validate`.
+- Every schema change is a new Flyway file: `V{n}__{description}.sql`. Never edit an applied migration.
+- Use `timestamptz` and set `hibernate.jdbc.time_zone=UTC`.
+- Foreign keys: audit columns use `ON DELETE SET NULL`. `users.role_id` uses `ON DELETE RESTRICT`.
+- Add unique constraints noted in the schema: `(class_id, subject_id)` on `class_subjects`, `(class_id, student_id)` on `class_students`. Also add `(assignment_id, student_id)` on `assignment_students` and `(user_id)` on `user_settings`.
+
+## 5. Common Columns and Soft Delete
+
+Most tables share audit and soft-delete columns:
+
+```text
+created_at, created_by_user, updated_at, updated_by_user, deleted_at, deleted_by_user
+```
+
+- Create `@MappedSuperclass AuditableEntity` with these fields. Use Spring Data JPA auditing (`@CreatedDate`, `@LastModifiedDate`, `@CreatedBy`, `@LastModifiedBy`).
+- Soft delete means setting `deleted_at` + `deleted_by_user` and the status to `DELETED` where the table has a status. Never hard delete these tables.
+- Hide deleted rows with `@SQLRestriction("deleted_at IS NULL")` on entities. Provide explicit repository queries when a deleted row must be found (for restore).
+- **Restore, don't insert:** when re-adding something that was soft-deleted (`class_subjects`, `class_students`, `assignment_students`, `assignment_student_repositories`), find the deleted row, clear `deleted_at`/`deleted_by_user`, and set status `ACTIVE`. Inserting a duplicate violates the unique key.
+- Tables without audit/soft-delete columns: `roles`, `analysis_runs`, `analysis_results`, `analysis_issues`, `user_settings` (they only have `created_at`/`updated_at`).
+- `created_by_user` is `NULL` for public self-registration and seeded accounts.
+
+## 6. Entities, Enums, and Status Rules
+
+Create one Java enum per status/type. Store as strings.
+
+```text
+RoleName:            ADMIN, TEACHER, STUDENT   (DB values are lowercase: admin, teacher, student)
+RoleStatus:          ACTIVE, INACTIVE
+UserStatus:          PENDING, ACTIVE, INACTIVE, SUSPENDED, DELETED
+AssignmentStatus:    PUBLISHED, DRAFT, DELETED
+AssignmentStudentStatus / AssignmentStudentRepositoryStatus / ClassSubjectStatus / ClassStudentStatus: ACTIVE, INACTIVE, DELETED
+ClassStatus / SubjectStatus: ACTIVE, INACTIVE
+RequirementType:     FEATURE, TECHNOLOGY, DATABASE, API, UI, SECURITY, TEST, DOCUMENTATION
+StructureRuleType:   FILE, DIRECTORY
+SubmissionStatus:    SUBMITTED, ANALYZING, ANALYZED, VERIFIED, REJECTED
+AnalysisRunStatus:   PENDING, RUNNING, COMPLETED, FAILED
+AnalysisResultStatus: PASS, PARTIAL, FAIL, NOT_CHECKED
+IssueStatus:         OPEN, RESOLVED, IGNORED
+IssueSeverity:       LOW, MEDIUM, HIGH, CRITICAL
+IssueCategory:       STRUCTURE, REQUIREMENT, CODE, SECURITY, DEPENDENCY, DATABASE, API, TEST, UI
+ThemeMode:           LIGHT, DARK, SYSTEM
+Language:            EN, KH, KO
+```
+
+Roles are lowercase in the DB. Use a JPA `AttributeConverter` (or `@Column` mapping) so `RoleName.ADMIN` <-> `"admin"`. `roles` is seeded by `RoleSeeder` (idempotent, runs on startup).
+
+### Users
+
+- Login allowed only when `status = ACTIVE`, the role is `ACTIVE`, and `deleted_at IS NULL`.
+- `PENDING`: public student registration. Cannot log in. Approve -> `ACTIVE`, reject -> `DELETED`. Only admin or teacher can approve.
+- `INACTIVE`: cannot log in, history kept, admin can reactivate.
+- `SUSPENDED`: cannot log in, keep all data. Admin restores to `ACTIVE` or sets `DELETED`.
+- `DELETED`: soft delete. Email and phone stay reserved (unique indexes include deleted rows, do not make them partial).
+- Public self-registration always creates role `student` with status `PENDING`. Ignore any role sent by the client.
+- Password sign-up requires `phone`. Google sign-in may leave `phone` NULL and sets `google_id`.
+- Block admins from assigning an `INACTIVE` role to a user.
+- Hash passwords with BCrypt. Never store plain text.
+
+### Assignments
+
+- `DRAFT`: invisible to students, no submissions. Publish -> `PUBLISHED`.
+- `PUBLISHED`: visible to assigned students, submissions allowed only when `start_at <= now <= deadline_at`.
+- `DELETED`: hidden, but keep submissions and analysis results.
+- Validate `deadline_at > start_at`.
+- Creating an assignment requires an `ACTIVE` `class_subjects` row owned by that teacher, and an `ACTIVE` class.
+- Requirement `weight` is `NUMERIC(5,2)`. Validate that the sum of required requirement weights per assignment does not exceed 100.
+
+### Classes, Subjects, Enrollment
+
+- `classes.code` is a unique 6-character code. Generate it server-side, retry on collision.
+- `INACTIVE` class: no new assignments or enrollments. `end_date` must be on or after `start_at`.
+- `INACTIVE` subject cannot be added to new classes. Existing rows stay.
+- `INACTIVE` class_subject: teacher cannot create new assignments, old ones are kept.
+- `INACTIVE` class_student: cannot see new work, history kept.
+
+> Note: `classes` has `start_at` and `end_date` (inconsistent naming in the source schema). Keep the DB names as given unless the team agrees to rename in a migration.
+
+### Git Connections and Repositories
+
+- `access_token` and `refresh_token` must be encrypted at rest (AES-GCM via a JPA `AttributeConverter`, key from environment). Never log them.
+- Handle token expiry with `token_expires_at` and refresh before calling the provider.
+- `assignment_repositories.type` defaults to `TEMPLATE`, `branch` defaults to `main`.
+- `assignment_student_repositories`: only one `ACTIVE` link per `(assignment_id, student_id)`. Replacing one sets the old row to `INACTIVE`.
+
+### Submissions and Analysis (state machine)
+
+```text
+Submission:  SUBMITTED -> ANALYZING -> ANALYZED -> VERIFIED
+                  \________________________________-> REJECTED
+AnalysisRun: PENDING -> RUNNING -> COMPLETED | FAILED
+```
+
+- Student submits only if: assignment `PUBLISHED`, within `start_at`/`deadline_at`, student has `ACTIVE` `assignment_students` row, and uses their `ACTIVE` repository link. Otherwise reject with a clear error.
+- On `SUBMITTED`, create an `analysis_runs` row (`PENDING`). Run analysis asynchronously (`@Async` or a queue worker), never in the request thread.
+- `RUNNING`: set `started_at`, set submission `ANALYZING`. Do not start another run for the same submission while one is `PENDING` or `RUNNING`.
+- `COMPLETED`: set `completed_at`, `overall_score`, `summary`, and the submission to `ANALYZED`.
+- `FAILED`: store the error in `summary`. Retry means creating a **new** run.
+- `VERIFIED` is final. Only a teacher/admin can set it, and not while any `OPEN` issue has severity `CRITICAL`. It is the official grade.
+- `REJECTED`: wrong repository, invalid commit, or late submission. The student may resubmit if the assignment allows it.
+- Result scoring: `PASS` = full weight, `PARTIAL` = partial score with explanation, `FAIL` = 0 or very low. `NOT_CHECKED` is excluded from the score or reviewed manually.
+- `IGNORED` issues are kept for history but never count against the score.
+- `RESOLVED` issues must set `resolved_at` and `resolved_by_user`.
+- `analysis_results.evidence` is JSONB.
+
+## 7. API Conventions
+
+- Base path: `/api/v1`. Resource names are plural, kebab-case (`/api/v1/class-subjects`).
+- Use proper verbs and status codes: `201` on create, `204` on delete, `400` validation, `401` unauthenticated, `403` forbidden, `404` missing, `409` conflict.
+- Success wrapper (keep consistent across all endpoints):
+
+```json
+{ "success": true, "message": "OK", "data": {}, "timestamp": "2026-01-01T00:00:00Z" }
+```
+
+- Error wrapper: `{ "success": false, "code": "SUBMISSION_DEADLINE_PASSED", "message": "...", "errors": [] }`.
+- Handle all errors in one `@RestControllerAdvice`. Use custom exceptions (`NotFoundException`, `ConflictException`, `BusinessRuleException`, `ForbiddenException`).
+- Paginate every list endpoint (`page`, `size`, `sort`). Cap `size` at 100.
+- Return timestamps as ISO-8601 UTC. Return enums as strings.
+- Soft-deleted rows never appear in list or detail responses.
+
+## 8. Security and Authorization
+
+- Stateless JWT. Short-lived access token, rotating refresh token.
+- Use `@PreAuthorize` with roles `ADMIN`, `TEACHER`, `STUDENT`.
+- Ownership checks live in services, not only in annotations:
+    - Teachers only manage assignments for subjects they teach (`class_subjects.teacher_id`).
+    - Students only see assignments assigned to them (`assignment_students`) in classes where they are `ACTIVE`.
+    - Students only see their own submissions, results and issues.
+- Admin: manage users, roles, classes, subjects, class_subjects, enrollment.
+- Teacher: approve `PENDING` students, manage own assignments, verify/reject submissions, mark issues `IGNORED`.
+- Student: view assigned work, link a repository, submit, view results.
+- Validate all input. Use parameterized queries only (JPA/JPQL, never string-concatenated SQL).
+- CORS: explicit allowed origins from config. Rate limit login and registration.
+- Secrets (JWT key, Google client secret, token encryption key, DB password) come from environment variables. Never commit them.
+
+## 9. Coding Standards
+
+- Java 21. Constructor injection only (`@RequiredArgsConstructor`), no field `@Autowired`.
+- Entities: no `@Data`. Implement `equals`/`hashCode` on id only. Use `LAZY` fetching everywhere. Fix N+1 with `@EntityGraph` or fetch-join queries.
+- Do not put business logic in entities or controllers.
+- Use `Optional` and throw `NotFoundException`, never return null from services.
+- Use `Instant` for timestamps. Inject a `Clock` so time-based rules (deadlines) are testable.
+- Request DTOs are Java `record`s with validation annotations. Response DTOs never contain sensitive fields.
+- Log with SLF4J. No `System.out`. Never log passwords, tokens or full request bodies.
+- Keep methods small, name things after the domain (`submission`, `analysisRun`, `classSubject`).
+
+## 10. Testing
+
+- Unit tests for services (Mockito) covering every status transition and rejection path.
+- Integration tests with Testcontainers PostgreSQL. Do not use H2.
+- Cover at minimum: login blocked per user status, submission window checks, soft-delete restore, one-active-repository rule, `VERIFIED` blocked by `CRITICAL` open issues, authorization per role.
+- Run migrations in tests with Flyway so the schema matches production.
+
+## 11. Commands
 
 ```bash
-# Install
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate --seed
-
-# Run (three processes)
-php artisan serve
-php artisan queue:work --queue=analysis,default
-php artisan schedule:work            # token pruning, workspace cleanup
-
-# Test
-php artisan test
-php artisan test --filter=SubmissionTest
-php artisan test --parallel
-
-# Code quality (run before finishing any task)
-./vendor/bin/pint --dirty
-./vendor/bin/phpstan analyse         # if Larastan is installed
+./mvnw spring-boot:run              # run the API
+./mvnw test                         # unit + integration tests
+./mvnw flyway:migrate               # apply migrations (if plugin configured)
+docker compose up -d postgres       # local PostgreSQL
 ```
 
-Tests use a separate MySQL database configured in `.env.testing`. Never run tests against the development database.
+(Replace with `./gradlew` equivalents if the project uses Gradle.)
 
-Project configuration lives in `config/ai.php`, `config/git.php`, and `config/review.php`. Read limits and timeouts from config; never hard-code them.
+## 12. Working Agreement for Claude
 
----
-
-## Documentation Map
-
-Read the relevant documents **before** changing code. Do not load all of them for every task.
-
-| When you are working on...                        | Read                               |
-|---------------------------------------------------|------------------------------------|
-| Any feature                                       | `docs/business/business-rules.md`  |
-| Assignments, requirements, structures, enrollment | `docs/business/assignments.md`     |
-| Submissions, late work, attempts                  | `docs/business/submissions.md`     |
-| Git providers, repositories, archives             | `docs/business/git-integration.md` |
-| AI analysis, prompts, output validation           | `docs/business/ai-review.md`       |
-| Folder structure, layers, naming                  | `docs/backend/architecture.md`     |
-| Endpoints, request and response formats           | `docs/backend/api.md`              |
-| Login, tokens, passwords                          | `docs/backend/authentication.md`   |
-| Roles, ownership, policies                        | `docs/backend/authorization.md`    |
-| Exceptions, status codes, error codes, logging    | `docs/backend/error-handling.md`   |
-| Tests, factories, fakes                           | `docs/backend/testing.md`          |
-| Tables and columns                                | `docs/database/database.md`        |
-| Model relationships                               | `docs/database/relationships.md`   |
-| Schema conventions                                | `docs/database/database-rules.md`  |
-
-**Priority when documents conflict:** `business-rules.md` → `database.md` / `relationships.md` → the other business docs → the backend docs → existing code. If you find a conflict, point it out instead of choosing silently.
-
-**Rule IDs.** Rules have stable IDs. `BR-*` rules are in `business-rules.md`; detailed rules use the prefix of their document (`ASG-*`, `SUB-*`, `GIT-*`, `AI-*`). Reference them in tests and reports.
-
-**Proposed endpoints.** Endpoints marked **proposed** in the docs are not part of the API yet. Do not build them unless the task asks for them.
-
----
-
-## Domain Model
-
-```text
-Role ─< User
-User ─< Assignment (as teacher, teacher_id)
-User ─< GitConnection ─< Repository
-
-Assignment ─< AssignmentStudent           (enrollment)
-Assignment ─< AssignmentRequirement
-Assignment ─< AssignmentStructure ─< AssignmentStructureRule
-Assignment ─< AssignmentRepository        (type: TEMPLATE | REFERENCE)
-Assignment ─< AssignmentStudentRepository
-Assignment ─< Submission ─< AnalysisRun ─< AnalysisResult >─ AssignmentRequirement
-                                       └─< AnalysisIssue
-```
-
-Use these exact model names. There is no `AIReview` model; AI reviews are `AnalysisRun`, `AnalysisResult`, and `AnalysisIssue`. (`architecture.md` uses `AIReview` as an older example name; ignore it.)
-
-**Derived, not stored:** assignment `stage`, submission `attempt_number`, `is_latest`, and `review_status`. Calculate them; do not add columns for them.
-
-**Two different "latest" runs:** `latest_analysis_run` is the newest run of any status. `current_analysis` is the newest **completed** run. Scores always come from `current_analysis`.
-
----
-
-## How to Work on a Task
-
-1. **Understand.** Read the relevant docs and the existing code for the feature. Find the rule IDs that apply.
-2. **Plan.** For anything beyond a small fix, state which files you will change and why before writing code. Mention any database change, new job, new error code, or new enum value.
-3. **Implement.** Follow the existing patterns in neighboring files. Keep changes focused on the task.
-4. **Test.** Add or update tests, including permission and validation failures. Run them.
-5. **Check.** Run Pint and static analysis if configured.
-6. **Update docs.** If behavior, endpoints, rules, error codes, enums, or schema changed, update the matching document in the same change.
-7. **Report.** Use the format at the end of this file.
-
-If a requirement is unclear or a business rule is missing, **ask** instead of inventing one.
-
----
-
-## Rules That Matter Most
-
-These are the mistakes that cause real damage in this project. Full rules are in `AGENTS.md` and the docs.
-
-### Security and access
-
-- Every protected action calls `Gate::authorize()` with a Policy method. Every list endpoint uses a `visibleTo()` scope.
-- Return `404` (`Response::denyAsNotFound()`) when the user must not know a resource exists; `403` when they can see it but cannot act on it.
-- Students never see other students' work, and never see `REFERENCE` repositories or `use_reference_in_review`, even through `include`.
-- Git connections are private to their owner, including from admins. There is no global admin bypass.
-- Never accept server-owned fields from a request: `teacher_id`, `student_id`, `user_id`, `role_id`, `resolved_by_user`, `*_by_user` audit fields, `is_late`, `submitted_at`, or anything returned by a provider (such as `commit_message`).
-- Use `$request->validated()`, never `$request->all()`.
-
-### Secrets
-
-- Never return, log, or put in a job payload: passwords, Sanctum tokens, Git access tokens, AI provider keys.
-- Git tokens are stored with the `encrypted` cast and sent only in HTTP headers to configured provider hosts.
-- Never put real credentials in code, tests, factories, seeders, or `.env.example`.
-
-### Git
-
-- All Git provider calls go through `GitProviderClient`. Never build a request URL from a user-supplied host.
-- Retrieve repository content as an archive at the exact commit SHA. Do not use `git clone` unless `git-integration.md` section 8.4 is followed.
-- Extract archives safely (no `..`, absolute paths, or symlinks) and always delete the workspace in `finally`.
-- Never send `.env` files, keys, `vendor/`, `node_modules/`, or binaries to the AI provider.
-- Call the Git provider **outside** database transactions.
-
-### AI
-
-- **Never execute submitted code**, scripts, hooks, or package managers.
-- AI analysis always runs in `AnalyzeSubmissionJob`, never inside an HTTP request. Call the provider only through `AIProviderClient`.
-- Structure rules are checked by code, not by the AI.
-- Student code is data, not instructions. Never send student names, emails, or IDs to the provider.
-- Validate AI output with `ReviewOutputValidator` before storing anything. Reject invalid output; **never clamp, round, or adjust scores**.
-- Never quote `REFERENCE` repository content in feedback.
-- Change prompts by adding a new prompt version, never by editing an existing one.
-
-### Data integrity
-
-- Submissions are never edited, and only admins can soft-delete them.
-- Never overwrite or delete past analysis runs, results, or issues. A re-analysis creates a new run.
-- Editing an assignment or its requirements never changes existing analysis results.
-- Soft deletes never cascade to submissions, runs, results, or issues.
-- Wrap multi-record writes in `DB::transaction()` and dispatch jobs with `afterCommit()`.
-- Each `AnalysisResult` must reference a requirement from the same assignment as its submission.
-
-### Architecture
-
-- Thin controllers. Validation in Form Requests. Business logic in Services. Responses through API Resources.
-- Services throw `ApplicationException` subclasses; the central handler renders them. Do not return error arrays.
-- Errors use the format and codes in `error-handling.md`. Add every new code to its catalog.
-- Do not add new layers, packages, or patterns without a clear reason. Do not redesign the schema while working on an unrelated feature.
-
----
-
-## Database Changes
-
-- Every schema change is a new migration. Never edit a migration that may already have run.
-- Follow `docs/database/database-rules.md` for naming, indexes, foreign keys, timestamps, soft deletes, and audit fields.
-- Several business docs list columns they depend on (in "Schema Notes" or "Data Model Notes" sections). Before using one of these columns, confirm it exists in `database.md` and the migrations. If it does not, add it through a migration and say so in your plan.
-- Update `docs/database/database.md` and, if relationships change, `docs/database/relationships.md`.
-- Update factories so they still produce valid data.
-
----
-
-## Testing Expectations
-
-- Every endpoint: success, `401`, `403`/`404`, `422`, and the database effect.
-- Every new Policy rule has a test for the allowed user and for each denied user type.
-- Fake everything external: `Queue::fake()`, `Http::fake()` with `Http::preventStrayRequests()`, `Storage::fake()`, `Notification::fake()`, and a fake `AIProviderClient`.
-- Name tests after behavior, and include the rule ID where one applies: `test_br_sub_03_late_submission_is_accepted_and_marked_late`.
-- Do not delete, skip, or weaken an existing test to make new code pass.
-
-**Never claim tests passed unless you ran them and they passed.** If you could not run them, say so and explain why.
-
----
-
-## Known Documentation Gaps
-
-These inconsistencies are known. Do not resolve them silently; follow the note and mention it in your report. Remove each item from this list once the docs are fixed.
-
-- Requirement score field: `api.md` shows `weight`; the business docs use `max_score`. Use `max_score`.
-- Error format: `api.md` and `testing.md` examples show errors without `code`. Follow `error-handling.md`, which includes `code`.
-- Error codes used in the business docs but missing from the `error-handling.md` catalog: `DUPLICATE_SUBMISSION`, `ASSIGNMENT_HAS_NO_REQUIREMENTS`, `TEMPLATE_ALREADY_LINKED`. Add them when you first use them.
-- Issue category `INTEGRITY` (from `ai-review.md`) is not yet listed in `business-rules.md` `BR-ISS-02`.
-- The submission response in `api.md` section 17 does not yet show `attempt_number`, `is_latest`, `review_status`, or `current_analysis` (see `submissions.md`).
-- User fields: users have no `username`; the name field is `fullname` (as in `database.md`). Examples elsewhere that still show a user `name` (for example the assignment `teacher` object in `api.md`, and `assignments.md` section 7.2) have not been updated. Use `fullname`.
-- `BR-USR-08` (role change blocked while a user owns active assignments or has active enrollments) is not enforced yet, because the assignment and enrollment tables do not exist. Add the check to `UserService::update()` when they do.
-
----
-
-## Things Not to Do
-
-- Do not invent business rules, endpoints, columns, or enum values that are not documented. Ask or flag them.
-- Do not make unrelated refactors, formatting changes, or dependency upgrades in a feature change.
-- Do not commit `.env`, credentials, or generated files.
-- Do not disable authorization, validation, or tests "temporarily".
-- Do not run destructive commands (`migrate:fresh`, `db:wipe`, dropping tables) outside the test database without explicit permission.
-- Do not push, merge, or deploy unless asked.
-
----
-
-## Response Format When Finishing a Task
-
-```text
-Summary
-- What was changed and why (1–3 lines)
-
-Files changed
-- path/to/File.php — what changed
-
-Rules
-- BR-XXX-NN / SUB-XXX-NN — implemented / tested
-
-Commands run
-- php artisan test --filter=... → result
-- ./vendor/bin/pint --dirty → result
-
-Docs updated
-- docs/...
-
-Notes
-- Assumptions, open questions, documentation gaps found, anything not finished or not verified
-```
+- Before writing code, check this file and the existing package for conventions. Match them.
+- When the schema is unclear or inconsistent, say so and propose a fix instead of guessing silently.
+- Any DB change = new Flyway migration + entity update + tests.
+- Do not add dependencies without saying why.
+- Do not change status-transition rules in section 6 without explicit instruction.
+- Prefer small, reviewable changes. Explain trade-offs briefly after each task.
