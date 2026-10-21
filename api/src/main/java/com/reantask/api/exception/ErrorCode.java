@@ -43,7 +43,10 @@ public enum ErrorCode {
     LAST_ADMIN(HttpStatus.CONFLICT),
 
     // Classes
-    SUBJECT_NOT_FOUND(HttpStatus.NOT_FOUND);
+    SUBJECT_NOT_FOUND(HttpStatus.NOT_FOUND),
+    CLASS_NOT_FOUND(HttpStatus.NOT_FOUND),
+    CLASS_CODE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_DATE_RANGE(HttpStatus.UNPROCESSABLE_ENTITY);
 
     private final HttpStatus status;
 
