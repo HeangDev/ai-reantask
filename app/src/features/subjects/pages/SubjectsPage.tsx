@@ -57,7 +57,7 @@ export function SubjectsPage() {
   const resetPaging = () => setLimit(PAGE_SIZE)
 
   const showSaveError = (error: unknown) => {
-    if (error instanceof ApiError && error.status === 422 && error.fieldErrors.name) setServerErrors({ name: 'sub.errNameTaken' })
+    if (error instanceof ApiError && (error.status === 409 || error.fieldErrors.name)) setServerErrors({ name: 'sub.errNameTaken' })
     else notify({ variant: 'danger', title: t('sub.saveFailed'), subtitle: t('usr.tryAgain') })
   }
 
