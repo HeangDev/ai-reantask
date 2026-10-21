@@ -25,10 +25,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.reantask.api.exception.AppException;
+import com.reantask.api.exception.BadRequestException;
+import com.reantask.api.service.AvatarStorageService;
+import com.reantask.api.service.UserSessionService;
 import com.reantask.api.exception.ErrorCode;
 import com.reantask.api.security.CurrentUser;
 import com.reantask.api.dto.request.ChangePasswordRequest;
-import com.reantask.api.dto.request.ChangeUserStatusRequest;
 import com.reantask.api.dto.request.CreateUserRequest;
 import com.reantask.api.dto.response.UserResponse;
 import com.reantask.api.entity.Role;
@@ -49,6 +51,8 @@ class UserServiceImplTest {
     @Mock RoleRepository roleRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock CurrentUser currentUser;
+    @Mock AvatarStorageService avatarStorage;
+    @Mock UserSessionService sessionService;
 
     UserServiceImpl service;
     Role adminRole;
@@ -58,7 +62,7 @@ class UserServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new UserServiceImpl(userRepository, roleRepository, new UserMapper(), passwordEncoder,
-                currentUser, Clock.fixed(NOW, ZoneOffset.UTC));
+                currentUser, Clock.fixed(NOW, ZoneOffset.UTC), avatarStorage, sessionService);
         adminRole = role(1L, RoleName.ADMIN);
         teacherRole = role(2L, RoleName.TEACHER);
         studentRole = role(3L, RoleName.STUDENT);
@@ -176,74 +180,6 @@ class UserServiceImplTest {
         assertThat(pendingTeacher.getStatus()).isEqualTo(UserStatus.PENDING);
     }
 
-    // ---- changeStatus ----
-
-    @Test
-    void changeStatus_activeToSuspended_isAllowed() {
-        User active = user(10L, studentRole, UserStatus.ACTIVE);
-        when(userRepository.findById(10L)).thenReturn(Optional.of(active));
-        when(currentUser.id()).thenReturn(Optional.of(1L));
-
-        UserResponse response = service.changeStatus(10L, new ChangeUserStatusRequest(UserStatus.SUSPENDED));
-
-        assertThat(response.status()).isEqualTo(UserStatus.SUSPENDED);
-    }
-
-    @Test
-    void changeStatus_sameStatus_isIdempotent() {
-        User active = user(10L, studentRole, UserStatus.ACTIVE);
-        when(userRepository.findById(10L)).thenReturn(Optional.of(active));
-
-        UserResponse response = service.changeStatus(10L, new ChangeUserStatusRequest(UserStatus.ACTIVE));
-
-        assertThat(response.status()).isEqualTo(UserStatus.ACTIVE);
-    }
-
-    @Test
-    void changeStatus_pendingToSuspended_throwsInvalidTransition() {
-        User pending = user(10L, studentRole, UserStatus.PENDING);
-        when(userRepository.findById(10L)).thenReturn(Optional.of(pending));
-        when(currentUser.id()).thenReturn(Optional.of(1L));
-
-        assertThatThrownBy(() -> service.changeStatus(10L, new ChangeUserStatusRequest(UserStatus.SUSPENDED)))
-                .isInstanceOfSatisfying(AppException.class,
-                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.INVALID_STATUS_TRANSITION));
-    }
-
-    @Test
-    void changeStatus_ownAccount_isRejected() {
-        User me = user(1L, adminRole, UserStatus.ACTIVE);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(me));
-        when(currentUser.id()).thenReturn(Optional.of(1L));
-
-        assertThatThrownBy(() -> service.changeStatus(1L, new ChangeUserStatusRequest(UserStatus.INACTIVE)))
-                .isInstanceOfSatisfying(AppException.class,
-                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.CANNOT_MODIFY_SELF));
-    }
-
-    @Test
-    void changeStatus_lastActiveAdmin_isRejected() {
-        User admin = user(5L, adminRole, UserStatus.ACTIVE);
-        when(userRepository.findById(5L)).thenReturn(Optional.of(admin));
-        when(currentUser.id()).thenReturn(Optional.of(1L));
-        when(userRepository.countByRole_NameAndStatus(RoleName.ADMIN, UserStatus.ACTIVE)).thenReturn(1L);
-
-        assertThatThrownBy(() -> service.changeStatus(5L, new ChangeUserStatusRequest(UserStatus.SUSPENDED)))
-                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getCode()).isEqualTo(ErrorCode.LAST_ADMIN));
-    }
-
-    @Test
-    void changeStatus_deletedUserIsFinal() {
-        // @SQLRestriction hides DELETED rows, but a row loaded in the same transaction must still be final.
-        User deleted = user(10L, studentRole, UserStatus.DELETED);
-        when(userRepository.findById(10L)).thenReturn(Optional.of(deleted));
-        when(currentUser.id()).thenReturn(Optional.of(1L));
-
-        assertThatThrownBy(() -> service.changeStatus(10L, new ChangeUserStatusRequest(UserStatus.ACTIVE)))
-                .isInstanceOfSatisfying(AppException.class,
-                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.INVALID_STATUS_TRANSITION));
-    }
-
     // ---- delete ----
 
     @Test
@@ -279,6 +215,120 @@ class UserServiceImplTest {
                 PageRequest.of(0, 20, Sort.by("password"))))
                 .isInstanceOfSatisfying(AppException.class,
                         e -> assertThat(e.getCode()).isEqualTo(ErrorCode.INVALID_SORT_FIELD));
+    }
+
+    // ---- deactivate my account ----
+
+    @Test
+    void deactivateMe_activeUser_becomesInactiveAndIsSignedOutEverywhere() {
+        User me = user(5L, studentRole, UserStatus.ACTIVE);
+        when(currentUser.requireId()).thenReturn(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(me));
+
+        service.deactivateMe();
+
+        assertThat(me.getStatus()).isEqualTo(UserStatus.INACTIVE);
+        verify(sessionService).revokeAllMine();
+        assertThat(me.getDeletedAt()).isNull();
+    }
+
+    @Test
+    void deactivateMe_alreadyInactive_isNoOp() {
+        User me = user(5L, studentRole, UserStatus.INACTIVE);
+        when(currentUser.requireId()).thenReturn(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(me));
+
+        service.deactivateMe();
+
+        assertThat(me.getStatus()).isEqualTo(UserStatus.INACTIVE);
+        verify(sessionService, never()).revokeAllMine();
+    }
+
+    @Test
+    void deactivateMe_suspendedUser_isRejectedAndStaysSuspended() {
+        User me = user(5L, studentRole, UserStatus.SUSPENDED);
+        when(currentUser.requireId()).thenReturn(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(me));
+
+        assertThatThrownBy(() -> service.deactivateMe())
+                .isInstanceOfSatisfying(AppException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.INVALID_STATUS_TRANSITION));
+        assertThat(me.getStatus()).isEqualTo(UserStatus.SUSPENDED);
+        verify(sessionService, never()).revokeAllMine();
+    }
+
+    @Test
+    void deactivateMe_lastActiveAdmin_isRejected() {
+        User me = user(5L, adminRole, UserStatus.ACTIVE);
+        when(currentUser.requireId()).thenReturn(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(me));
+        when(userRepository.countByRole_NameAndStatus(RoleName.ADMIN, UserStatus.ACTIVE)).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.deactivateMe())
+                .isInstanceOfSatisfying(AppException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.LAST_ADMIN));
+        assertThat(me.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        verify(sessionService, never()).revokeAllMine();
+    }
+
+    @Test
+    void deactivateMe_adminWithAnotherActiveAdmin_isAllowed() {
+        User me = user(5L, adminRole, UserStatus.ACTIVE);
+        when(currentUser.requireId()).thenReturn(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(me));
+        when(userRepository.countByRole_NameAndStatus(RoleName.ADMIN, UserStatus.ACTIVE)).thenReturn(2L);
+
+        service.deactivateMe();
+
+        assertThat(me.getStatus()).isEqualTo(UserStatus.INACTIVE);
+    }
+
+    // ---- my avatar ----
+
+    @Test
+    void updateMyAvatar_storesImageSavesUrlAndDeletesPreviousFile() {
+        User me = user(5L, studentRole, UserStatus.ACTIVE);
+        me.setAvatar("/api/v1/avatars/old.png");
+        byte[] image = {1, 2, 3};
+        when(currentUser.requireId()).thenReturn(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(me));
+        when(avatarStorage.store(image)).thenReturn("/api/v1/avatars/new.png");
+
+        UserResponse response = service.updateMyAvatar(image);
+
+        assertThat(response.avatar()).isEqualTo("/api/v1/avatars/new.png");
+        assertThat(me.getAvatar()).isEqualTo("/api/v1/avatars/new.png");
+        verify(avatarStorage).delete("/api/v1/avatars/old.png");
+    }
+
+    @Test
+    void updateMyAvatar_invalidImage_keepsCurrentAvatarAndDeletesNothing() {
+        User me = user(5L, studentRole, UserStatus.ACTIVE);
+        me.setAvatar("/api/v1/avatars/old.png");
+        byte[] bad = {9};
+        when(currentUser.requireId()).thenReturn(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(me));
+        when(avatarStorage.store(bad))
+                .thenThrow(new BadRequestException(ErrorCode.INVALID_AVATAR, "not an image"));
+
+        assertThatThrownBy(() -> service.updateMyAvatar(bad))
+                .isInstanceOfSatisfying(AppException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.INVALID_AVATAR));
+        assertThat(me.getAvatar()).isEqualTo("/api/v1/avatars/old.png");
+        verify(avatarStorage, never()).delete(any());
+    }
+
+    @Test
+    void removeMyAvatar_clearsAvatarAndDeletesFile() {
+        User me = user(5L, studentRole, UserStatus.ACTIVE);
+        me.setAvatar("/api/v1/avatars/old.png");
+        when(currentUser.requireId()).thenReturn(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(me));
+
+        service.removeMyAvatar();
+
+        assertThat(me.getAvatar()).isNull();
+        verify(avatarStorage).delete("/api/v1/avatars/old.png");
     }
 
     // ---- change my password ----

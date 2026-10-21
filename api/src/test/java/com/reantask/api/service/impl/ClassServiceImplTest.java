@@ -29,7 +29,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.reantask.api.dto.common.PageResponse;
-import com.reantask.api.dto.request.ChangeClassStatusRequest;
 import com.reantask.api.dto.request.CreateClassRequest;
 import com.reantask.api.dto.request.UpdateClassRequest;
 import com.reantask.api.dto.response.ClassResponse;
@@ -173,34 +172,6 @@ class ClassServiceImplTest {
         when(classRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(99L, new UpdateClassRequest("Web", null, START, END)))
-                .satisfies(e -> assertCode(e, ErrorCode.CLASS_NOT_FOUND));
-    }
-
-    // ---- status ----
-
-    @Test
-    void changeStatus_toInactive_updatesStatus() {
-        when(classRepository.findById(1L)).thenReturn(Optional.of(classRoom(1L, ClassStatus.ACTIVE)));
-
-        ClassResponse response = service.changeStatus(1L, new ChangeClassStatusRequest(ClassStatus.INACTIVE));
-
-        assertThat(response.status()).isEqualTo(ClassStatus.INACTIVE);
-    }
-
-    @Test
-    void changeStatus_sameStatus_isIdempotent() {
-        when(classRepository.findById(1L)).thenReturn(Optional.of(classRoom(1L, ClassStatus.ACTIVE)));
-
-        ClassResponse response = service.changeStatus(1L, new ChangeClassStatusRequest(ClassStatus.ACTIVE));
-
-        assertThat(response.status()).isEqualTo(ClassStatus.ACTIVE);
-    }
-
-    @Test
-    void changeStatus_missing_throwsNotFound() {
-        when(classRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.changeStatus(99L, new ChangeClassStatusRequest(ClassStatus.INACTIVE)))
                 .satisfies(e -> assertCode(e, ErrorCode.CLASS_NOT_FOUND));
     }
 

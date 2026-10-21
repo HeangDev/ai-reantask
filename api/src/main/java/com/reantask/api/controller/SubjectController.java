@@ -9,7 +9,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -21,7 +20,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.reantask.api.dto.common.ApiResponse;
 import com.reantask.api.dto.common.PageResponse;
-import com.reantask.api.dto.request.ChangeSubjectStatusRequest;
 import com.reantask.api.dto.request.CreateSubjectRequest;
 import com.reantask.api.dto.request.UpdateSubjectRequest;
 import com.reantask.api.dto.response.SubjectResponse;
@@ -69,13 +67,6 @@ public class SubjectController {
     public ApiResponse<SubjectResponse> update(@PathVariable @Positive Long id,
                                                @Valid @RequestBody UpdateSubjectRequest request) {
         return ApiResponse.ok(subjectService.update(id, request));
-    }
-
-    @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<SubjectResponse> changeStatus(@PathVariable @Positive Long id,
-                                                     @Valid @RequestBody ChangeSubjectStatusRequest request) {
-        return ApiResponse.ok(subjectService.changeStatus(id, request));
     }
 
     @DeleteMapping("/{id}")

@@ -28,7 +28,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.reantask.api.dto.common.PageResponse;
-import com.reantask.api.dto.request.ChangeSubjectStatusRequest;
 import com.reantask.api.dto.request.CreateSubjectRequest;
 import com.reantask.api.dto.request.UpdateSubjectRequest;
 import com.reantask.api.dto.response.SubjectResponse;
@@ -112,37 +111,6 @@ class SubjectServiceImplTest {
         when(subjectRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(99L, new UpdateSubjectRequest("Spring", null)))
-                .isInstanceOfSatisfying(AppException.class,
-                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.SUBJECT_NOT_FOUND));
-    }
-
-    // ---- status ----
-
-    @Test
-    void changeStatus_toInactive_updatesStatus() {
-        Subject existing = subject(1L, SubjectStatus.ACTIVE);
-        when(subjectRepository.findById(1L)).thenReturn(Optional.of(existing));
-
-        SubjectResponse response = service.changeStatus(1L, new ChangeSubjectStatusRequest(SubjectStatus.INACTIVE));
-
-        assertThat(response.status()).isEqualTo(SubjectStatus.INACTIVE);
-    }
-
-    @Test
-    void changeStatus_sameStatus_isIdempotent() {
-        Subject existing = subject(1L, SubjectStatus.ACTIVE);
-        when(subjectRepository.findById(1L)).thenReturn(Optional.of(existing));
-
-        SubjectResponse response = service.changeStatus(1L, new ChangeSubjectStatusRequest(SubjectStatus.ACTIVE));
-
-        assertThat(response.status()).isEqualTo(SubjectStatus.ACTIVE);
-    }
-
-    @Test
-    void changeStatus_missing_throwsNotFound() {
-        when(subjectRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.changeStatus(99L, new ChangeSubjectStatusRequest(SubjectStatus.INACTIVE)))
                 .isInstanceOfSatisfying(AppException.class,
                         e -> assertThat(e.getCode()).isEqualTo(ErrorCode.SUBJECT_NOT_FOUND));
     }

@@ -9,7 +9,7 @@ A classroom code-assignment platform. Teachers create assignments with requireme
 - **Backend:** Spring Boot REST API (Java 21, Maven or Gradle: follow what the repo already uses)
 - **Database:** PostgreSQL 15+
 - **Roles:** `admin`, `teacher`, `student`
-- **Default timezone:** `Asia/Phnom_Penh` (store everything in UTC, convert only at the edge)
+- **Time:** store everything in UTC. There is no per-user timezone setting.
 
 ## Rule Files
 

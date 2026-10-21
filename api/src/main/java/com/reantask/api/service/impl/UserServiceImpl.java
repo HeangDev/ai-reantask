@@ -11,6 +11,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.reantask.api.exception.BadRequestException;
 import com.reantask.api.exception.BusinessRuleException;
@@ -20,7 +22,6 @@ import com.reantask.api.exception.NotFoundException;
 import com.reantask.api.dto.common.PageResponse;
 import com.reantask.api.security.CurrentUser;
 import com.reantask.api.dto.request.ChangePasswordRequest;
-import com.reantask.api.dto.request.ChangeUserStatusRequest;
 import com.reantask.api.dto.request.CreateUserRequest;
 import com.reantask.api.dto.request.UpdateProfileRequest;
 import com.reantask.api.dto.request.UpdateUserRequest;
@@ -34,7 +35,9 @@ import com.reantask.api.mapper.UserMapper;
 import com.reantask.api.repository.RoleRepository;
 import com.reantask.api.repository.UserRepository;
 import com.reantask.api.repository.UserSpecifications;
+import com.reantask.api.service.AvatarStorageService;
 import com.reantask.api.service.UserService;
+import com.reantask.api.service.UserSessionService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -53,6 +56,8 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final CurrentUser currentUser;
     private final Clock clock;
+    private final AvatarStorageService avatarStorage;
+    private final UserSessionService sessionService;
 
     @Override
     public PageResponse<UserResponse> list(UserStatus status, Long roleId, String q, Pageable pageable) {
@@ -106,23 +111,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse changeStatus(Long id, ChangeUserStatusRequest request) {
-        User user = findOrThrow(id);
-        UserStatus target = request.status();
-        if (user.getStatus() == target) {
-            return mapper.toResponse(user);
-        }
-        assertNotSelf(user);
-        assertTransition(user, target);
-        if (target != UserStatus.ACTIVE) {
-            assertNotLastActiveAdmin(user);
-        }
-        applyStatus(user, target);
-        return mapper.toResponse(user);
-    }
-
-    @Override
-    @Transactional
     public UserResponse approve(Long id) {
         User user = findOrThrow(id);
         assertCanReview(user);
@@ -168,6 +156,41 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public void deactivateMe() {
+        User user = findOrThrow(currentUser.requireId());
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            return;
+        }
+        if (!user.getStatus().canTransitionTo(UserStatus.INACTIVE)) {
+            throw new ConflictException(ErrorCode.INVALID_STATUS_TRANSITION,
+                    "Cannot deactivate an account that is " + user.getStatus());
+        }
+        assertNotLastActiveAdmin(user);
+        user.setStatus(UserStatus.INACTIVE);
+        sessionService.revokeAllMine();
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateMyAvatar(byte[] content) {
+        User user = findOrThrow(currentUser.requireId());
+        String previous = user.getAvatar();
+        user.setAvatar(avatarStorage.store(content));
+        runAfterCommit(() -> avatarStorage.delete(previous));
+        return mapper.toResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public void removeMyAvatar() {
+        User user = findOrThrow(currentUser.requireId());
+        String previous = user.getAvatar();
+        user.setAvatar(null);
+        runAfterCommit(() -> avatarStorage.delete(previous));
+    }
+
+    @Override
+    @Transactional
     public void changeMyPassword(ChangePasswordRequest request) {
         User user = findOrThrow(currentUser.requireId());
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
@@ -178,6 +201,20 @@ public class UserServiceImpl implements UserService {
                     "New password must be different from the current password");
         }
         user.setPassword(passwordEncoder.encode(request.newPassword()));
+    }
+
+    /** Files are only touched once the DB change is durable; without a transaction the action runs at once. */
+    private static void runAfterCommit(Runnable action) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            action.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                action.run();
+            }
+        });
     }
 
     private User findOrThrow(Long id) {
@@ -222,13 +259,6 @@ public class UserServiceImpl implements UserService {
         if (user.getStatus() != UserStatus.PENDING) {
             throw new ConflictException(ErrorCode.INVALID_STATUS_TRANSITION,
                     "Only PENDING users can be approved or rejected");
-        }
-    }
-
-    private void assertTransition(User user, UserStatus target) {
-        if (!user.getStatus().canTransitionTo(target)) {
-            throw new ConflictException(ErrorCode.INVALID_STATUS_TRANSITION,
-                    "Cannot change status from " + user.getStatus() + " to " + target);
         }
     }
 

@@ -9,7 +9,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -21,7 +20,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.reantask.api.dto.common.ApiResponse;
 import com.reantask.api.dto.common.PageResponse;
-import com.reantask.api.dto.request.ChangeClassStatusRequest;
 import com.reantask.api.dto.request.CreateClassRequest;
 import com.reantask.api.dto.request.UpdateClassRequest;
 import com.reantask.api.dto.response.ClassResponse;
@@ -69,13 +67,6 @@ public class ClassController {
     public ApiResponse<ClassResponse> update(@PathVariable @Positive Long id,
                                              @Valid @RequestBody UpdateClassRequest request) {
         return ApiResponse.ok(classService.update(id, request));
-    }
-
-    @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<ClassResponse> changeStatus(@PathVariable @Positive Long id,
-                                                   @Valid @RequestBody ChangeClassStatusRequest request) {
-        return ApiResponse.ok(classService.changeStatus(id, request));
     }
 
     @DeleteMapping("/{id}")

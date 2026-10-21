@@ -25,7 +25,7 @@ com.reantask.api
 ├── security/       CurrentUser, JwtService, SecurityErrorHandlers (JWT, filters, user details, Google verifier)
 ├── config/         SecurityConfig, JwtConfig, JwtProperties, ClockConfig, JpaAuditingConfig, PasswordEncoderConfig, CORS, OpenAPI, async
 ├── converter/      JPA AttributeConverters (RoleNameConverter, EncryptedStringConverter)
-├── validation/     custom Bean Validation constraints and validators (@ValidTimezone, @SafeRelativePath, @ValidDateRange)
+├── validation/     custom Bean Validation constraints and validators (@SafeRelativePath, @ValidDateRange)
 ├── seeder/         idempotent seeders (RoleSeeder)
 ├── client/         Git provider clients (GitHub, GitLab)            (create when needed)
 ├── worker/         async analysis worker                             (create when needed)

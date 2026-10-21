@@ -125,6 +125,28 @@ class UserSessionServiceImplTest {
         verify(revocations, never()).revoke(any(), any());
     }
 
+    @Test
+    void revokeAllMine_revokesEveryActiveSessionOfTheCaller() {
+        when(currentUser.requireId()).thenReturn(7L);
+        when(repository.findAllActive(7L, NOW))
+                .thenReturn(List.of(session(1L, "jti-1"), session(2L, "jti-2")));
+
+        service.revokeAllMine();
+
+        verify(revocations).revoke("jti-1", NOW.plusSeconds(600));
+        verify(revocations).revoke("jti-2", NOW.plusSeconds(600));
+    }
+
+    @Test
+    void revokeAllMine_noActiveSessions_revokesNothing() {
+        when(currentUser.requireId()).thenReturn(7L);
+        when(repository.findAllActive(7L, NOW)).thenReturn(List.of());
+
+        service.revokeAllMine();
+
+        verify(revocations, never()).revoke(any(), any());
+    }
+
     private UserSession session(Long id, String jti) {
         UserSession s = new UserSession(7L, jti, "10.0.0.1", "Firefox", NOW.plusSeconds(600));
         ReflectionTestUtils.setField(s, "id", id);

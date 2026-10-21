@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.reantask.api.dto.common.PageResponse;
-import com.reantask.api.dto.request.ChangeSubjectStatusRequest;
 import com.reantask.api.dto.request.CreateSubjectRequest;
 import com.reantask.api.dto.request.UpdateSubjectRequest;
 import com.reantask.api.dto.response.SubjectResponse;
@@ -65,14 +64,6 @@ public class SubjectServiceImpl implements SubjectService {
     public SubjectResponse update(Long id, UpdateSubjectRequest request) {
         Subject subject = findOrThrow(id);
         mapper.update(subject, request);
-        return mapper.toResponse(subject);
-    }
-
-    @Override
-    @Transactional
-    public SubjectResponse changeStatus(Long id, ChangeSubjectStatusRequest request) {
-        Subject subject = findOrThrow(id);
-        subject.setStatus(request.status());
         return mapper.toResponse(subject);
     }
 

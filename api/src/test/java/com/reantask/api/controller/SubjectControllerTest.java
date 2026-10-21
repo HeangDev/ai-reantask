@@ -4,7 +4,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -125,26 +124,6 @@ class SubjectControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(1));
-    }
-
-    @Test
-    void changeStatus_missingStatus_returns400() throws Exception {
-        mvc.perform(patch("/api/v1/subjects/1/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void changeStatus_valid_returns200() throws Exception {
-        when(subjectService.changeStatus(any(), any())).thenReturn(sample());
-
-        mvc.perform(patch("/api/v1/subjects/1/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"status":"INACTIVE"}
-                                """))
-                .andExpect(status().isOk());
     }
 
     @Test

@@ -16,6 +16,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import com.reantask.api.dto.common.ErrorResponse;
 import com.reantask.api.dto.common.ErrorResponse.FieldError;
@@ -59,6 +61,18 @@ public class GlobalExceptionHandler {
     ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_PARAMETER,
                 "Invalid value for parameter '" + ex.getName() + "'", List.of(), request, null);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<ErrorResponse> handleUploadTooLarge(MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        return build(HttpStatus.valueOf(413), ErrorCode.PAYLOAD_TOO_LARGE, "Uploaded file is too large",
+                List.of(), request, null);
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    ResponseEntity<ErrorResponse> handleMissingPart(MissingServletRequestPartException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_ERROR, "Validation failed",
+                List.of(new FieldError(ex.getRequestPartName(), "is required")), request, null);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

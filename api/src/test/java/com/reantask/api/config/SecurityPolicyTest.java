@@ -3,7 +3,9 @@ package com.reantask.api.config;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -23,6 +25,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.reantask.api.controller.AuthController;
+import com.reantask.api.controller.AvatarController;
+import com.reantask.api.dto.response.AvatarFile;
+import com.reantask.api.service.AvatarStorageService;
+import org.springframework.http.HttpMethod;
+import org.springframework.mock.web.MockMultipartFile;
 import com.reantask.api.dto.response.TokenResponse;
 import com.reantask.api.security.JwtService;
 import com.reantask.api.security.SecurityErrorHandlers;
@@ -42,7 +49,7 @@ import com.reantask.api.service.UserSettingService;
 import java.util.List;
 
 /** Proves the access policy: 401 without a valid token, 403 for the wrong role, success for the right one. */
-@WebMvcTest({AuthController.class, UserController.class, RoleController.class})
+@WebMvcTest({AuthController.class, UserController.class, RoleController.class, AvatarController.class})
 @Import({SecurityConfig.class, SecurityErrorHandlers.class, JwtConfig.class, ClockConfig.class,
         JwtService.class, GlobalExceptionHandler.class})
 @TestPropertySource(properties = {
@@ -61,6 +68,7 @@ class SecurityPolicyTest {
     @MockitoBean RoleService roleService;
     @MockitoBean TokenRevocationService revocationService;
     @MockitoBean UserSessionService sessionService;
+    @MockitoBean AvatarStorageService avatarStorage;
 
     private static UserResponse sampleUser() {
         return new UserResponse(1L, 3L, "student", "Dara", "dara@example.com", null, null,
@@ -92,6 +100,46 @@ class SecurityPolicyTest {
     @Test
     void mySessions_withoutToken_returns401() throws Exception {
         mvc.perform(get("/api/v1/users/me/sessions")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateMyAvatar_withoutToken_returns401() throws Exception {
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/users/me/avatar")
+                        .file(new MockMultipartFile("file", "me.png", "image/png", new byte[] {1})))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(delete("/api/v1/users/me/avatar")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateMyAvatar_withValidToken_returns200() throws Exception {
+        String token = jwtService.issueAccessToken(5L, "STUDENT");
+        when(userService.updateMyAvatar(any())).thenReturn(sampleUser());
+
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/users/me/avatar")
+                        .file(new MockMultipartFile("file", "me.png", "image/png", new byte[] {1}))
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deactivateMe_withoutToken_returns401() throws Exception {
+        mvc.perform(patch("/api/v1/users/me/deactivate")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deactivateMe_withValidToken_returns204() throws Exception {
+        String token = jwtService.issueAccessToken(5L, "STUDENT");
+
+        mvc.perform(patch("/api/v1/users/me/deactivate").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void getAvatarImage_isPublic() throws Exception {
+        String name = "11111111-2222-3333-4444-555555555555.png";
+        when(avatarStorage.load(name)).thenReturn(new AvatarFile(new byte[] {1}, "image/png"));
+
+        mvc.perform(get("/api/v1/avatars/" + name)).andExpect(status().isOk());
     }
 
     @Test

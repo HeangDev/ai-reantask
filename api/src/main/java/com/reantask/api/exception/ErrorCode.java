@@ -18,6 +18,7 @@ public enum ErrorCode {
     NOT_FOUND(HttpStatus.NOT_FOUND),
     CONFLICT(HttpStatus.CONFLICT),
     CONCURRENT_UPDATE(HttpStatus.CONFLICT),
+    PAYLOAD_TOO_LARGE(HttpStatus.valueOf(413)),
     TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
 
@@ -41,6 +42,9 @@ public enum ErrorCode {
     INVALID_STATUS_TRANSITION(HttpStatus.CONFLICT),
     CANNOT_MODIFY_SELF(HttpStatus.UNPROCESSABLE_ENTITY),
     LAST_ADMIN(HttpStatus.CONFLICT),
+    INVALID_AVATAR(HttpStatus.BAD_REQUEST),
+    AVATAR_TOO_LARGE(HttpStatus.valueOf(413)),
+    AVATAR_NOT_FOUND(HttpStatus.NOT_FOUND),
 
     // Classes
     SUBJECT_NOT_FOUND(HttpStatus.NOT_FOUND),

@@ -1,9 +1,11 @@
 package com.reantask.api.controller;
 
+import java.io.IOException;
 import java.net.URI;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -16,12 +18,13 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.reantask.api.dto.common.ApiResponse;
 import com.reantask.api.dto.common.PageResponse;
-import com.reantask.api.dto.request.ChangeUserStatusRequest;
 import com.reantask.api.dto.request.CreateUserRequest;
 import com.reantask.api.dto.request.UpdateProfileRequest;
 import com.reantask.api.dto.request.UpdateUserRequest;
@@ -80,13 +83,6 @@ public class UserController {
         return ApiResponse.ok(userService.update(id, request));
     }
 
-    @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<UserResponse> changeStatus(@PathVariable @Positive Long id,
-                                                  @Valid @RequestBody ChangeUserStatusRequest request) {
-        return ApiResponse.ok(userService.changeStatus(id, request));
-    }
-
     @PatchMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ApiResponse<UserResponse> approve(@PathVariable @Positive Long id) {
@@ -116,6 +112,26 @@ public class UserController {
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<UserResponse> updateMe(@Valid @RequestBody UpdateProfileRequest request) {
         return ApiResponse.ok(userService.updateMe(request));
+    }
+
+    @PatchMapping("/me/deactivate")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deactivateMe() {
+        userService.deactivateMe();
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<UserResponse> updateMyAvatar(@RequestPart("file") MultipartFile file) throws IOException {
+        return ApiResponse.ok(userService.updateMyAvatar(file.getBytes()));
+    }
+
+    @DeleteMapping("/me/avatar")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> removeMyAvatar() {
+        userService.removeMyAvatar();
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me/sessions")

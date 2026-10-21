@@ -2,6 +2,7 @@ package com.reantask.api.repository;
 
 import java.time.Instant;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -26,6 +27,13 @@ public interface UserSessionRepository extends JpaRepository<UserSession, Long> 
             WHERE s.userId = :userId AND s.expiresAt > :now
               AND NOT EXISTS (SELECT 1 FROM RevokedToken r WHERE r.jti = s.jti)""")
     Page<UserSession> findActive(@Param("userId") Long userId, @Param("now") Instant now, Pageable pageable);
+
+    // Same filter as findActive, unpaged: used to end every login of one user at once.
+    @Query("""
+            SELECT s FROM UserSession s
+            WHERE s.userId = :userId AND s.expiresAt > :now
+              AND NOT EXISTS (SELECT 1 FROM RevokedToken r WHERE r.jti = s.jti)""")
+    List<UserSession> findAllActive(@Param("userId") Long userId, @Param("now") Instant now);
 
     // Scoped to the owner, so another user's session id looks the same as one that does not exist.
     Optional<UserSession> findByIdAndUserId(Long id, Long userId);

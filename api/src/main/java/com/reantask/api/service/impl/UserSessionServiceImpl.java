@@ -61,6 +61,13 @@ public class UserSessionServiceImpl implements UserSessionService {
         revocations.revoke(session.getJti(), session.getExpiresAt());
     }
 
+    @Override
+    @Transactional
+    public void revokeAllMine() {
+        repository.findAllActive(currentUser.requireId(), Instant.now(clock))
+                .forEach(session -> revocations.revoke(session.getJti(), session.getExpiresAt()));
+    }
+
     private static String truncate(String value, int max) {
         return value == null || value.length() <= max ? value : value.substring(0, max);
     }

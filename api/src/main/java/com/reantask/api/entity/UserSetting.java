@@ -25,8 +25,6 @@ import lombok.Setter;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserSetting extends TimestampedEntity {
 
-    public static final String DEFAULT_TIMEZONE = "Asia/Phnom_Penh";
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -43,10 +41,6 @@ public class UserSetting extends TimestampedEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "language", nullable = false, length = 10)
     private Language language = Language.EN;
-
-    @Setter
-    @Column(name = "timezone", nullable = false, length = 100)
-    private String timezone = DEFAULT_TIMEZONE;
 
     @Setter
     @Column(name = "email_notifications", nullable = false)

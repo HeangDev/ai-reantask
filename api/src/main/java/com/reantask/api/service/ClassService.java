@@ -3,7 +3,6 @@ package com.reantask.api.service;
 import org.springframework.data.domain.Pageable;
 
 import com.reantask.api.dto.common.PageResponse;
-import com.reantask.api.dto.request.ChangeClassStatusRequest;
 import com.reantask.api.dto.request.CreateClassRequest;
 import com.reantask.api.dto.request.UpdateClassRequest;
 import com.reantask.api.dto.response.ClassResponse;
@@ -36,14 +35,6 @@ public interface ClassService {
      * @throws com.reantask.api.exception.BusinessRuleException INVALID_DATE_RANGE when endDate is before startAt
      */
     ClassResponse update(Long id, UpdateClassRequest request);
-
-    /**
-     * Idempotent: re-applying the current status is a no-op. An INACTIVE class accepts no new assignments or
-     * enrollments; its data is kept.
-     *
-     * @throws com.reantask.api.exception.NotFoundException CLASS_NOT_FOUND
-     */
-    ClassResponse changeStatus(Long id, ChangeClassStatusRequest request);
 
     /** Soft delete. Idempotent: deleting an already deleted class is a no-op. */
     void delete(Long id);

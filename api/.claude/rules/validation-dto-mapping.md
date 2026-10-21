@@ -37,13 +37,12 @@ Apply on request DTOs; controllers use `@Valid` / `@Validated`. Mirror DB limits
 | `line_number`                 | `@Min(1)`                                                                                                            |
 | `start_at`, `deadline_at`     | `@NotNull`; cross-field `@ValidDateRange` (`deadline_at > start_at`)                                                 |
 | `theme_mode`, `language`      | enum types                                                                                                           |
-| `timezone`                    | valid IANA id (`ZoneId.of`) via custom validator                                                                     |
 
 Rules:
 - Bean Validation checks shape; the service checks business rules (state, ownership, uniqueness).
 - Trim strings; normalize email to lowercase; reject blank-only strings.
 - Validate path/query params (`@Min(1)` for ids, `@Max(100)` for size).
-- Custom validators live in the top-level `validation/` package (`@SafeRelativePath`, `@ValidDateRange`, `@ValidTimezone`), listed in `architecture.md`.
+- Custom validators live in the top-level `validation/` package (`@SafeRelativePath`, `@ValidDateRange`), listed in `architecture.md`.
 
 ## 3. Mapping (MapStruct)
 

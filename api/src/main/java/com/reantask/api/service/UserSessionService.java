@@ -21,4 +21,7 @@ public interface UserSessionService {
      * Another user's session id gives SESSION_NOT_FOUND (404), the same as an unknown id.
      */
     void revokeMine(Long sessionId);
+
+    /** Logs the caller out everywhere by revoking the token of every active session. Idempotent. */
+    void revokeAllMine();
 }

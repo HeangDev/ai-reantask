@@ -13,7 +13,7 @@ Full DDL: `src/main/resources/db/migration/V1__init_schema.sql` (generated from 
 ## 1. Engine and Settings
 
 - PostgreSQL 15+. Encoding `UTF8`. Collation `en_US.UTF-8` (or `C.UTF-8`).
-- Store all time as `TIMESTAMPTZ` in UTC. `hibernate.jdbc.time_zone=UTC`. Convert to the user's `user_settings.timezone` (default `Asia/Phnom_Penh`) only in the API/UI.
+- Store all time as `TIMESTAMPTZ` in UTC. `hibernate.jdbc.time_zone=UTC`. The API returns UTC; there is no per-user timezone setting.
 - One schema (`public`) unless the team decides otherwise. App connects with a least-privilege role (no superuser, no DDL rights in production; Flyway uses a separate migration role).
 - `spring.jpa.hibernate.ddl-auto=validate`. Hibernate never changes the schema.
 

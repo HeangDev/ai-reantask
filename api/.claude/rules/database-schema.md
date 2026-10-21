@@ -627,7 +627,6 @@ ACTIVE, INACTIVE, DELETED
 | user_id             | BIGINT        | FK, NOT NULL                        |
 | theme_mode          | VARCHAR(20)   | NOT NULL, DEFAULT 'SYSTEM'          |
 | language            | VARCHAR(10)   | NOT NULL, DEFAULT 'EN'              |
-| timezone            | VARCHAR(100)  | NOT NULL, DEFAULT 'Asia/Phnom_Penh' |
 | email_notifications | BOOLEAN       | NOT NULL, DEFAULT TRUE              |
 | push_notifications  | BOOLEAN       | NOT NULL, DEFAULT TRUE              |
 | created_at          | TIMESTAMP     | NULL                                |

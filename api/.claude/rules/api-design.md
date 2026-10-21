@@ -82,10 +82,10 @@ Error:
 
 ```text
 /auth:        POST register, login, google, refresh, logout
-/users:       GET list, POST create, GET/PUT /{id}, PATCH /{id}/status, /{id}/approve, /{id}/reject, DELETE /{id}
+/users:       GET list, POST create, GET/PUT /{id}, PATCH /{id}/approve, /{id}/reject, DELETE /{id}, PATCH /me/deactivate
               GET/PUT /me, GET/PUT /me/settings
 /roles:               GET
-/classes:             CRUD, PATCH /{id}/status, GET/POST /{id}/subjects, GET/POST /{id}/students
+/classes:             CRUD, GET/POST /{id}/subjects, GET/POST /{id}/students
 /subjects:            CRUD
 /class-subjects/{id}: PATCH status, DELETE
 /class-students/{id}: PATCH status, DELETE

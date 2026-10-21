@@ -19,7 +19,7 @@ src/test/java/com/reantask/api/
 ├── security/                   JwtServiceTest, CurrentUserTest
 ├── exception/                  GlobalExceptionHandlerTest
 ├── converter/                  RoleNameConverterTest, EncryptedStringConverterTest
-├── validation/                 ValidTimezoneValidatorTest, SafeRelativePathValidatorTest, ValidDateRangeValidatorTest
+├── validation/                 SafeRelativePathValidatorTest, ValidDateRangeValidatorTest
 ├── seeder/                     RoleSeederTest (idempotent)
 ├── event/ client/ worker/      tests for those packages once they exist
 ├── testdata/                   object-mother builders: UserTestData, AssignmentTestData, ...
@@ -101,7 +101,7 @@ Must verify:
 **Shared infrastructure**
 - `GlobalExceptionHandler` maps every `AppException` subtype and validation errors to the right `ErrorCode`/HTTP status.
 - `EncryptedStringConverter` round-trips and never stores plain text; `RoleNameConverter` maps both ways.
-- Validators `@SafeRelativePath`, `@ValidDateRange`, `@ValidTimezone` (valid, invalid, null, boundary).
+- Validators `@SafeRelativePath`, `@ValidDateRange` (valid, invalid, null, boundary).
 - `AuditableEntity`: created/updated populated, soft delete hides rows.
 - `CurrentUser` reads the SecurityContext only.
 

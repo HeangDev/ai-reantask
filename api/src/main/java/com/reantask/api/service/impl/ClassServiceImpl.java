@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.reantask.api.dto.common.PageResponse;
-import com.reantask.api.dto.request.ChangeClassStatusRequest;
 import com.reantask.api.dto.request.CreateClassRequest;
 import com.reantask.api.dto.request.UpdateClassRequest;
 import com.reantask.api.dto.response.ClassResponse;
@@ -75,14 +74,6 @@ public class ClassServiceImpl implements ClassService {
         ClassRoom classRoom = findOrThrow(id);
         assertDateRange(request.startAt(), request.endDate());
         mapper.update(classRoom, request);
-        return mapper.toResponse(classRoom);
-    }
-
-    @Override
-    @Transactional
-    public ClassResponse changeStatus(Long id, ChangeClassStatusRequest request) {
-        ClassRoom classRoom = findOrThrow(id);
-        classRoom.setStatus(request.status());
         return mapper.toResponse(classRoom);
     }
 

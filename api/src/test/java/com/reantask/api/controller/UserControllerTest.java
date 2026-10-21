@@ -1,9 +1,12 @@
 package com.reantask.api.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -17,10 +20,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.reantask.api.exception.AppException;
+import com.reantask.api.exception.BadRequestException;
+import com.reantask.api.exception.ConflictException;
 import com.reantask.api.exception.ErrorCode;
 import com.reantask.api.exception.NotFoundException;
 import com.reantask.api.dto.common.PageResponse;
@@ -113,17 +122,71 @@ class UserControllerTest {
     }
 
     @Test
-    void changeStatus_missingStatus_returns400() throws Exception {
-        mvc.perform(patch("/api/v1/users/1/status")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void delete_returns204() throws Exception {
         mvc.perform(delete("/api/v1/users/1"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void updateMyAvatar_validFile_returns200WithAvatarUrl() throws Exception {
+        UserResponse withAvatar = new UserResponse(1L, 3L, "student", "Dara", "dara@example.com", null,
+                "/api/v1/avatars/a.png", UserStatus.ACTIVE, null, Instant.now(), Instant.now());
+        when(userService.updateMyAvatar(any())).thenReturn(withAvatar);
+
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/users/me/avatar")
+                        .file(new MockMultipartFile("file", "me.png", "image/png", new byte[] {1, 2, 3})))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.avatar").value("/api/v1/avatars/a.png"));
+    }
+
+    @Test
+    void updateMyAvatar_missingFilePart_returns400() throws Exception {
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/users/me/avatar"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.errors[?(@.field == 'file')]").exists());
+    }
+
+    @Test
+    void updateMyAvatar_invalidImage_returns400() throws Exception {
+        when(userService.updateMyAvatar(any()))
+                .thenThrow(new BadRequestException(ErrorCode.INVALID_AVATAR, "Avatar must be a JPEG, PNG or WebP image"));
+
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/users/me/avatar")
+                        .file(new MockMultipartFile("file", "me.txt", "text/plain", "hello".getBytes())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_AVATAR"));
+    }
+
+    @Test
+    void updateMyAvatar_tooLarge_returns413() throws Exception {
+        when(userService.updateMyAvatar(any())).thenThrow(
+                new AppException(ErrorCode.AVATAR_TOO_LARGE, "too big", HttpStatus.valueOf(413)));
+
+        mvc.perform(multipart(HttpMethod.PUT, "/api/v1/users/me/avatar")
+                        .file(new MockMultipartFile("file", "me.png", "image/png", new byte[] {1})))
+                .andExpect(status().isPayloadTooLarge())
+                .andExpect(jsonPath("$.code").value("AVATAR_TOO_LARGE"));
+    }
+
+    @Test
+    void deactivateMe_returns204() throws Exception {
+        mvc.perform(patch("/api/v1/users/me/deactivate")).andExpect(status().isNoContent());
+        verify(userService).deactivateMe();
+    }
+
+    @Test
+    void deactivateMe_suspendedAccount_returns409() throws Exception {
+        doThrow(new ConflictException(ErrorCode.INVALID_STATUS_TRANSITION, "no")).when(userService).deactivateMe();
+
+        mvc.perform(patch("/api/v1/users/me/deactivate"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INVALID_STATUS_TRANSITION"));
+    }
+
+    @Test
+    void removeMyAvatar_returns204() throws Exception {
+        mvc.perform(delete("/api/v1/users/me/avatar")).andExpect(status().isNoContent());
     }
 
     @Test

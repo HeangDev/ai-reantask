@@ -40,13 +40,11 @@ public class UserMapper {
     public void update(User user, UpdateProfileRequest request) {
         user.setFullname(request.fullname().trim());
         user.setPhone(blankToNull(request.phone()));
-        user.setAvatar(blankToNull(request.avatar()));
     }
 
     public void update(UserSetting setting, UpdateUserSettingRequest request) {
         setting.setThemeMode(request.themeMode());
         setting.setLanguage(request.language());
-        setting.setTimezone(request.timezone());
         setting.setEmailNotifications(request.emailNotifications());
         setting.setPushNotifications(request.pushNotifications());
     }
@@ -63,7 +61,7 @@ public class UserMapper {
     }
 
     public UserSettingResponse toResponse(UserSetting setting) {
-        return new UserSettingResponse(setting.getThemeMode(), setting.getLanguage(), setting.getTimezone(),
+        return new UserSettingResponse(setting.getThemeMode(), setting.getLanguage(),
                 setting.isEmailNotifications(), setting.isPushNotifications());
     }
 
