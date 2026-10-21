@@ -40,7 +40,10 @@ public enum ErrorCode {
     PASSWORD_UNCHANGED(HttpStatus.UNPROCESSABLE_ENTITY),
     INVALID_STATUS_TRANSITION(HttpStatus.CONFLICT),
     CANNOT_MODIFY_SELF(HttpStatus.UNPROCESSABLE_ENTITY),
-    LAST_ADMIN(HttpStatus.CONFLICT);
+    LAST_ADMIN(HttpStatus.CONFLICT),
+
+    // Classes
+    SUBJECT_NOT_FOUND(HttpStatus.NOT_FOUND);
 
     private final HttpStatus status;
 
