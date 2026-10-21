@@ -1,10 +1,19 @@
 import type { TranslationKey } from '@/shared/i18n'
 
-/** Laravel error body: `{ message, errors?: { field: [messages] } }`. */
+/** API error body: `{ code, message, errors?: [{ field, message }] }`; the older `{ field: [messages] }` map is still read. */
 export interface ErrorBody {
   message?: string
   code?: string
-  errors?: Record<string, string[]>
+  errors?: { field: string; message: string }[] | Record<string, string[]>
+}
+
+/** Normalizes either error shape to `{ field: [messages] }`. */
+export function toFieldErrors(errors: ErrorBody['errors']): Record<string, string[]> {
+  if (!errors) return {}
+  if (!Array.isArray(errors)) return errors
+  const result: Record<string, string[]> = {}
+  for (const { field, message } of errors) (result[field] ??= []).push(message)
+  return result
 }
 
 const MESSAGE_KEYS: Record<number, TranslationKey> = {

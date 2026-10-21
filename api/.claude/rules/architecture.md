@@ -1,204 +1,182 @@
-# Architecture: Feature-Based (Package by Feature)
+# Architecture: Layer-Based (Package by Layer)
 
-Code is grouped by business **feature**. Each feature is a package that owns everything it needs: its API, business rules, persistence and tests. Inside a feature, classes are split into layer sub-packages. A small `common` package holds shared infrastructure.
+Code is grouped by technical **layer**. Each layer is one top-level package under the base package. A class goes in the package that matches what it *is* (controller, service, repository, ...), not which business area it belongs to.
 
-Why: a feature's code lives together, features have explicit boundaries, and a change usually touches one package.
+Why: one familiar Spring layout, trivial to navigate, and the layering rules below are easy to enforce with `ArchitectureTest`.
 
 ## 1. Package Structure
 
 ```text
-com.<org>.<app>
-├── <App>Application.java
-│
-├── common/                         shared kernel (depends on NO feature)
-│   ├── config/                     ClockConfig, JpaAuditingConfig, OpenApiConfig
-│   ├── entity/                     AuditableEntity (created/updated/deleted columns)
-│   ├── exception/                  ErrorCode, AppException (+ NotFound/Conflict/BusinessRule/BadRequest), GlobalExceptionHandler
-│   ├── response/                   ApiResponse, PageResponse, ErrorResponse
-│   ├── security/                   CurrentUser (reads the SecurityContext only)
-│   ├── converter/                  EncryptedStringConverter, RoleNameConverter
-│   ├── validation/                 @SafeRelativePath, @ValidDateRange, @ValidTimezone
-│   └── util/                       small stateless helpers
-│
-├── user/                           roles, users, user_settings
-├── auth/                           login, register, Google sign-in, JWT, SecurityConfig
-├── classroom/                      classes, subjects, class_subjects, class_students
-├── assignment/                     assignments, assignment_students, requirements, structures, structure rules
-├── git/                            git_connections, repositories, assignment_repositories,
-│                                   assignment_student_repositories
-├── submission/                     submissions
-└── analysis/                       analysis_runs, analysis_results, analysis_issues, worker
-```
-
-Inside EVERY feature package (create only the sub-packages you need):
-
-```text
-<feature>/
+com.reantask.api
+├── ApiApplication.java
 ├── controller/     REST controllers (HTTP only)
-├── service/        service INTERFACES = the feature's public API
-│   └── impl/       implementations (business rules, @Transactional)
-├── repository/     Spring Data JPA repositories
+├── service/        service INTERFACES
+│   └── impl/       implementations: business rules, ownership checks, @Transactional
+├── repository/     Spring Data JPA repositories + Specifications (queries only)
 ├── entity/         JPA entities
-├── enums/          status/type enums
+│   └── base/       @MappedSuperclass: TimestampedEntity, AuditableEntity
+├── enums/          status and type enums
 ├── dto/
 │   ├── request/    request records
-│   └── response/   response records
-├── mapper/         MapStruct mappers
-├── event/          events + listeners (optional)
-├── client/         external API clients (optional, e.g. git/client)
-├── worker/         async workers (optional, e.g. analysis/worker)
-├── seeder/         idempotent seeders (optional, e.g. user/seeder)
-└── config/ security/   feature-owned configuration (optional, e.g. auth/config, auth/security)
+│   ├── response/   response records
+│   └── common/     ApiResponse, PageResponse, ErrorResponse
+├── mapper/         entity <-> DTO mappers
+├── exception/      ErrorCode, AppException (+ subtypes), GlobalExceptionHandler
+├── security/       CurrentUser, JwtService, SecurityErrorHandlers (JWT, filters, user details, Google verifier)
+├── config/         SecurityConfig, JwtConfig, JwtProperties, ClockConfig, JpaAuditingConfig, PasswordEncoderConfig, CORS, OpenAPI, async
+├── converter/      JPA AttributeConverters (RoleNameConverter, EncryptedStringConverter)
+├── validation/     custom Bean Validation constraints and validators (@ValidTimezone, @SafeRelativePath, @ValidDateRange)
+├── seeder/         idempotent seeders (RoleSeeder)
+├── client/         Git provider clients (GitHub, GitLab)            (create when needed)
+├── worker/         async analysis worker                             (create when needed)
+├── event/          application events + listeners                    (create when needed)
+└── util/           small stateless helpers                           (create when needed)
 ```
 
-Example (`classroom`):
-
-```text
-classroom/
-├── controller/  ClassController, SubjectController
-├── service/     ClassService, SubjectService, ClassSubjectService, ClassStudentService
-│   └── impl/    ClassServiceImpl, ...
-├── repository/  ClassRoomRepository, SubjectRepository, ClassSubjectRepository, ClassStudentRepository
-├── entity/      ClassRoom, Subject, ClassSubject, ClassStudent
-├── enums/       ClassStatus, SubjectStatus, ClassSubjectStatus, ClassStudentStatus
-├── dto/request|response/
-└── mapper/      ClassMapper, SubjectMapper
-```
+Create a package only when it has a class to hold. Do not add other top-level packages and **never create per-feature packages** (`user/`, `assignment/`, ...). Package names are lowercase, singular nouns (`enums` is the one exception: `enum` is a Java keyword).
 
 Resources and tests:
 
 ```text
 src/main/resources/
-├── application.yml, application-dev.yml, application-prod.yml
-└── db/migration/               V1__init_schema.sql, V2__... (Flyway, one shared history, NOT per feature)
+├── application.yaml (+ application-dev.yaml, application-prod.yaml)
+└── db/migration/               V1__..., V2__... (Flyway, one global ordered history)
 
-src/test/java/com/<org>/<app>/  mirrors main: <feature>/controller, <feature>/service/impl, <feature>/repository
-├── architecture/               ArchitectureTest
-└── integration/                SchemaValidationIT and cross-feature flows
+src/test/java/com/reantask/api/  mirrors main by layer
+├── controller/                 <Resource>ControllerTest        (@WebMvcTest)
+├── service/impl/               <Resource>ServiceImplTest       (Mockito)
+├── repository/                 <Entity>RepositoryTest          (@DataJpaTest, Testcontainers)
+├── mapper/                     <Resource>MapperTest
+├── config/                     security policy tests (SecurityPolicyTest)
+├── exception/                  GlobalExceptionHandlerTest
+├── converter/ validation/ ...  one test package per layer that has logic
+├── testdata/                   object-mother builders (UserTestData, ...)
+├── support/                    AbstractIntegrationTest, PostgresContainerConfig, TestClockConfig
+├── architecture/               ArchitectureTest (ArchUnit)
+└── integration/                SchemaValidationIT and end-to-end flows
 ```
 
 ## 2. Dependency Rules
 
-### 2.1 Inside a feature (layers)
-
 ```text
 controller  ->  service (interface)  ->  service/impl  ->  repository  ->  entity
-                      dto  <-  mapper  ->  entity
+                     dto  <-  mapper  ->  entity
 ```
 
-| Layer                 | Does                                                              | Must NOT                                                        |
-|-----------------------|-------------------------------------------------------------------|-----------------------------------------------------------------|
-| `controller`          | Map HTTP <-> DTO, `@Valid`, `@PreAuthorize`, return `ApiResponse` | Business logic, repositories, entities, `service.impl`          |
-| `service` (interface) | Define operations with DTOs/ids                                   | Expose entities or HTTP types                                   |
-| `service.impl`        | Business rules, transitions, ownership checks, `@Transactional`   | `HttpServletRequest`, `ResponseEntity`                          |
-| `repository`          | Queries only                                                      | Business logic, depend on service/controller/dto                |
-| `entity`              | Map tables, simple invariants                                     | Depend on service/controller/repository/dto/mapper, use `@Data` |
-| `dto`                 | Data records + validation                                         | Contain entities                                                |
-| `mapper`              | Entity <-> DTO                                                    | Hit the database, call services                                 |
+Arrows mean "may depend on". Dependencies never point upward.
 
-`@Transactional` only in `service/impl`. Entities never leave `service/impl`.
+| Layer                 | Does                                                              | Must NOT                                                                 |
+|-----------------------|-------------------------------------------------------------------|--------------------------------------------------------------------------|
+| `controller`          | Map HTTP <-> DTO, `@Valid`, `@PreAuthorize`, return `ApiResponse` | Business logic, use repositories, entities or `service.impl`             |
+| `service` (interface) | Define operations with DTOs and ids, Javadoc the contract         | Expose entities or HTTP types                                            |
+| `service.impl`        | Business rules, transitions, ownership checks, `@Transactional`   | Use `HttpServletRequest`, `ResponseEntity`; depend on `controller`       |
+| `repository`          | Queries only                                                      | Business logic; depend on `service`, `controller`, `dto`                 |
+| `entity`              | Map tables, simple invariants                                     | Depend on `service`, `controller`, `repository`, `dto`, `mapper`; `@Data` |
+| `dto`                 | Immutable records + validation annotations                        | Contain entities                                                         |
+| `mapper`              | Entity <-> DTO                                                    | Hit the database, call services                                          |
+| `exception`           | Error codes, exception types, global handler                      | Depend on `service`, `repository`, `controller`                          |
+| `security`, `config`  | Wiring and cross-cutting infrastructure                           | Contain business rules                                                   |
 
-### 2.2 Between features (boundaries)
+Rules:
 
-1. **Public API of a feature = its `service` interfaces**, plus the `dto.response`/`dto.request` records and `enums` that appear in those signatures. Nothing else is visible to other features.
-2. Another feature must NEVER import this feature's `repository`, `entity`, `mapper`, `controller` or `service.impl`.
-3. **Reference other features by id.** No `@ManyToOne`/`@OneToMany` across features. Store `Long classId`, `Long teacherId`, etc. (like the audit columns already do). `@ManyToOne` is allowed only inside the same feature.
-4. Features may depend only in this direction (arrow = "may call"). No cycles.
-
-```text
-common  <-  user  <-  auth
-                 <-  classroom  <-  assignment  <-  git  <-  submission  <-  analysis
-```
-
-| Feature      | May depend on (besides `common` and itself)   |
-|--------------|-----------------------------------------------|
-| `user`       | nothing                                       |
-| `auth`       | `user`                                        |
-| `classroom`  | `user`                                        |
-| `assignment` | `user`, `classroom`                           |
-| `git`        | `user`, `assignment`                          |
-| `submission` | `user`, `assignment`, `git`                   |
-| `analysis`   | `user`, `assignment`, `git`, `submission`     |
-
-5. **Events go upward only.** A feature publishes an event (`<feature>/event`) and any feature that is allowed to depend on it may listen. Example: `submission` publishes `SubmissionCreatedEvent`, `analysis` listens. A lower feature never listens to a higher one's events.
-6. `common` depends on no feature. Features never put feature-specific code in `common`.
-7. Cross-feature reads: call the other feature's service. For heavy list/report screens, a read-only projection query (native SQL/JPQL by table name, no foreign entity imports) may live in the feature that owns the use case. Record such exceptions in the feature's rule file.
-8. A new feature needs an entry in the dependency table above and in `ArchitectureTest`.
-
-### 2.3 Shared infrastructure
-
-- `ErrorCode` is one central enum in `common/exception` (single catalogue).
-- `AuditableEntity`, `ApiResponse`, `PageResponse`, `CurrentUser`, `Clock` come from `common`.
-- Security wiring (`SecurityConfig`, JWT filter, `JwtService`, Google verifier) is owned by `auth`. Other features only use `@PreAuthorize` and `CurrentUser`.
+1. Controllers inject **service interfaces only**.
+2. **Entities never leave `service/impl`.** Public service methods and controllers use DTOs.
+3. `@Transactional` only in `service/impl`.
+4. Services may call other services **through their interface** (e.g. `AuthServiceImpl` calls `UserAccountService`). A service never injects another service's repository.
+5. A service that must not be reachable from controllers (internal contract, such as `UserAccountService`, which returns password hashes) is documented as internal in its Javadoc and is never injected into a controller. Its DTO overrides `toString` to hide secrets.
+6. Relations between entities use `@ManyToOne(fetch = LAZY)`; audit columns (`created_by_user`, ...) are plain `Long`.
+7. `exception`, `dto/common`, `entity/base`, `converter`, `validation` and `util` depend on no business layer (`service`, `repository`, `controller`). Exception: `converter` may depend on `enums`.
+8. Security wiring (`SecurityConfig`, `JwtConfig`, `JwtService`, Google verifier) lives in `config` and `security`. Controllers only use `@PreAuthorize` and `CurrentUser`.
+9. Events (`event/`): a service publishes, a listener reacts after commit. A listener never calls a controller.
+10. Heavy list/report screens may use a read-only projection query in `repository`. Record such exceptions in `database-conventions.md`.
 
 ## 3. Naming Conventions
 
-| Item            | Pattern                                           | Example                                      |
-|-----------------|---------------------------------------------------|----------------------------------------------|
-| Feature package | lowercase, one word                               | `classroom`, `assignment`                    |
-| Controller      | `<Resource>Controller`                            | `SubjectController`                          |
-| Service         | `<Resource>Service` / `<Resource>ServiceImpl`     | `SubmissionService`, `SubmissionServiceImpl` |
-| Repository      | `<Entity>Repository`                              | `UserRepository`                             |
-| Entity          | singular PascalCase of the table                  | `ClassSubject` (`class_subjects`)            |
-| Request DTO     | `<Verb><Resource>Request`                         | `CreateAssignmentRequest`                    |
-| Response DTO    | `<Resource>Response` / `<Resource>DetailResponse` | `UserResponse`                               |
-| Mapper          | `<Resource>Mapper`                                | `AssignmentMapper`                           |
-| Enum            | `<Resource><Field>`                               | `UserStatus`, `IssueSeverity`                |
-| Event           | past tense                                        | `SubmissionCreatedEvent`                     |
-| Test            | `<Class>Test` / `<Class>IT`                       | `UserServiceImplTest`                        |
+| Item         | Pattern                                           | Example                                      |
+|--------------|---------------------------------------------------|----------------------------------------------|
+| Controller   | `<Resource>Controller`                            | `SubjectController`                          |
+| Service      | `<Resource>Service` / `<Resource>ServiceImpl`     | `SubmissionService`, `SubmissionServiceImpl` |
+| Repository   | `<Entity>Repository`                              | `UserRepository`                             |
+| Entity       | singular PascalCase of the table                  | `ClassSubject` (`class_subjects`)            |
+| Request DTO  | `<Verb><Resource>Request`                         | `CreateAssignmentRequest`                    |
+| Response DTO | `<Resource>Response` / `<Resource>DetailResponse` | `UserResponse`                               |
+| Mapper       | `<Resource>Mapper`                                | `UserMapper`                                 |
+| Enum         | `<Resource><Field>`                               | `UserStatus`, `IssueSeverity`                |
+| Config       | `<Thing>Config`                                   | `SecurityConfig`, `ClockConfig`              |
+| Event        | past tense                                        | `SubmissionCreatedEvent`                     |
+| Test         | `<Class>Test` / `<Class>IT`                       | `UserServiceImplTest`                        |
 
-Name clashes: table `classes` -> entity `ClassRoom`; table `repositories` -> `GitRepository`; table `assignment_repositories` -> `AssignmentRepositoryLink`; table `assignment_student_repositories` -> `AssignmentStudentRepositoryLink`.
+Because all classes share one package per layer, names must be unique across the whole app: prefix with the resource (`UserSettingService`, not `SettingService`).
 
-## 4. Table -> Feature Map
+Name clashes with Java/Spring: table `classes` -> entity `ClassRoom`; table `repositories` -> `GitRepository`; table `assignment_repositories` -> `AssignmentRepositoryLink`; table `assignment_student_repositories` -> `AssignmentStudentRepositoryLink`.
 
-| Table                           | Feature      | Entity                            | Service (interface)            | Controller                              |
-|---------------------------------|--------------|-----------------------------------|--------------------------------|-----------------------------------------|
-| roles                           | `user`       | `Role`                            | `RoleService`                  | `RoleController`                        |
-| users                           | `user`       | `User`                            | `UserService`                  | `UserController`                        |
-| user_settings                   | `user`       | `UserSetting`                     | `UserSettingService`           | `UserController` (`/users/me/settings`) |
-| (auth, no table)                | `auth`       |                                   | `AuthService`, `JwtService`    | `AuthController`                        |
-| classes                         | `classroom`  | `ClassRoom`                       | `ClassService`                 | `ClassController`                       |
-| subjects                        | `classroom`  | `Subject`                         | `SubjectService`               | `SubjectController`                     |
-| class_subjects                  | `classroom`  | `ClassSubject`                    | `ClassSubjectService`          | `ClassController`                       |
-| class_students                  | `classroom`  | `ClassStudent`                    | `ClassStudentService`          | `ClassController`                       |
-| assignments                     | `assignment` | `Assignment`                      | `AssignmentService`            | `AssignmentController`                  |
-| assignment_students             | `assignment` | `AssignmentStudent`               | `AssignmentStudentService`     | `AssignmentController`                  |
-| assignment_requirements         | `assignment` | `AssignmentRequirement`           | `AssignmentRequirementService` | `AssignmentController`                  |
-| assignment_structures           | `assignment` | `AssignmentStructure`             | `AssignmentStructureService`   | `AssignmentController`                  |
-| assignment_structure_rules      | `assignment` | `AssignmentStructureRule`         | `AssignmentStructureService`   | `AssignmentController`                  |
-| git_connections                 | `git`        | `GitConnection`                   | `GitConnectionService`         | `GitController`                         |
-| repositories                    | `git`        | `GitRepository`                   | `GitRepositoryService`         | `GitController`                         |
-| assignment_repositories         | `git`        | `AssignmentRepositoryLink`        | `AssignmentRepositoryService`  | `GitController`                         |
-| assignment_student_repositories | `git`        | `AssignmentStudentRepositoryLink` | `StudentRepositoryService`     | `GitController`                         |
-| submissions                     | `submission` | `Submission`                      | `SubmissionService`            | `SubmissionController`                  |
-| analysis_runs                   | `analysis`   | `AnalysisRun`                     | `AnalysisService`              | `AnalysisController`                    |
-| analysis_results                | `analysis`   | `AnalysisResult`                  | `AnalysisService`              | `AnalysisController`                    |
-| analysis_issues                 | `analysis`   | `AnalysisIssue`                   | `AnalysisIssueService`         | `AnalysisController`                    |
+## 4. Table -> Class Map
+
+| Table                           | Entity                            | Service (interface)            | Controller                              |
+|---------------------------------|-----------------------------------|--------------------------------|-----------------------------------------|
+| roles                           | `Role`                            | `RoleService`                  | `RoleController`                        |
+| users                           | `User`                            | `UserService`, `UserAccountService` (internal, for auth) | `UserController`          |
+| user_settings                   | `UserSetting`                     | `UserSettingService`           | `UserController` (`/users/me/settings`) |
+| (auth, no table)                |                                   | `AuthService` (+ `JwtService` in `security`) | `AuthController`          |
+| classes                         | `ClassRoom`                       | `ClassService`                 | `ClassController`                       |
+| subjects                        | `Subject`                         | `SubjectService`               | `SubjectController`                     |
+| class_subjects                  | `ClassSubject`                    | `ClassSubjectService`          | `ClassController`                       |
+| class_students                  | `ClassStudent`                    | `ClassStudentService`          | `ClassController`                       |
+| assignments                     | `Assignment`                      | `AssignmentService`            | `AssignmentController`                  |
+| assignment_students             | `AssignmentStudent`               | `AssignmentStudentService`     | `AssignmentController`                  |
+| assignment_requirements         | `AssignmentRequirement`           | `AssignmentRequirementService` | `AssignmentController`                  |
+| assignment_structures           | `AssignmentStructure`             | `AssignmentStructureService`   | `AssignmentController`                  |
+| assignment_structure_rules      | `AssignmentStructureRule`         | `AssignmentStructureService`   | `AssignmentController`                  |
+| git_connections                 | `GitConnection`                   | `GitConnectionService`         | `GitController`                         |
+| repositories                    | `GitRepository`                   | `GitRepositoryService`         | `GitController`                         |
+| assignment_repositories         | `AssignmentRepositoryLink`        | `AssignmentRepositoryService`  | `GitController`                         |
+| assignment_student_repositories | `AssignmentStudentRepositoryLink` | `StudentRepositoryService`     | `GitController`                         |
+| submissions                     | `Submission`                      | `SubmissionService`            | `SubmissionController`                  |
+| analysis_runs                   | `AnalysisRun`                     | `AnalysisService`              | `AnalysisController`                    |
+| analysis_results                | `AnalysisResult`                  | `AnalysisService`              | `AnalysisController`                    |
+| analysis_issues                 | `AnalysisIssue`                   | `AnalysisIssueService`         | `AnalysisController`                    |
+
+Repositories follow `<Entity>Repository`; mappers are one per resource group (`UserMapper`, `AssignmentMapper`, ...).
 
 ## 5. Request Flow Example (Submit Assignment)
 
 ```text
 POST /api/v1/assignments/{id}/submissions
- -> submission.controller.SubmissionController.submit()      @PreAuthorize("hasRole('STUDENT')")
- -> submission.service.SubmissionService                     (interface)
- -> submission.service.impl.SubmissionServiceImpl            @Transactional
+ -> controller.SubmissionController.submit()        @PreAuthorize("hasRole('STUDENT')")
+ -> service.SubmissionService                       (interface)
+ -> service.impl.SubmissionServiceImpl              @Transactional
       calls by interface only:
-        assignment.service.AssignmentService      -> published? window? student assigned+ACTIVE?
-        git.service.StudentRepositoryService      -> active repository link
-        git.service.GitRepositoryService          -> resolve commit sha (git.client behind it)
-      saves Submission(SUBMITTED) via submission.repository, publishes SubmissionCreatedEvent
+        AssignmentService          -> published? window? student assigned + ACTIVE?
+        StudentRepositoryService   -> active repository link
+        GitRepositoryService       -> resolve commit sha (client/ behind it)
+      saves Submission(SUBMITTED) via repository.SubmissionRepository, publishes SubmissionCreatedEvent
  <- ApiResponse<SubmissionResponse> 201
 
-After commit: analysis.event.SubmissionCreatedListener -> analysis.worker.AnalysisWorker (@Async)
+After commit: event.SubmissionCreatedListener -> worker.AnalysisWorker (@Async)
 ```
 
 ## 6. Coding Rules for This Architecture
 
-- Put a class in the feature that owns the data it works on. If two features both need it, it belongs to the lower feature in the dependency order, or in `common` if it is feature-agnostic.
-- Every service has an interface + `impl`. Other features inject the interface only.
-- Controllers stay thin. A controller of feature A never calls feature B directly; the service of A does.
-- New table = migration + (feature) entity + repository + service (interface + impl) + DTOs + mapper + controller + tests, all inside the owning feature.
-- Do not create new top-level packages other than features and `common`.
-- When a feature grows past ~25 classes or a clear sub-domain appears, split it, update the dependency table and `ArchitectureTest`.
-- Flyway migrations are shared and ordered globally. Never one history per feature.
-- Package names are lowercase, singular nouns.
+- Put a class in the package of its layer. Do not create a package per business area.
+- Every service has an interface + `impl`. Inject the interface, never the impl.
+- Controllers stay thin and never touch repositories or entities.
+- New table = migration + entity + repository + service (interface + impl) + request/response DTOs + mapper + controller + tests, each in its layer package.
+- When one layer package grows past ~30 classes, group by sub-package **inside that layer only** (e.g. `service/impl/assignment/`) and update `ArchitectureTest`. Do not introduce top-level feature packages.
+- Cross-cutting infrastructure belongs in `config`, `security`, `exception` or `util`, never in a service.
+- Flyway migrations are one global ordered history.
+
+## 7. Enforcing It (`ArchitectureTest`)
+
+`ArchitectureTest` (ArchUnit) is the executable version of section 2. It must verify:
+
+- `controller` does not depend on `repository`, `entity` or `service.impl`.
+- `service` interfaces expose no entities, `HttpServletRequest` or `ResponseEntity`.
+- `service.impl` does not use `HttpServletRequest` / `ResponseEntity`; nothing depends on `service.impl` except Spring wiring and tests.
+- `repository` does not depend on `service`, `controller` or `dto`.
+- `entity` does not depend on `service`, `controller`, `repository`, `dto` or `mapper`, and does not use Lombok `@Data`.
+- `dto` contains no entities; `mapper` does not depend on `repository` or `service`.
+- `@Transactional` appears only in `service.impl`.
+- Naming: `controller` -> `*Controller`, `service.impl` -> `*ServiceImpl`, `repository` -> `*Repository`, `mapper` -> `*Mapper`, `event` -> `*Event` / `*Listener`.
+- Every `service` interface has exactly one `impl`.
+- No top-level package other than the ones in section 1, and no package named after a business area.
+- No dependency cycles between top-level layer packages other than the allowed direction in section 2.

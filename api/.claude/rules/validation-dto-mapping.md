@@ -43,11 +43,11 @@ Rules:
 - Bean Validation checks shape; the service checks business rules (state, ownership, uniqueness).
 - Trim strings; normalize email to lowercase; reject blank-only strings.
 - Validate path/query params (`@Min(1)` for ids, `@Max(100)` for size).
-- Custom validators live in `validation/` (`@SafeRelativePath`, `@ValidDateRange`, `@ValidTimezone`). If you add this package, document it in `architecture.md`.
+- Custom validators live in the top-level `validation/` package (`@SafeRelativePath`, `@ValidDateRange`, `@ValidTimezone`), listed in `architecture.md`.
 
 ## 3. Mapping (MapStruct)
 
-- One mapper per feature in `mapper/`: `@Mapper(componentModel = "spring")`.
+- One mapper per resource group in `mapper/` (`UserMapper`, `AssignmentMapper`, ...). With MapStruct: `@Mapper(componentModel = "spring")`. Until MapStruct is added, mappers are plain `@Component` classes with the same rules.
 - `unmappedTargetPolicy = ReportingPolicy.ERROR` so new fields are not forgotten.
 - Mappers do not call repositories or services. Resolve related entities in the service, then map.
 - Update mappers use `@MappingTarget` + `@BeanMapping(nullValuePropertyMappingStrategy = IGNORE)` for PATCH-like updates.

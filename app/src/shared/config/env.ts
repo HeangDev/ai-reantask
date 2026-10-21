@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const DEFAULT_API_URL = 'http://localhost:8000'
+const DEFAULT_API_URL = 'http://localhost:8080'
 
 const envSchema = z.object({
   VITE_API_URL: z

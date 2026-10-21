@@ -25,7 +25,7 @@ Tables WITHOUT audit/soft-delete columns: `roles`, `user_settings`, `analysis_ru
 
 ## Backend (Spring Boot)
 
-- Layer-based packaging (see `architecture.md`): `controller` (HTTP only) -> `service` interface + `service/impl` (rules + `@Transactional`) -> `repository` (queries only). Never create feature packages.
+- Layer-based packaging (see `architecture.md`): `controller` (HTTP only) -> `service` interface + `service/impl` (rules + `@Transactional`) -> `repository` (queries only). Never create feature packages (`user/`, `assignment/`, ...): one top-level package per layer, class names unique across the app.
 - Entities never leave the service layer. Use request/response DTOs (`record`) + MapStruct.
 - `@MappedSuperclass AuditableEntity` holds the audit + soft-delete fields; use JPA auditing (`@CreatedDate`, `@LastModifiedDate`, `@CreatedBy`, `@LastModifiedBy`).
 - Soft delete: set `deleted_at`, `deleted_by_user` (+ status `DELETED` if the table has status). Entities use `@SQLRestriction("deleted_at IS NULL")`.

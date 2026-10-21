@@ -1,0 +1,295 @@
+package com.reantask.api.service.impl;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import com.reantask.api.exception.AppException;
+import com.reantask.api.exception.ErrorCode;
+import com.reantask.api.security.CurrentUser;
+import com.reantask.api.dto.request.ChangeUserStatusRequest;
+import com.reantask.api.dto.request.CreateUserRequest;
+import com.reantask.api.dto.response.UserResponse;
+import com.reantask.api.entity.Role;
+import com.reantask.api.entity.User;
+import com.reantask.api.enums.RoleName;
+import com.reantask.api.enums.RoleStatus;
+import com.reantask.api.enums.UserStatus;
+import com.reantask.api.mapper.UserMapper;
+import com.reantask.api.repository.RoleRepository;
+import com.reantask.api.repository.UserRepository;
+
+@ExtendWith(MockitoExtension.class)
+class UserServiceImplTest {
+
+    private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
+
+    @Mock UserRepository userRepository;
+    @Mock RoleRepository roleRepository;
+    @Mock PasswordEncoder passwordEncoder;
+    @Mock CurrentUser currentUser;
+
+    UserServiceImpl service;
+    Role adminRole;
+    Role teacherRole;
+    Role studentRole;
+
+    @BeforeEach
+    void setUp() {
+        service = new UserServiceImpl(userRepository, roleRepository, new UserMapper(), passwordEncoder,
+                currentUser, Clock.fixed(NOW, ZoneOffset.UTC));
+        adminRole = role(1L, RoleName.ADMIN);
+        teacherRole = role(2L, RoleName.TEACHER);
+        studentRole = role(3L, RoleName.STUDENT);
+    }
+
+    // ---- create ----
+
+    @Test
+    void create_savesActiveUserWithHashedPasswordAndLowercaseEmail() {
+        when(userRepository.emailTaken(anyString(), anyLong())).thenReturn(false);
+        when(userRepository.phoneTaken(anyString(), anyLong())).thenReturn(false);
+        when(roleRepository.findById(3L)).thenReturn(Optional.of(studentRole));
+        when(passwordEncoder.encode("Secret123")).thenReturn("hash");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UserResponse response = service.create(
+                new CreateUserRequest(3L, " Dara ", "Dara@Example.COM", "012345678", "Secret123", null));
+
+        assertThat(response.email()).isEqualTo("dara@example.com");
+        assertThat(response.fullname()).isEqualTo("Dara");
+        assertThat(response.status()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(response.roleName()).isEqualTo("student");
+        verify(passwordEncoder).encode("Secret123");
+    }
+
+    @Test
+    void create_emailTaken_throwsConflict() {
+        when(userRepository.emailTaken(anyString(), anyLong())).thenReturn(true);
+
+        assertThatThrownBy(() -> service.create(
+                new CreateUserRequest(3L, "Dara", "dara@example.com", "012345678", "Secret123", null)))
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getCode()).isEqualTo(ErrorCode.EMAIL_TAKEN));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void create_inactiveRole_isRejected() {
+        studentRole.setStatus(RoleStatus.INACTIVE);
+        when(userRepository.emailTaken(anyString(), anyLong())).thenReturn(false);
+        when(userRepository.phoneTaken(anyString(), anyLong())).thenReturn(false);
+        when(roleRepository.findById(3L)).thenReturn(Optional.of(studentRole));
+
+        assertThatThrownBy(() -> service.create(
+                new CreateUserRequest(3L, "Dara", "dara@example.com", "012345678", "Secret123", null)))
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getCode()).isEqualTo(ErrorCode.ROLE_INACTIVE));
+    }
+
+    // ---- get / not found ----
+
+    @Test
+    void get_missing_throwsNotFound() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.get(99L))
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getCode()).isEqualTo(ErrorCode.USER_NOT_FOUND));
+    }
+
+    @Test
+    void get_teacherCannotSeeNonPendingUser() {
+        User active = user(10L, studentRole, UserStatus.ACTIVE);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(active));
+        when(currentUser.hasRole("ADMIN")).thenReturn(false);
+
+        assertThatThrownBy(() -> service.get(10L))
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getCode()).isEqualTo(ErrorCode.USER_NOT_FOUND));
+    }
+
+    // ---- approve / reject ----
+
+    @Test
+    void approve_pendingStudentByTeacher_becomesActive() {
+        User pending = user(10L, studentRole, UserStatus.PENDING);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(pending));
+        when(currentUser.hasRole("ADMIN")).thenReturn(false);
+
+        UserResponse response = service.approve(10L);
+
+        assertThat(response.status()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(pending.getDeletedAt()).isNull();
+    }
+
+    @Test
+    void approve_nonPendingByAdmin_throwsInvalidTransition() {
+        User active = user(10L, studentRole, UserStatus.ACTIVE);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(active));
+        when(currentUser.hasRole("ADMIN")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.approve(10L))
+                .isInstanceOfSatisfying(AppException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.INVALID_STATUS_TRANSITION));
+    }
+
+    @Test
+    void reject_pendingStudent_softDeletesWithActorAndTime() {
+        User pending = user(10L, studentRole, UserStatus.PENDING);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(pending));
+        when(currentUser.hasRole("ADMIN")).thenReturn(false);
+        when(currentUser.id()).thenReturn(Optional.of(2L));
+
+        UserResponse response = service.reject(10L);
+
+        assertThat(response.status()).isEqualTo(UserStatus.DELETED);
+        assertThat(pending.getDeletedAt()).isEqualTo(NOW);
+        assertThat(pending.getDeletedByUser()).isEqualTo(2L);
+    }
+
+    @Test
+    void reject_teacherCannotRejectPendingTeacher() {
+        User pendingTeacher = user(11L, teacherRole, UserStatus.PENDING);
+        when(userRepository.findById(11L)).thenReturn(Optional.of(pendingTeacher));
+        when(currentUser.hasRole("ADMIN")).thenReturn(false);
+
+        assertThatThrownBy(() -> service.reject(11L))
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getCode()).isEqualTo(ErrorCode.USER_NOT_FOUND));
+        assertThat(pendingTeacher.getStatus()).isEqualTo(UserStatus.PENDING);
+    }
+
+    // ---- changeStatus ----
+
+    @Test
+    void changeStatus_activeToSuspended_isAllowed() {
+        User active = user(10L, studentRole, UserStatus.ACTIVE);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(active));
+        when(currentUser.id()).thenReturn(Optional.of(1L));
+
+        UserResponse response = service.changeStatus(10L, new ChangeUserStatusRequest(UserStatus.SUSPENDED));
+
+        assertThat(response.status()).isEqualTo(UserStatus.SUSPENDED);
+    }
+
+    @Test
+    void changeStatus_sameStatus_isIdempotent() {
+        User active = user(10L, studentRole, UserStatus.ACTIVE);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(active));
+
+        UserResponse response = service.changeStatus(10L, new ChangeUserStatusRequest(UserStatus.ACTIVE));
+
+        assertThat(response.status()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    @Test
+    void changeStatus_pendingToSuspended_throwsInvalidTransition() {
+        User pending = user(10L, studentRole, UserStatus.PENDING);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(pending));
+        when(currentUser.id()).thenReturn(Optional.of(1L));
+
+        assertThatThrownBy(() -> service.changeStatus(10L, new ChangeUserStatusRequest(UserStatus.SUSPENDED)))
+                .isInstanceOfSatisfying(AppException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.INVALID_STATUS_TRANSITION));
+    }
+
+    @Test
+    void changeStatus_ownAccount_isRejected() {
+        User me = user(1L, adminRole, UserStatus.ACTIVE);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(me));
+        when(currentUser.id()).thenReturn(Optional.of(1L));
+
+        assertThatThrownBy(() -> service.changeStatus(1L, new ChangeUserStatusRequest(UserStatus.INACTIVE)))
+                .isInstanceOfSatisfying(AppException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.CANNOT_MODIFY_SELF));
+    }
+
+    @Test
+    void changeStatus_lastActiveAdmin_isRejected() {
+        User admin = user(5L, adminRole, UserStatus.ACTIVE);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(admin));
+        when(currentUser.id()).thenReturn(Optional.of(1L));
+        when(userRepository.countByRole_NameAndStatus(RoleName.ADMIN, UserStatus.ACTIVE)).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.changeStatus(5L, new ChangeUserStatusRequest(UserStatus.SUSPENDED)))
+                .isInstanceOfSatisfying(AppException.class, e -> assertThat(e.getCode()).isEqualTo(ErrorCode.LAST_ADMIN));
+    }
+
+    @Test
+    void changeStatus_deletedUserIsFinal() {
+        // @SQLRestriction hides DELETED rows, but a row loaded in the same transaction must still be final.
+        User deleted = user(10L, studentRole, UserStatus.DELETED);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(deleted));
+        when(currentUser.id()).thenReturn(Optional.of(1L));
+
+        assertThatThrownBy(() -> service.changeStatus(10L, new ChangeUserStatusRequest(UserStatus.ACTIVE)))
+                .isInstanceOfSatisfying(AppException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.INVALID_STATUS_TRANSITION));
+    }
+
+    // ---- delete ----
+
+    @Test
+    void delete_softDeletesUser() {
+        User active = user(10L, studentRole, UserStatus.ACTIVE);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(active));
+        when(currentUser.id()).thenReturn(Optional.of(1L));
+
+        service.delete(10L);
+
+        assertThat(active.getStatus()).isEqualTo(UserStatus.DELETED);
+        assertThat(active.getDeletedAt()).isEqualTo(NOW);
+        assertThat(active.getDeletedByUser()).isEqualTo(1L);
+        verify(userRepository, never()).delete(any(User.class));
+    }
+
+    @Test
+    void delete_alreadyGone_isNoOp() {
+        when(userRepository.findById(10L)).thenReturn(Optional.empty());
+
+        service.delete(10L);
+
+        verify(userRepository, never()).delete(any(User.class));
+    }
+
+    // ---- list ----
+
+    @Test
+    void list_unknownSortField_throwsInvalidSortField() {
+        when(currentUser.hasRole("ADMIN")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.list(null, null, null,
+                PageRequest.of(0, 20, Sort.by("password"))))
+                .isInstanceOfSatisfying(AppException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.INVALID_SORT_FIELD));
+    }
+
+    private Role role(Long id, RoleName name) {
+        Role role = new Role(name);
+        ReflectionTestUtils.setField(role, "id", id);
+        return role;
+    }
+
+    private User user(Long id, Role role, UserStatus status) {
+        User user = User.builder().role(role).fullname("Test").email("t" + id + "@example.com")
+                .password("hash").status(status).build();
+        ReflectionTestUtils.setField(user, "id", id);
+        return user;
+    }
+}

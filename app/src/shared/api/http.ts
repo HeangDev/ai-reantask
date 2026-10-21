@@ -1,6 +1,7 @@
 import type { z } from 'zod'
 import { env } from '@/shared/config/env'
 import { ApiError } from '@/shared/api/errors'
+import { toFieldErrors } from '@/shared/api/errors'
 import type { ErrorBody } from '@/shared/api/errors'
 import { authActions, getSession } from '@/shared/store/authStore'
 
@@ -76,7 +77,7 @@ export async function apiRequest(path: string, options: RequestOptions<z.ZodType
     throw new ApiError(response.status, {
       message: errorBody.message,
       code: errorBody.code,
-      fieldErrors: errorBody.errors,
+      fieldErrors: toFieldErrors(errorBody.errors),
       requestId,
       retryAfter: Number(response.headers.get('Retry-After')) || undefined,
     })

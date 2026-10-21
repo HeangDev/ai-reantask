@@ -18,33 +18,25 @@ All rules live in `.claude/rules/`. Read the matching file before touching a mod
 **Architecture and general**
 
 @.claude/rules/architecture.md
-@.claude/rules/00-general.md
-
-**Modules (DB + Backend per module)**
-
-@.claude/rules/01-users-roles.md
-@.claude/rules/02-classes.md
-@.claude/rules/03-assignments.md
-@.claude/rules/04-git-repositories.md
-@.claude/rules/05-submissions-analysis.md
+@.claude/rules/general-rules.md
 
 **Database**
 
-@.claude/rules/10-database-conventions.md
+@.claude/rules/database-schema.md
+@.claude/rules/relationships.md
+@.claude/rules/database-conventions.md
 
 **Backend**
 
-@.claude/rules/20-api-design.md
-@.claude/rules/21-security-and-permissions.md
-@.claude/rules/22-exception-and-error-codes.md
-@.claude/rules/23-validation-dto-mapping.md
-@.claude/rules/24-jpa-and-transactions.md
-@.claude/rules/25-async-events-worker.md
-@.claude/rules/26-config-logging-ops.md
-@.claude/rules/27-testing.md
-@.claude/rules/28-code-style.md
+@.claude/rules/api-design.md
+@.claude/rules/security-and-permissions.md
+@.claude/rules/exception-and-error-codes.md
+@.claude/rules/validation-dto-mapping.md
+@.claude/rules/jpa-and-transactions.md
+@.claude/rules/testing.md
+@.claude/rules/code-style.md
 
-Database migrations: `src/main/resources/db/migration/V1__init_schema.sql` (all 20 tables) and `V2__seed_roles.sql`.
+Database migrations live in `src/main/resources/db/migration` (one global Flyway history, see `database-conventions.md`).
 
 ## 2. Tech Stack
 
@@ -72,17 +64,20 @@ com.<org>.<app>
 ├── entity/        JPA entities (+ entity/base/AuditableEntity)
 ├── enums/         status and type enums
 ├── dto/           request/, response/, common/
-├── mapper/        MapStruct mappers
-├── exception/     custom exceptions + GlobalExceptionHandler
-├── security/      JWT, filters, user details, Google verifier
-├── config/        Security, JPA auditing, async, CORS, OpenAPI, Clock
+├── mapper/        entity <-> DTO mappers (MapStruct once added)
+├── exception/     ErrorCode, custom exceptions + GlobalExceptionHandler
+├── security/      CurrentUser, JwtService, error handlers, Google verifier
+├── config/        Security, Jwt, JPA auditing, async, CORS, OpenAPI, Clock
 ├── client/        Git provider clients (GitHub, GitLab)
 ├── worker/        async analysis worker
 ├── event/         application events + listeners
 ├── converter/     JPA AttributeConverters (role name, encrypted tokens)
+├── validation/    custom Bean Validation constraints
 ├── seeder/        RoleSeeder and other seeders
 └── util/          small stateless helpers
 ```
+
+Base package: `com.reantask.api`. Never create per-feature packages.
 
 Dependency direction: `controller -> service -> repository -> entity`. Never upward. Controllers use service interfaces only. Entities never leave the service layer.
 

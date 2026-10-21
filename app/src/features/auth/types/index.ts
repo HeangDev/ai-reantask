@@ -18,9 +18,7 @@ export interface GoogleAuthInput {
 
 export interface RegisterInput {
   fullname: string
-  username: string
   email: string
   phone: string
   password: string
-  password_confirmation: string
 }

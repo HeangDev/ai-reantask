@@ -1,17 +1,30 @@
 import {
-  authResultEnvelope,
+  apiUserEnvelope,
   authUserEnvelope,
   googleEnvelope,
   messageSchema,
+  tokenEnvelope,
 } from '@/features/auth/schemas/auth.schemas'
-import type { GoogleAuthInput, LoginInput, RegisterInput } from '@/features/auth/types'
+import type { AuthResult, AuthUser, GoogleAuthInput, LoginInput, RegisterInput } from '@/features/auth/types'
 import { apiRequest } from '@/shared/api/http'
 
 export const authApi = {
-  login: (input: LoginInput) =>
-    apiRequest('/auth/login', { method: 'POST', body: input, schema: authResultEnvelope }).then((r) => r.data),
-  google: (input: GoogleAuthInput) =>
-    apiRequest('/auth/google', { method: 'POST', body: input, schema: googleEnvelope }).then((r) => r.data),
+  /** The login answer holds only a token, so the user and role are read with it right after. */
+  login: async ({ email, password }: LoginInput): Promise<AuthResult> => {
+    const { data: token } = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: { email, password },
+      schema: tokenEnvelope,
+    })
+    const { data: user } = await apiRequest('/users/me', { token: token.accessToken, schema: apiUserEnvelope })
+    return { token: token.accessToken, token_type: token.tokenType, expires_at: null, user }
+  },
+  /** An approved account gets a token (AuthResult); a first-time Google user is created PENDING, with none (AuthUser). */
+  google: async ({ credential }: GoogleAuthInput): Promise<AuthResult | AuthUser> => {
+    const { data } = await apiRequest('/auth/google', { method: 'POST', body: { credential }, schema: googleEnvelope })
+    if (!data.token) return data.user
+    return { token: data.token.accessToken, token_type: data.token.tokenType, expires_at: null, user: data.user }
+  },
   me: (signal?: AbortSignal) => apiRequest('/auth/me', { signal, schema: authUserEnvelope }).then((r) => r.data),
   /** Ends this device's session on the server. */
   logout: (token: string) => apiRequest('/auth/logout', { method: 'POST', token }),
@@ -21,5 +34,5 @@ export const authApi = {
     apiRequest('/auth/forgot-password', { method: 'POST', body: { email }, schema: messageSchema }),
   /** The new student is PENDING and gets no token until an admin or a teacher approves the account. */
   register: (input: RegisterInput) =>
-    apiRequest('/auth/register', { method: 'POST', body: input, schema: authUserEnvelope }).then((r) => r.data),
+    apiRequest('/auth/register', { method: 'POST', body: input, schema: apiUserEnvelope }).then((r) => r.data),
 }

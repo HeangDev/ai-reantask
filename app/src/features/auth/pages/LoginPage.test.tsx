@@ -23,24 +23,29 @@ function renderLogin() {
   )
 }
 
-const authResult = (role: 'student' | 'teacher' | 'admin') => ({
+const tokenBody = { data: { accessToken: 'tok-123', tokenType: 'Bearer', expiresIn: 900 } }
+
+const meBody = (role: 'student' | 'teacher' | 'admin') => ({
   data: {
-    token: 'tok-123',
-    token_type: 'Bearer',
-    expires_at: null,
-    user: {
-      id: 1,
-      fullname: 'Sok Dara',
-      username: 'sokdara',
-      email: 'Sok@Example.com',
-      phone: null,
-      avatar: null,
-      status: 'ACTIVE',
-      created_at: '2026-01-01T00:00:00Z',
-      role: { id: 1, name: role },
-    },
+    id: 1,
+    roleId: 1,
+    roleName: role.toUpperCase(),
+    fullname: 'Sok Dara',
+    email: 'Sok@Example.com',
+    phone: null,
+    avatar: null,
+    status: 'ACTIVE',
+    createdAt: '2026-01-01T00:00:00Z',
   },
 })
+
+/** Login answers with a token only; the user is then read with it from /users/me. */
+function mockLogin(role: 'student' | 'teacher' | 'admin') {
+  server.use(
+    http.post(`${API}/auth/login`, () => HttpResponse.json(tokenBody)),
+    http.get(`${API}/users/me`, () => HttpResponse.json(meBody(role))),
+  )
+}
 
 describe('LoginPage', () => {
   it('shows an error for each empty field and sends nothing (forms-validation.md §6.1)', async () => {
@@ -55,7 +60,7 @@ describe('LoginPage', () => {
   })
 
   it('a successful sign-in keeps the session in memory and goes to the dashboard', async () => {
-    server.use(http.post(`${API}/auth/login`, () => HttpResponse.json(authResult('teacher'))))
+    mockLogin('teacher')
     const user = userEvent.setup()
     renderLogin()
 
@@ -67,13 +72,14 @@ describe('LoginPage', () => {
     expect(useAuthStore.getState().session).toEqual({ role: 'teacher', email: 'sok@example.com', token: 'tok-123' })
   })
 
-  it('sends the typed credentials and a device name', async () => {
+  it('sends the typed credentials', async () => {
     let body: unknown
     server.use(
       http.post(`${API}/auth/login`, async ({ request }) => {
         body = await request.json()
-        return HttpResponse.json(authResult('student'))
+        return HttpResponse.json(tokenBody)
       }),
+      http.get(`${API}/users/me`, () => HttpResponse.json(meBody('student'))),
     )
     const user = userEvent.setup()
     renderLogin()
@@ -83,7 +89,6 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
 
     await waitFor(() => expect(body).toMatchObject({ email: 'a@b.co', password: 'Passw0rd!' }))
-    expect(body).toHaveProperty('device_name')
   })
 
   it('wrong details show a generic error and never the server message', async () => {

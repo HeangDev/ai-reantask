@@ -37,7 +37,7 @@ Before writing anything, find out:
 - **Spring Boot version**: 3.x uses `jakarta.*`; 2.x uses `javax.*`. Getting this wrong breaks compilation.
 - **Java/Kotlin version**: if Java 17+, use `record` for DTOs; otherwise use classes.
 - **Base package**: locate the `@SpringBootApplication` class.
-- **Package layout**: layer-first (`controller/`, `service/`, `repository/`) or feature-first (`product/controller/...`). Mirror what exists. If the project is empty, default to feature-first.
+- **Package layout**: layer-first (`controller/`, `service/`, `repository/`) or feature-first (`product/controller/...`). Mirror what exists, and follow `.claude/rules/architecture.md` when the project has one (this project is layer-based). If the project is empty and has no such rule, default to feature-first.
 - **Existing conventions**: look at one existing feature, if any, and copy its style: Lombok or not, MapStruct or manual mapper, `ResponseEntity` vs plain return, API prefix and versioning, ID type (`Long`, `UUID`), auditing base class, existing exception handler, existing error response shape.
 - **Persistence**: Spring Data JPA, JDBC, R2DBC, or Mongo. Default to JPA if unclear.
 - **Migrations**: Flyway (`db/migration`), Liquibase, or none.

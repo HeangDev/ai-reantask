@@ -17,7 +17,7 @@ import { getDeviceName } from '@/shared/lib/deviceName'
 import { ApiError } from '@/shared/api/http'
 import { useI18n } from '@/shared/i18n'
 import type { TranslationKey } from '@/shared/i18n'
-import { isValidEmail, isValidPhone, usernameFromEmail } from '@/shared/lib/validation'
+import { isValidEmail, isValidPhone } from '@/shared/lib/validation'
 import { paths } from '@/shared/config/paths'
 
 interface Values {
@@ -101,22 +101,20 @@ export function RegisterPage() {
     register.mutate(
       {
         fullname: values.fullName.trim(),
-        // The form has no username field; the API needs one, so it is made from the email.
-        username: usernameFromEmail(email),
         email,
         phone: values.phone.trim(),
         password: values.password,
-        password_confirmation: values.confirm,
       },
       {
         onSuccess: () => setCreatedFor(email),
         onError: (error) => {
-          // The server enforces unique emails and phone numbers; the username is made from the email, so a clash on it is shown on the email field.
-          const fields = error instanceof ApiError && error.status === 422 ? error.fieldErrors : {}
+          // The server enforces unique emails and phone numbers (409) and re-validates each field (400).
           const serverErrors: Errors = {}
-          if (fields.email || fields.username) serverErrors.email = 'register.errEmailTaken'
-          if (fields.phone) serverErrors.phone = 'register.errPhoneTaken'
-          if (fields.password) serverErrors.password = 'acct.errPasswordRule'
+          if (error instanceof ApiError) {
+            if (error.code === 'EMAIL_TAKEN' || error.fieldErrors.email) serverErrors.email = 'register.errEmailTaken'
+            if (error.code === 'PHONE_TAKEN' || error.fieldErrors.phone) serverErrors.phone = 'register.errPhoneTaken'
+            if (error.fieldErrors.password) serverErrors.password = 'acct.errPasswordRule'
+          }
           if (Object.keys(serverErrors).length > 0) setErrors(serverErrors)
           else setFailed(true)
         },

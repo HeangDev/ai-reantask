@@ -54,7 +54,7 @@ Error:
 
 ## 4. Pagination, Sorting, Filtering
 
-- Query params: `page` (0-based, default 0), `size` (default 20, max 100), `sort=field,asc|desc` (whitelist allowed fields), plus filters: `status`, `q` (search), `classId`, `assignmentId`, `from`, `to`.
+- Query params: `page` (0-based, default 0), `size` (default 10, max 100), `sort=field,asc|desc` (whitelist allowed fields), plus filters: `status`, `q` (search), `classId`, `assignmentId`, `from`, `to`.
 - Whitelist sortable/filterable fields. Reject unknown sort fields with 400 `INVALID_SORT_FIELD`.
 - Use Spring `Pageable` + Specifications (or QueryDSL) for filters. Default sort `createdAt desc`.
 - Soft-deleted rows excluded by default.
