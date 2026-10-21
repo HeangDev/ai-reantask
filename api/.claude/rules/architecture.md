@@ -24,7 +24,7 @@ com.reantask.api
 ├── exception/      ErrorCode, AppException (+ subtypes), GlobalExceptionHandler
 ├── security/       CurrentUser, JwtService, SecurityErrorHandlers (JWT, filters, user details, Google verifier)
 ├── config/         SecurityConfig, JwtConfig, JwtProperties, ClockConfig, JpaAuditingConfig, PasswordEncoderConfig, CORS, OpenAPI, async
-├── converter/      JPA AttributeConverters (RoleNameConverter, EncryptedStringConverter)
+├── converter/      JPA AttributeConverters (EncryptedStringConverter)
 ├── validation/     custom Bean Validation constraints and validators (@SafeRelativePath, @ValidDateRange)
 ├── seeder/         idempotent seeders (RoleSeeder)
 ├── client/         Git provider clients (GitHub, GitLab)            (create when needed)
@@ -67,7 +67,7 @@ Arrows mean "may depend on". Dependencies never point upward.
 
 | Layer                 | Does                                                              | Must NOT                                                                 |
 |-----------------------|-------------------------------------------------------------------|--------------------------------------------------------------------------|
-| `controller`          | Map HTTP <-> DTO, `@Valid`, `@PreAuthorize`, return `ApiResponse` | Business logic, use repositories, entities or `service.impl`             |
+| `controller`          | Map HTTP <-> DTO, `@Valid`, return `ApiResponse` | Business logic, use repositories, entities or `service.impl`             |
 | `service` (interface) | Define operations with DTOs and ids, Javadoc the contract         | Expose entities or HTTP types                                            |
 | `service.impl`        | Business rules, transitions, ownership checks, `@Transactional`   | Use `HttpServletRequest`, `ResponseEntity`; depend on `controller`       |
 | `repository`          | Queries only                                                      | Business logic; depend on `service`, `controller`, `dto`                 |
@@ -86,7 +86,7 @@ Rules:
 5. A service that must not be reachable from controllers (internal contract, such as `UserAccountService`, which returns password hashes) is documented as internal in its Javadoc and is never injected into a controller. Its DTO overrides `toString` to hide secrets.
 6. Relations between entities use `@ManyToOne(fetch = LAZY)`; audit columns (`created_by_user`, ...) are plain `Long`.
 7. `exception`, `dto/common`, `entity/base`, `converter`, `validation` and `util` depend on no business layer (`service`, `repository`, `controller`). Exception: `converter` may depend on `enums`.
-8. Security wiring (`SecurityConfig`, `JwtConfig`, `JwtService`, Google verifier) lives in `config` and `security`. Controllers only use `@PreAuthorize` and `CurrentUser`.
+8. Security wiring (`SecurityConfig`, `JwtConfig`, `JwtService`, Google verifier) lives in `config` and `security`. Role rules live in `SecurityConfig` (URL matchers); controllers only use `CurrentUser`.
 9. Events (`event/`): a service publishes, a listener reacts after commit. A listener never calls a controller.
 10. Heavy list/report screens may use a read-only projection query in `repository`. Record such exceptions in `database-conventions.md`.
 
@@ -142,7 +142,7 @@ Repositories follow `<Entity>Repository`; mappers are one per resource group (`U
 
 ```text
 POST /api/v1/assignments/{id}/submissions
- -> controller.SubmissionController.submit()        @PreAuthorize("hasRole('STUDENT')")
+ -> controller.SubmissionController.submit()
  -> service.SubmissionService                       (interface)
  -> service.impl.SubmissionServiceImpl              @Transactional
       calls by interface only:

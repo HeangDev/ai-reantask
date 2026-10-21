@@ -88,7 +88,7 @@ public class ClassSubjectServiceImpl implements ClassSubjectService {
     }
 
     private void assertActiveTeacher(UserResponse user) {
-        if (!RoleName.TEACHER.dbValue().equals(user.roleName()) || user.status() != UserStatus.ACTIVE) {
+        if (!RoleName.TEACHER.name().equals(user.roleName()) || user.status() != UserStatus.ACTIVE) {
             throw new BusinessRuleException(ErrorCode.TEACHER_INVALID, "User is not an active teacher");
         }
     }

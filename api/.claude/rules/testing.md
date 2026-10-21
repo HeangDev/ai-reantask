@@ -18,7 +18,7 @@ src/test/java/com/reantask/api/
 ├── config/                     SecurityPolicyTest (401/403 matrix), config wiring tests
 ├── security/                   JwtServiceTest, CurrentUserTest
 ├── exception/                  GlobalExceptionHandlerTest
-├── converter/                  RoleNameConverterTest, EncryptedStringConverterTest
+├── converter/                  EncryptedStringConverterTest
 ├── validation/                 SafeRelativePathValidatorTest, ValidDateRangeValidatorTest
 ├── seeder/                     RoleSeederTest (idempotent)
 ├── event/ client/ worker/      tests for those packages once they exist
@@ -100,7 +100,7 @@ Must verify:
 
 **Shared infrastructure**
 - `GlobalExceptionHandler` maps every `AppException` subtype and validation errors to the right `ErrorCode`/HTTP status.
-- `EncryptedStringConverter` round-trips and never stores plain text; `RoleNameConverter` maps both ways.
+- `EncryptedStringConverter` round-trips and never stores plain text.
 - Validators `@SafeRelativePath`, `@ValidDateRange` (valid, invalid, null, boundary).
 - `AuditableEntity`: created/updated populated, soft delete hides rows.
 - `CurrentUser` reads the SecurityContext only.

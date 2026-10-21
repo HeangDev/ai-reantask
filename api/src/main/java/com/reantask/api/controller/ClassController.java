@@ -5,7 +5,6 @@ import java.net.URI;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,7 +43,6 @@ public class ClassController {
     private final ClassSubjectService classSubjectService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ApiResponse<PageResponse<ClassResponse>> list(
             @RequestParam(required = false) ClassStatus status,
             @RequestParam(required = false) String q,
@@ -53,7 +51,6 @@ public class ClassController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ClassResponse>> create(@Valid @RequestBody CreateClassRequest request) {
         ClassResponse created = classService.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -62,27 +59,23 @@ public class ClassController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ApiResponse<ClassResponse> get(@PathVariable @Positive Long id) {
         return ApiResponse.ok(classService.get(id));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ClassResponse> update(@PathVariable @Positive Long id,
                                              @Valid @RequestBody UpdateClassRequest request) {
         return ApiResponse.ok(classService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable @Positive Long id) {
         classService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me/teaching")
-    @PreAuthorize("hasRole('TEACHER')")
     public ApiResponse<PageResponse<ClassSubjectResponse>> myTeaching(
             @RequestParam(required = false) ClassSubjectStatus status,
             @PageableDefault(size = 10) Pageable pageable) {
@@ -90,7 +83,6 @@ public class ClassController {
     }
 
     @PostMapping("/{id}/subjects")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<ClassSubjectResponse>> assignSubject(
             @PathVariable @Positive Long id, @Valid @RequestBody AssignClassSubjectRequest request) {
         ClassSubjectResponse created = classSubjectService.assign(id, request);

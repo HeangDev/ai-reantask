@@ -107,7 +107,7 @@ class ClassSubjectServiceImplTest {
     private void stubValidAssign() {
         when(classService.get(1L)).thenReturn(classResponse(ClassStatus.ACTIVE));
         when(subjectService.get(2L)).thenReturn(subjectResponse(SubjectStatus.ACTIVE));
-        when(userService.get(7L)).thenReturn(user("teacher", UserStatus.ACTIVE));
+        when(userService.get(7L)).thenReturn(user("TEACHER", UserStatus.ACTIVE));
     }
 
     // ---- assign ----
@@ -154,7 +154,7 @@ class ClassSubjectServiceImplTest {
     void assign_userIsNotTeacher_throwsTeacherInvalid() {
         when(classService.get(1L)).thenReturn(classResponse(ClassStatus.ACTIVE));
         when(subjectService.get(2L)).thenReturn(subjectResponse(SubjectStatus.ACTIVE));
-        when(userService.get(7L)).thenReturn(user("student", UserStatus.ACTIVE));
+        when(userService.get(7L)).thenReturn(user("STUDENT", UserStatus.ACTIVE));
 
         assertThatThrownBy(() -> service.assign(1L, REQUEST))
                 .satisfies(e -> assertCode(e, ErrorCode.TEACHER_INVALID));
@@ -165,7 +165,7 @@ class ClassSubjectServiceImplTest {
     void assign_teacherNotActive_throwsTeacherInvalid() {
         when(classService.get(1L)).thenReturn(classResponse(ClassStatus.ACTIVE));
         when(subjectService.get(2L)).thenReturn(subjectResponse(SubjectStatus.ACTIVE));
-        when(userService.get(7L)).thenReturn(user("teacher", UserStatus.SUSPENDED));
+        when(userService.get(7L)).thenReturn(user("TEACHER", UserStatus.SUSPENDED));
 
         assertThatThrownBy(() -> service.assign(1L, REQUEST))
                 .satisfies(e -> assertCode(e, ErrorCode.TEACHER_INVALID));

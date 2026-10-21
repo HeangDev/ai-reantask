@@ -38,7 +38,7 @@ class AuthControllerTest {
 
     @Test
     void me_returnsCurrentUserInEnvelope() throws Exception {
-        when(userService.getMe()).thenReturn(new UserResponse(1L, 3L, "student", "Dara", "dara@example.com", null,
+        when(userService.getMe()).thenReturn(new UserResponse(1L, 3L, "STUDENT", "Dara", "dara@example.com", null,
                 null, UserStatus.ACTIVE, null, Instant.parse("2026-01-01T00:00:00Z"),
                 Instant.parse("2026-01-01T00:00:00Z")));
 

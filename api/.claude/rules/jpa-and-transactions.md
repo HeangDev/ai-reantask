@@ -28,7 +28,7 @@ public abstract class AuditableEntity {
 - Tables without audit/soft-delete columns (`roles`, `user_settings`, `analysis_*`) use a smaller `TimestampedEntity` (`created_at`, `updated_at`) only.
 - `@SQLRestriction("deleted_at IS NULL")` on soft-deletable entities.
 - Primary key: `@Id @GeneratedValue(strategy = GenerationType.IDENTITY) Long id`.
-- Enums: `@Enumerated(EnumType.STRING)`. `RoleName` uses a converter (lowercase in DB).
+- Enums: `@Enumerated(EnumType.STRING)` (including `RoleName`: stored as ADMIN, TEACHER, STUDENT).
 - JSONB: `@JdbcTypeCode(SqlTypes.JSON) private JsonNode evidence;`
 - Relations: `@ManyToOne(fetch = LAZY)` always; no `EAGER`. Avoid bidirectional `@OneToMany` unless needed; never `CascadeType.REMOVE` (soft delete only).
 - Foreign keys to users for audit are plain `Long` columns, not `@ManyToOne`.

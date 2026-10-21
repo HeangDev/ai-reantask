@@ -51,7 +51,7 @@ class UserControllerTest {
     @MockitoBean UserSessionService sessionService;
 
     private static UserResponse sample() {
-        return new UserResponse(1L, 3L, "student", "Dara", "dara@example.com", "012345678", null,
+        return new UserResponse(1L, 3L, "STUDENT", "Dara", "dara@example.com", "012345678", null,
                 UserStatus.ACTIVE, null, Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-01-01T00:00:00Z"));
     }
 
@@ -129,7 +129,7 @@ class UserControllerTest {
 
     @Test
     void updateMyAvatar_validFile_returns200WithAvatarUrl() throws Exception {
-        UserResponse withAvatar = new UserResponse(1L, 3L, "student", "Dara", "dara@example.com", null,
+        UserResponse withAvatar = new UserResponse(1L, 3L, "STUDENT", "Dara", "dara@example.com", null,
                 "/api/v1/avatars/a.png", UserStatus.ACTIVE, null, Instant.now(), Instant.now());
         when(userService.updateMyAvatar(any())).thenReturn(withAvatar);
 

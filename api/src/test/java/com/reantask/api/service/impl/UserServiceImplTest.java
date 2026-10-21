@@ -84,7 +84,7 @@ class UserServiceImplTest {
         assertThat(response.email()).isEqualTo("dara@example.com");
         assertThat(response.fullname()).isEqualTo("Dara");
         assertThat(response.status()).isEqualTo(UserStatus.ACTIVE);
-        assertThat(response.roleName()).isEqualTo("student");
+        assertThat(response.roleName()).isEqualTo("STUDENT");
         verify(passwordEncoder).encode("Secret123");
     }
 

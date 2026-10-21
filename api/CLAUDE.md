@@ -128,7 +128,7 @@ created_at, created_by_user, updated_at, updated_by_user, deleted_at, deleted_by
 Create one Java enum per status/type. Store as strings.
 
 ```text
-RoleName:            ADMIN, TEACHER, STUDENT   (DB values are lowercase: admin, teacher, student)
+RoleName:            ADMIN, TEACHER, STUDENT
 RoleStatus:          ACTIVE, INACTIVE
 UserStatus:          PENDING, ACTIVE, INACTIVE, SUSPENDED, DELETED
 AssignmentStatus:    PUBLISHED, DRAFT, DELETED
@@ -146,7 +146,7 @@ ThemeMode:           LIGHT, DARK, SYSTEM
 Language:            EN, KH, KO
 ```
 
-Roles are lowercase in the DB. Use a JPA `AttributeConverter` (or `@Column` mapping) so `RoleName.ADMIN` <-> `"admin"`. `roles` is seeded by `RoleSeeder` (idempotent, runs on startup).
+Roles are stored by enum name (`ADMIN`, `TEACHER`, `STUDENT`) via `@Enumerated(STRING)`. `roles` is seeded by `RoleSeeder` (idempotent, runs on startup).
 
 ### Users
 
@@ -225,7 +225,7 @@ AnalysisRun: PENDING -> RUNNING -> COMPLETED | FAILED
 ## 8. Security and Authorization
 
 - Stateless JWT. Short-lived access token, rotating refresh token.
-- Use `@PreAuthorize` with roles `ADMIN`, `TEACHER`, `STUDENT`.
+- Role checks for endpoints are URL matchers in `SecurityConfig` (roles `ADMIN`, `TEACHER`, `STUDENT`), not `@PreAuthorize`.
 - Ownership checks live in services, not only in annotations:
     - Teachers only manage assignments for subjects they teach (`class_subjects.teacher_id`).
     - Students only see assignments assigned to them (`assignment_students`) in classes where they are `ACTIVE`.

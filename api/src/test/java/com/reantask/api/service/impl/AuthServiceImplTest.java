@@ -106,7 +106,7 @@ class AuthServiceImplTest {
     private static final GoogleIdentity IDENTITY = new GoogleIdentity("g-1", "dara@example.com", "Dara", "http://pic");
 
     private UserResponse userResponse(UserStatus status) {
-        return new UserResponse(7L, 3L, "student", "Dara", "dara@example.com", null, null, status, null,
+        return new UserResponse(7L, 3L, "STUDENT", "Dara", "dara@example.com", null, null, status, null,
                 Instant.now(), Instant.now());
     }
 
@@ -262,7 +262,7 @@ class AuthServiceImplTest {
 
     @Test
     void register_hashesPasswordAndDelegatesWithoutAnyRoleOrStatus() {
-        UserResponse created = new UserResponse(1L, 3L, "student", "Dara", "dara@example.com", "012345678", null,
+        UserResponse created = new UserResponse(1L, 3L, "STUDENT", "Dara", "dara@example.com", "012345678", null,
                 UserStatus.PENDING, null, Instant.now(), Instant.now());
         when(passwordEncoder.encode("Secret123")).thenReturn("new-hash");
         when(accounts.registerStudent("Dara", "dara@example.com", "012345678", "new-hash")).thenReturn(created);

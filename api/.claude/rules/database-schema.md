@@ -24,7 +24,7 @@ Allowed values:
 ADMIN, TEACHER, STUDENT
 ```
 
-Role names are lowercase and match the `RoleName` enum. The `roles` table is seeded by `RoleSeeder`.
+Role names are uppercase and match the `RoleName` enum (stored with `@Enumerated(STRING)`). The `roles` table is seeded by `RoleSeeder`.
 ---
 Role status:
 

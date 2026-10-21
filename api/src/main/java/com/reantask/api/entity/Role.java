@@ -2,13 +2,11 @@ package com.reantask.api.entity;
 
 import java.util.Objects;
 
-import com.reantask.api.converter.RoleNameConverter;
 import com.reantask.api.entity.base.TimestampedEntity;
 import com.reantask.api.enums.RoleName;
 import com.reantask.api.enums.RoleStatus;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -31,7 +29,7 @@ public class Role extends TimestampedEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Convert(converter = RoleNameConverter.class)
+    @Enumerated(EnumType.STRING)
     @Column(name = "name", nullable = false, unique = true, length = 100)
     private RoleName name;
 

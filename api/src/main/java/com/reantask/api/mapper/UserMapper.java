@@ -51,13 +51,13 @@ public class UserMapper {
 
     public UserResponse toResponse(User user) {
         Role role = user.getRole();
-        return new UserResponse(user.getId(), role.getId(), role.getName().dbValue(), user.getFullname(),
+        return new UserResponse(user.getId(), role.getId(), role.getName().name(), user.getFullname(),
                 user.getEmail(), user.getPhone(), user.getAvatar(), user.getStatus(),
                 user.getEmailVerifiedAt(), user.getCreatedAt(), user.getUpdatedAt());
     }
 
     public RoleResponse toResponse(Role role) {
-        return new RoleResponse(role.getId(), role.getName().dbValue(), role.getStatus());
+        return new RoleResponse(role.getId(), role.getName().name(), role.getStatus());
     }
 
     public UserSettingResponse toResponse(UserSetting setting) {

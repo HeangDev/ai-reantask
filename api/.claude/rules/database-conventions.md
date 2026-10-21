@@ -180,5 +180,5 @@ classes.status / subjects.status      ACTIVE, INACTIVE
 class_subjects.status / class_students.status   ACTIVE, INACTIVE, DELETED
 user_settings.theme_mode              LIGHT, DARK, SYSTEM
 user_settings.language                EN, KH, KO
-roles.name                            admin, teacher, student  (lowercase)
+roles.name                            ADMIN, TEACHER, STUDENT
 ```

@@ -62,7 +62,7 @@ Error:
 ## 4b. Formats
 
 - JSON, UTF-8, `camelCase` properties. Timestamps ISO-8601 UTC (`2026-01-01T08:00:00Z`). Dates `yyyy-MM-dd`.
-- Enums as their uppercase string name (`ACTIVE`). Role names returned lowercase as stored (`teacher`).
+- Enums as their uppercase string name (`ACTIVE`). Role names are returned as the enum name (`TEACHER`).
 - `BigDecimal` scores serialized as numbers with 2 decimals.
 - IDs as numbers. Never return internal-only columns (`password`, tokens, `deleted_by_user` to non-admins).
 

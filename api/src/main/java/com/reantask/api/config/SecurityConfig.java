@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -21,8 +20,10 @@ import com.reantask.api.security.SecurityErrorHandlers;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
 public class SecurityConfig {
+
+    private static final String ADMIN = "ADMIN";
+    private static final String TEACHER = "TEACHER";
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationConverter jwtConverter,
@@ -41,6 +42,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/avatars/*").permitAll()
                         // OpenAPI docs: disable in prod with springdoc.api-docs.enabled=false
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Role rules per endpoint. First match wins, so specific paths come before wildcards.
+                        .requestMatchers("/api/v1/users/me", "/api/v1/users/me/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users", "/api/v1/users/*").hasAnyRole(ADMIN, TEACHER)
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/users/*/approve", "/api/v1/users/*/reject")
+                                .hasAnyRole(ADMIN, TEACHER)
+                        .requestMatchers("/api/v1/users", "/api/v1/users/*").hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/roles").hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/classes/me/teaching").hasRole(TEACHER)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/classes", "/api/v1/classes/*",
+                                "/api/v1/subjects", "/api/v1/subjects/*").hasAnyRole(ADMIN, TEACHER)
+                        .requestMatchers("/api/v1/classes", "/api/v1/classes/*", "/api/v1/classes/*/subjects",
+                                "/api/v1/subjects", "/api/v1/subjects/*").hasRole(ADMIN)
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter))

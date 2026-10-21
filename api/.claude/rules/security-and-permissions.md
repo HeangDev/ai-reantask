@@ -23,7 +23,7 @@ paths:
 
 Roles: `ROLE_ADMIN`, `ROLE_TEACHER`, `ROLE_STUDENT` (from `roles.name`).
 
-1. Coarse check with `@PreAuthorize("hasRole('ADMIN')")` on controller methods (enable `@EnableMethodSecurity`).
+1. Coarse role check per endpoint in `SecurityConfig` (`authorizeHttpRequests` matchers; first match wins, specific paths before wildcards). Do not use `@PreAuthorize`.
 2. Fine check (ownership, state) in `service/impl`: never rely on the annotation alone.
 3. Default deny: everything except `/auth/**`, health, OpenAPI (non-prod) requires authentication.
 

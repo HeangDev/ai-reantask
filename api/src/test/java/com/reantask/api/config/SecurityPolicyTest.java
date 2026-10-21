@@ -71,7 +71,7 @@ class SecurityPolicyTest {
     @MockitoBean AvatarStorageService avatarStorage;
 
     private static UserResponse sampleUser() {
-        return new UserResponse(1L, 3L, "student", "Dara", "dara@example.com", null, null,
+        return new UserResponse(1L, 3L, "STUDENT", "Dara", "dara@example.com", null, null,
                 UserStatus.ACTIVE, null, Instant.now(), Instant.now());
     }
 

@@ -33,7 +33,7 @@ public class RoleSeeder implements ApplicationRunner {
         for (RoleName name : RoleName.values()) {
             if (!roleRepository.existsByName(name)) {
                 roleRepository.save(new Role(name));
-                log.info("Seeded role {}", name.dbValue());
+                log.info("Seeded role {}", name);
             }
         }
     }
