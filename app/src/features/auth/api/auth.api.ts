@@ -1,11 +1,10 @@
 import {
   apiUserEnvelope,
-  authUserEnvelope,
   googleEnvelope,
   messageSchema,
   tokenEnvelope,
 } from '@/features/auth/schemas/auth.schemas'
-import type { AuthResult, AuthUser, GoogleAuthInput, LoginInput, RegisterInput } from '@/features/auth/types'
+import type { AuthResult, AuthUser, GoogleAuthInput, LoginInput, RegisterInput, UpdateProfileInput } from '@/features/auth/types'
 import { apiRequest } from '@/shared/api/http'
 
 export const authApi = {
@@ -25,7 +24,10 @@ export const authApi = {
     if (!data.token) return data.user
     return { token: data.token.accessToken, token_type: data.token.tokenType, expires_at: null, user: data.user }
   },
-  me: (signal?: AbortSignal) => apiRequest('/auth/me', { signal, schema: authUserEnvelope }).then((r) => r.data),
+  me: (signal?: AbortSignal) => apiRequest('/users/me', { signal, schema: apiUserEnvelope }).then((r) => r.data),
+  /** Saves the signed-in user's own profile; the answer is the updated user. */
+  updateProfile: (input: UpdateProfileInput) =>
+    apiRequest('/users/me', { method: 'PUT', body: input, schema: apiUserEnvelope }).then((r) => r.data),
   /** Ends this device's session on the server. */
   logout: (token: string) => apiRequest('/auth/logout', { method: 'POST', token }),
   /** Revokes every token of the user, including the one making the request. */

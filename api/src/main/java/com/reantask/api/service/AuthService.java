@@ -1,5 +1,6 @@
 package com.reantask.api.service;
 
+import com.reantask.api.dto.common.ClientInfo;
 import com.reantask.api.dto.request.GoogleAuthRequest;
 import com.reantask.api.dto.request.LoginRequest;
 import com.reantask.api.dto.request.RegisterRequest;
@@ -17,7 +18,7 @@ public interface AuthService {
      * matches is the account gate checked: ACCOUNT_PENDING / ACCOUNT_INACTIVE / ACCOUNT_SUSPENDED /
      * ACCOUNT_DELETED / ROLE_INACTIVE (403).
      */
-    TokenResponse login(LoginRequest request);
+    TokenResponse login(LoginRequest request, ClientInfo client);
 
     /**
      * Google sign-in and sign-up with a Google ID token. A first-time Google user is created as a PENDING student
@@ -25,5 +26,11 @@ public interface AuthService {
      *
      * @throws com.reantask.api.exception.UnauthorizedException GOOGLE_TOKEN_INVALID (401)
      */
-    GoogleAuthResponse google(GoogleAuthRequest request);
+    GoogleAuthResponse google(GoogleAuthRequest request, ClientInfo client);
+
+    /**
+     * Ends the access token used for this request: it is rejected from now on. Idempotent, and other devices'
+     * tokens are not affected.
+     */
+    void logout();
 }

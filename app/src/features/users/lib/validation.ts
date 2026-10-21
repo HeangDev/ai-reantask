@@ -1,6 +1,7 @@
 import { isAcceptablePassword } from '@/features/auth'
 import type { User, UserFormErrors, UserInput } from '@/features/users/types'
 import { isValidEmail, isValidPhone } from '@/shared/lib/validation'
+import type { ApiError } from '@/shared/api/errors'
 
 /**
  * Client-side rules: required fields, valid email, and no duplicate email among the loaded users.
@@ -27,14 +28,14 @@ export function validateUser(
   return errors
 }
 
-/** Turns the API's 422 field errors into errors under the matching form fields. */
-export function serverFieldErrors(fields: Record<string, string[]>): UserFormErrors {
+/** Turns the API's field errors (400) and conflict codes (409) into errors under the matching form fields. */
+export function serverFieldErrors(error: ApiError): UserFormErrors {
+  const { code, fieldErrors: fields } = error
   const errors: UserFormErrors = {}
   if (fields.fullname) errors.fullName = 'usr.errName'
-  // The username is made from the email, so a clash is shown on the email field.
-  if (fields.email || fields.username) errors.email = 'usr.errEmailTaken'
-  if (fields.phone) errors.phone = 'register.errPhoneTaken'
+  if (code === 'EMAIL_TAKEN' || fields.email) errors.email = 'usr.errEmailTaken'
+  if (code === 'PHONE_TAKEN' || fields.phone) errors.phone = 'register.errPhoneTaken'
   if (fields.password) errors.password = 'acct.errPasswordRule'
-  if (fields.role_id) errors.roleId = 'usr.errRole'
+  if (fields.roleId || code === 'ROLE_INACTIVE' || code === 'ROLE_NOT_FOUND') errors.roleId = 'usr.errRole'
   return errors
 }

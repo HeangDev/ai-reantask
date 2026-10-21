@@ -3,6 +3,7 @@ package com.reantask.api.service;
 import org.springframework.data.domain.Pageable;
 
 import com.reantask.api.dto.common.PageResponse;
+import com.reantask.api.dto.request.ChangePasswordRequest;
 import com.reantask.api.dto.request.ChangeUserStatusRequest;
 import com.reantask.api.dto.request.CreateUserRequest;
 import com.reantask.api.dto.request.UpdateProfileRequest;
@@ -38,4 +39,12 @@ public interface UserService {
     UserResponse getMe();
 
     UserResponse updateMe(UpdateProfileRequest request);
+
+    /**
+     * Changes the signed-in user's password. Access tokens already issued stay valid until they expire.
+     *
+     * @throws com.reantask.api.exception.BusinessRuleException INVALID_CURRENT_PASSWORD when the current password
+     *         is wrong, PASSWORD_UNCHANGED when the new password equals it
+     */
+    void changeMyPassword(ChangePasswordRequest request);
 }

@@ -11,6 +11,8 @@ export interface User {
   username: string
   email: string
   phone: string
+  /** The avatar URL the API stores; sent back unchanged when an admin edits the user. */
+  avatar: string | null
   role: Role
   roleId: number
   status: AccountStatus

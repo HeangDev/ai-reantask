@@ -3,6 +3,7 @@ import { queryClient } from '@/shared/api/queryClient'
 import { useProfileStore } from '@/shared/store/profileStore'
 import { useTwoFactorStore } from '@/shared/store/twoFactorStore'
 import { useShallow } from 'zustand/react/shallow'
+import { roles } from '@/shared/types/auth'
 import type { Role } from '@/shared/types/auth'
 
 export interface Session {
@@ -19,16 +20,46 @@ interface AuthState {
   clear: () => void
 }
 
+const STORAGE_KEY = 'session'
+
+/** The session saved by this tab, so a page reload keeps the user signed in; null if none or unreadable. */
+function loadSession(): Session | null {
+  try {
+    const raw: unknown = JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) ?? 'null')
+    if (typeof raw !== 'object' || raw === null) return null
+    const { role, email, token } = raw as Record<string, unknown>
+    if (typeof email !== 'string' || typeof token !== 'string' || !token) return null
+    const knownRole = roles.find((r) => r === role)
+    return knownRole ? { role: knownRole, email, token } : null
+  } catch {
+    return null
+  }
+}
+
+function saveSession(session: Session | null) {
+  try {
+    if (session) window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session))
+    else window.sessionStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Storage blocked or full: the session still works until the next reload.
+  }
+}
+
 // The signed-in session, shared by the login page, the route guard, the sidebar and the header.
 //
-// The token is kept in memory only (security.md §1): it is never written to localStorage or
-// sessionStorage, so a page reload signs the user out. This only decides which screens the interface
-// shows; real access control is enforced by the server.
+// The session is kept in this tab's sessionStorage so a reload does not sign the user out (the API has no
+// refresh token yet; see security.md §1). It is cleared on logout and when the tab closes; the access token
+// itself expires after 15 minutes. This only decides which screens the interface shows; real access
+// control is enforced by the server.
 export const useAuthStore = create<AuthState>()((set) => ({
-  session: null,
-  setSession: (session) => set({ session }),
+  session: loadSession(),
+  setSession: (session) => {
+    saveSession(session)
+    set({ session })
+  },
   // On logout the session and every cached server response are dropped (state-management.md §2).
   clear: () => {
+    saveSession(null)
     set({ session: null })
     useProfileStore.getState().reset()
     useTwoFactorStore.getState().disable()

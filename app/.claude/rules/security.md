@@ -3,7 +3,7 @@
 ## 1. Authentication & sessions (ASSUMPTION)
 
 - Preferred: **httpOnly, Secure, SameSite cookies** for session/refresh token; access token (if any) in **memory only**.
-- Never store tokens in `localStorage`/`sessionStorage`.
+- Never store tokens in `localStorage`. **Exception (decision, 2026-10):** the API has no refresh token, so the session (role, email, access token) is kept in `sessionStorage` to survive a reload; it is cleared on logout. Replace with an httpOnly refresh cookie when the API supports it.
 - On logout: call API, clear Zustand, `queryClient.clear()`, redirect.
 - CSRF: if cookie auth, send CSRF header on mutating requests.
 

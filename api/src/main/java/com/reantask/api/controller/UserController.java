@@ -27,9 +27,11 @@ import com.reantask.api.dto.request.UpdateProfileRequest;
 import com.reantask.api.dto.request.UpdateUserRequest;
 import com.reantask.api.dto.request.UpdateUserSettingRequest;
 import com.reantask.api.dto.response.UserResponse;
+import com.reantask.api.dto.response.UserSessionResponse;
 import com.reantask.api.dto.response.UserSettingResponse;
 import com.reantask.api.enums.UserStatus;
 import com.reantask.api.service.UserService;
+import com.reantask.api.service.UserSessionService;
 import com.reantask.api.service.UserSettingService;
 
 import jakarta.validation.Valid;
@@ -44,6 +46,7 @@ public class UserController {
 
     private final UserService userService;
     private final UserSettingService settingService;
+    private final UserSessionService sessionService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
@@ -113,6 +116,19 @@ public class UserController {
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<UserResponse> updateMe(@Valid @RequestBody UpdateProfileRequest request) {
         return ApiResponse.ok(userService.updateMe(request));
+    }
+
+    @GetMapping("/me/sessions")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<PageResponse<UserSessionResponse>> mySessions(@PageableDefault(size = 10) Pageable pageable) {
+        return ApiResponse.ok(sessionService.listMine(pageable));
+    }
+
+    @DeleteMapping("/me/sessions/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> revokeMySession(@PathVariable @Positive Long id) {
+        sessionService.revokeMine(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me/settings")

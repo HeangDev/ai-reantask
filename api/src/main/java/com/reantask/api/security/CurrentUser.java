@@ -5,6 +5,8 @@ import java.util.Optional;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 import com.reantask.api.exception.ErrorCode;
@@ -24,6 +26,12 @@ public class CurrentUser {
         } catch (NumberFormatException e) {
             return Optional.empty();
         }
+    }
+
+    /** The validated access token of this request, absent for anonymous or non-JWT authentication. */
+    public Optional<Jwt> token() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth instanceof JwtAuthenticationToken jwt ? Optional.of(jwt.getToken()) : Optional.empty();
     }
 
     public Long requireId() {

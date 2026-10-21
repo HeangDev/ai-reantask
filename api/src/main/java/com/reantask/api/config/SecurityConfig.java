@@ -32,6 +32,9 @@ public class SecurityConfig {
                 .cors(cors -> { })
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Must come before the /auth/** rule: first match wins.
+                        .requestMatchers("/api/v1/auth/me", "/api/v1/auth/logout",
+                                "/api/v1/auth/change-password").authenticated()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         // OpenAPI docs: disable in prod with springdoc.api-docs.enabled=false
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()

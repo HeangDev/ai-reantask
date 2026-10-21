@@ -3,14 +3,17 @@ package com.reantask.api.service.impl;
 import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import com.reantask.api.dto.common.ClientInfo;
 import com.reantask.api.dto.request.GoogleAuthRequest;
 import com.reantask.api.dto.request.LoginRequest;
 import com.reantask.api.dto.request.RegisterRequest;
 import com.reantask.api.dto.response.GoogleAccountResponse;
 import com.reantask.api.dto.response.GoogleAuthResponse;
 import com.reantask.api.dto.response.TokenResponse;
+import com.reantask.api.security.CurrentUser;
 import com.reantask.api.security.GoogleIdTokenVerifier;
 import com.reantask.api.security.GoogleIdentity;
 import com.reantask.api.security.JwtService;
@@ -22,7 +25,9 @@ import com.reantask.api.dto.response.UserCredentialsResponse;
 import com.reantask.api.dto.response.UserResponse;
 import com.reantask.api.enums.RoleStatus;
 import com.reantask.api.enums.UserStatus;
+import com.reantask.api.service.TokenRevocationService;
 import com.reantask.api.service.UserAccountService;
+import com.reantask.api.service.UserSessionService;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -31,15 +36,22 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final GoogleIdTokenVerifier googleVerifier;
+    private final TokenRevocationService revocations;
+    private final CurrentUser currentUser;
+    private final UserSessionService sessions;
     // Checked against when the email is unknown so both failures cost about the same time.
     private final String dummyHash;
 
     public AuthServiceImpl(UserAccountService accounts, PasswordEncoder passwordEncoder, JwtService jwtService,
-                           GoogleIdTokenVerifier googleVerifier) {
+                           GoogleIdTokenVerifier googleVerifier, TokenRevocationService revocations,
+                           CurrentUser currentUser, UserSessionService sessions) {
         this.accounts = accounts;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.googleVerifier = googleVerifier;
+        this.revocations = revocations;
+        this.currentUser = currentUser;
+        this.sessions = sessions;
         this.dummyHash = passwordEncoder.encode("not-a-real-password");
     }
 
@@ -50,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public TokenResponse login(LoginRequest request) {
+    public TokenResponse login(LoginRequest request, ClientInfo client) {
         Optional<UserCredentialsResponse> found = accounts.findCredentialsByEmail(request.email());
         String hash = found.map(UserCredentialsResponse::passwordHash).orElse(dummyHash);
         boolean passwordMatches = passwordEncoder.matches(request.password(), hash);
@@ -60,12 +72,11 @@ public class AuthServiceImpl implements AuthService {
 
         UserCredentialsResponse user = found.get();
         assertCanLogin(user);
-        String token = jwtService.issueAccessToken(user.id(), user.roleName().name());
-        return TokenResponse.bearer(token, jwtService.accessTokenTtlSeconds());
+        return TokenResponse.bearer(startSession(user, client).value(), jwtService.accessTokenTtlSeconds());
     }
 
     @Override
-    public GoogleAuthResponse google(GoogleAuthRequest request) {
+    public GoogleAuthResponse google(GoogleAuthRequest request, ClientInfo client) {
         GoogleIdentity identity = googleVerifier.verify(request.credential());
         GoogleAccountResponse account = accounts.signInWithGoogle(identity.googleId(), identity.email(),
                 identity.fullname(), identity.picture());
@@ -74,9 +85,24 @@ public class AuthServiceImpl implements AuthService {
         }
         assertCanLogin(account.credentials());
         UserCredentialsResponse user = account.credentials();
-        String token = jwtService.issueAccessToken(user.id(), user.roleName().name());
-        return GoogleAuthResponse.signedIn(TokenResponse.bearer(token, jwtService.accessTokenTtlSeconds()),
+        return GoogleAuthResponse.signedIn(
+                TokenResponse.bearer(startSession(user, client).value(), jwtService.accessTokenTtlSeconds()),
                 account.user());
+    }
+
+    @Override
+    public void logout() {
+        Jwt token = currentUser.token()
+                .orElseThrow(() -> new UnauthorizedException(ErrorCode.UNAUTHORIZED, "Authentication required"));
+        if (token.getId() != null && token.getExpiresAt() != null) {
+            revocations.revoke(token.getId(), token.getExpiresAt());
+        }
+    }
+
+    private JwtService.AccessToken startSession(UserCredentialsResponse user, ClientInfo client) {
+        JwtService.AccessToken token = jwtService.issue(user.id(), user.roleName().name());
+        sessions.record(user.id(), token, client);
+        return token;
     }
 
     private void assertCanLogin(UserCredentialsResponse user) {

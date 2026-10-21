@@ -5,7 +5,7 @@ import type { CurrentUser } from '@/shared/lib/currentUser'
 import { useProfileStore } from '@/shared/store/profileStore'
 
 /**
- * The signed-in user's name, email and avatar: the server's `/auth/me` answer, with any edits made on the
+ * The signed-in user's name, email and avatar: the server's `/users/me` answer, with any edits made on the
  * Account page on top. Server data stays in TanStack Query; only the edits live in a store.
  */
 export function useProfile(): CurrentUser {

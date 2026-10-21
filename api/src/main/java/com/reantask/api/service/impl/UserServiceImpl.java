@@ -19,6 +19,7 @@ import com.reantask.api.exception.ErrorCode;
 import com.reantask.api.exception.NotFoundException;
 import com.reantask.api.dto.common.PageResponse;
 import com.reantask.api.security.CurrentUser;
+import com.reantask.api.dto.request.ChangePasswordRequest;
 import com.reantask.api.dto.request.ChangeUserStatusRequest;
 import com.reantask.api.dto.request.CreateUserRequest;
 import com.reantask.api.dto.request.UpdateProfileRequest;
@@ -163,6 +164,20 @@ public class UserServiceImpl implements UserService {
         assertPhoneFree(request.phone(), user.getId());
         mapper.update(user, request);
         return mapper.toResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public void changeMyPassword(ChangePasswordRequest request) {
+        User user = findOrThrow(currentUser.requireId());
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new BusinessRuleException(ErrorCode.INVALID_CURRENT_PASSWORD, "Current password is incorrect");
+        }
+        if (request.currentPassword().equals(request.newPassword())) {
+            throw new BusinessRuleException(ErrorCode.PASSWORD_UNCHANGED,
+                    "New password must be different from the current password");
+        }
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
     }
 
     private User findOrThrow(Long id) {

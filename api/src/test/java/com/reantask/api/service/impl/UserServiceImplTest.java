@@ -27,6 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.reantask.api.exception.AppException;
 import com.reantask.api.exception.ErrorCode;
 import com.reantask.api.security.CurrentUser;
+import com.reantask.api.dto.request.ChangePasswordRequest;
 import com.reantask.api.dto.request.ChangeUserStatusRequest;
 import com.reantask.api.dto.request.CreateUserRequest;
 import com.reantask.api.dto.response.UserResponse;
@@ -278,6 +279,48 @@ class UserServiceImplTest {
                 PageRequest.of(0, 20, Sort.by("password"))))
                 .isInstanceOfSatisfying(AppException.class,
                         e -> assertThat(e.getCode()).isEqualTo(ErrorCode.INVALID_SORT_FIELD));
+    }
+
+    // ---- change my password ----
+
+    @Test
+    void changeMyPassword_correctCurrent_storesNewHash() {
+        User me = user(5L, studentRole, UserStatus.ACTIVE);
+        when(currentUser.requireId()).thenReturn(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(me));
+        when(passwordEncoder.matches("Old12345", "hash")).thenReturn(true);
+        when(passwordEncoder.encode("New12345")).thenReturn("new-hash");
+
+        service.changeMyPassword(new ChangePasswordRequest("Old12345", "New12345"));
+
+        assertThat(me.getPassword()).isEqualTo("new-hash");
+    }
+
+    @Test
+    void changeMyPassword_wrongCurrent_isRejectedAndKeepsHash() {
+        User me = user(5L, studentRole, UserStatus.ACTIVE);
+        when(currentUser.requireId()).thenReturn(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(me));
+        when(passwordEncoder.matches("wrong", "hash")).thenReturn(false);
+
+        assertThatThrownBy(() -> service.changeMyPassword(new ChangePasswordRequest("wrong", "New12345")))
+                .isInstanceOfSatisfying(AppException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.INVALID_CURRENT_PASSWORD));
+        assertThat(me.getPassword()).isEqualTo("hash");
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    @Test
+    void changeMyPassword_sameAsCurrent_isRejected() {
+        User me = user(5L, studentRole, UserStatus.ACTIVE);
+        when(currentUser.requireId()).thenReturn(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(me));
+        when(passwordEncoder.matches("Same1234", "hash")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.changeMyPassword(new ChangePasswordRequest("Same1234", "Same1234")))
+                .isInstanceOfSatisfying(AppException.class,
+                        e -> assertThat(e.getCode()).isEqualTo(ErrorCode.PASSWORD_UNCHANGED));
+        assertThat(me.getPassword()).isEqualTo("hash");
     }
 
     private Role role(Long id, RoleName name) {

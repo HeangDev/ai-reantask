@@ -105,7 +105,7 @@ Before finishing any task run: `lint`, `typecheck`, `test`. Fix all failures you
 
 ## Security (see security.md)
 
-- No tokens in `localStorage`/`sessionStorage`.
+- No tokens in `localStorage`. The session lives in `sessionStorage` only until the API has a refresh cookie (security.md §1).
 - Never `dangerouslySetInnerHTML` without DOMPurify + review.
 - Treat student text and AI output as **untrusted**.
 - No PII or submission content in logs, URLs, or error reports.

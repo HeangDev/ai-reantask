@@ -49,9 +49,11 @@ export function PasswordSection() {
         notify({ variant: 'info', title: t('acct.passwordChanged'), subtitle: t('acct.passwordChangedDesc') })
       },
       onError: (error) => {
-        const fields = error instanceof ApiError && error.status === 422 ? error.fieldErrors : {}
-        if (fields.current_password) setErrors({ current: 'acct.errCurrentWrong' })
-        else if (fields.password) setErrors({ next: 'acct.errPasswordRule' })
+        const code = error instanceof ApiError ? error.code : undefined
+        const fields = error instanceof ApiError ? error.fieldErrors : {}
+        if (code === 'INVALID_CURRENT_PASSWORD') setErrors({ current: 'acct.errCurrentWrong' })
+        else if (code === 'PASSWORD_UNCHANGED') setErrors({ next: 'acct.errPasswordSame' })
+        else if (fields.newPassword) setErrors({ next: 'acct.errPasswordRule' })
         else notify({ variant: 'danger', title: t('acct.passwordFailed'), subtitle: t('acct.passwordFailedDesc') })
       },
     })

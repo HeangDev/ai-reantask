@@ -4,7 +4,7 @@ import type { TranslationKey } from '@/shared/i18n'
 export interface LoginSession {
   id: number
   device: string
-  /** Epoch milliseconds of the last activity (the sign-in time when the token was never used). */
+  /** Epoch milliseconds of the sign-in. */
   lastActiveAt: number
   isCurrent: boolean
   kind: 'desktop' | 'phone'

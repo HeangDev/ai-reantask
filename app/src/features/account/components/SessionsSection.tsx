@@ -6,7 +6,8 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { LogoutIcon, MonitorIcon, PhoneIcon } from '@/shared/components/icons'
 import { useToast } from '@/shared/components/Toast'
 import { SectionCard } from '@/features/account/components/SectionCard'
-import { useSessions } from '@/features/account/api/useSessions'
+import type { LoginSession } from '@/features/account/types'
+import { useRevokeSession, useSessions } from '@/features/account/api/useSessions'
 import { useLogoutAll } from '@/features/auth'
 import { useMe } from '@/features/auth'
 import { authActions } from '@/shared/store/authStore'
@@ -28,6 +29,19 @@ export function SessionsSection() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const logoutAll = useLogoutAll()
+  const revokeSession = useRevokeSession()
+  const [revoking, setRevoking] = useState<LoginSession | null>(null)
+
+  // Another device is signed out: its token stops working at once; this device stays signed in.
+  const signOutDevice = () => {
+    if (!revoking || revokeSession.isPending) return
+    const device = revoking.device || t('acct.unknownDevice')
+    revokeSession.mutate(revoking.id, {
+      onSuccess: () => notify({ title: t('acct.deviceLoggedOut'), subtitle: t('acct.deviceLoggedOutDesc', { device }) }),
+      onError: () => notify({ variant: 'danger', title: t('acct.deviceLogoutFailed'), subtitle: t('acct.passwordFailedDesc') }),
+      onSettled: () => setRevoking(null),
+    })
+  }
 
   // Every token is revoked, this device's included, so the person is signed out here too.
   const signOutEverywhere = () =>
@@ -78,7 +92,7 @@ export function SessionsSection() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-                    {session.device}
+                    {session.device || t('acct.unknownDevice')}
                     {session.isCurrent && (
                       <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
                         {t('acct.thisDevice')}
@@ -89,6 +103,18 @@ export function SessionsSection() {
                     {session.isCurrent ? t('acct.activeNow') : formatTimeAgo(session.lastActiveAt, locale)}
                   </p>
                 </div>
+                {!session.isCurrent && (
+                  <button
+                    type="button"
+                    onClick={() => setRevoking(session)}
+                    aria-haspopup="dialog"
+                    aria-label={t('acct.deviceLogoutLabel', { device: session.device || t('acct.unknownDevice') })}
+                    disabled={revokeSession.isPending}
+                    className={`${outlineButton} shrink-0`}
+                  >
+                    {t('acct.deviceLogout')}
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -104,6 +130,15 @@ export function SessionsSection() {
             {t('acct.logoutAll')}
           </button>
         </div>
+        <ConfirmDialog
+          open={revoking !== null}
+          icon={<LogoutIcon />}
+          title={t('acct.deviceLogoutTitle')}
+          message={t('acct.deviceLogoutMessage', { device: revoking?.device || t('acct.unknownDevice') })}
+          confirmLabel={t('acct.deviceLogout')}
+          onCancel={() => setRevoking(null)}
+          onConfirm={signOutDevice}
+        />
         <ConfirmDialog
           open={confirmingAll}
           icon={<LogoutIcon />}

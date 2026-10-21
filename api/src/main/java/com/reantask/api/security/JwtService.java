@@ -25,19 +25,35 @@ public class JwtService {
     private final JwtProperties props;
     private final Clock clock;
 
+    /** An issued token with the id and expiry needed to track its session. */
+    public record AccessToken(String value, String id, Instant expiresAt) {
+
+        @Override
+        public String toString() {
+            return "AccessToken[id=" + id + ", expiresAt=" + expiresAt + "]";
+        }
+    }
+
     /** Claims: sub = user id, role = ADMIN | TEACHER | STUDENT, plus iss, iat, exp, jti. */
-    public String issueAccessToken(Long userId, String role) {
+    public AccessToken issue(Long userId, String role) {
         Instant now = Instant.now(clock);
+        Instant expiresAt = now.plus(props.accessTokenTtl());
+        String id = UUID.randomUUID().toString();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer(props.issuer())
                 .issuedAt(now)
-                .expiresAt(now.plus(props.accessTokenTtl()))
+                .expiresAt(expiresAt)
                 .subject(String.valueOf(userId))
-                .id(UUID.randomUUID().toString())
+                .id(id)
                 .claim(ROLE_CLAIM, role)
                 .build();
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
-        return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+        String value = encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+        return new AccessToken(value, id, expiresAt);
+    }
+
+    public String issueAccessToken(Long userId, String role) {
+        return issue(userId, role).value();
     }
 
     public long accessTokenTtlSeconds() {

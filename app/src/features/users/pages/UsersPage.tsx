@@ -64,7 +64,7 @@ export function UsersPage() {
   }
 
   const showSaveError = (error: unknown) => {
-    const fields = error instanceof ApiError && error.status === 422 ? serverFieldErrors(error.fieldErrors) : {}
+    const fields = error instanceof ApiError ? serverFieldErrors(error) : {}
     if (Object.keys(fields).length > 0) setServerErrors(fields)
     else notify({ variant: 'danger', title: t('usr.saveFailed'), subtitle: t('usr.tryAgain') })
   }

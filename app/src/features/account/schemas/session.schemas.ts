@@ -1,14 +1,17 @@
 import { z } from 'zod'
 
+/** A page of the signed-in user's active sessions (`GET /users/me/sessions`). */
 export const sessionsSchema = z.object({
-  data: z.array(
-    z.object({
-      id: z.number(),
-      device_name: z.string(),
-      is_current: z.boolean(),
-      last_used_at: z.string().nullable(),
-      expires_at: z.string().nullable(),
-      created_at: z.string(),
-    }),
-  ),
+  data: z.object({
+    items: z.array(
+      z.object({
+        id: z.number(),
+        ipAddress: z.string().nullable(),
+        userAgent: z.string().nullable(),
+        signedInAt: z.string(),
+        expiresAt: z.string().nullable(),
+        current: z.boolean(),
+      }),
+    ),
+  }),
 })

@@ -179,7 +179,7 @@ export function UserForm({ user, users, onSave, onClose, serverErrors, saving = 
             <input {...props} type="tel" autoComplete="off" value={values.phone} onChange={(e) => set('phone', e.target.value)} />
           ))}
           {field('email', t('stu.fieldEmail'), (props) => (
-            <input {...props} type="email" autoComplete="off" value={values.email} onChange={(e) => set('email', e.target.value)} />
+            <input {...props} type="email" autoComplete="off" disabled={Boolean(user)} value={values.email} onChange={(e) => set('email', e.target.value)} />
           ))}
           {!lockedRole &&
             field('roleId', t('usr.role'), (props) => (

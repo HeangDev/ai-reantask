@@ -44,10 +44,6 @@ export function AccountPage() {
         </div>
       </div>
 
-      <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
-        {t('acct.demoNote')}
-      </p>
-
       <div className="mt-5 grid gap-5 lg:grid-cols-[14rem_minmax(0,1fr)]">
         <nav aria-label={t('header.accountSettings')} className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
           {tabs.map((item) => {

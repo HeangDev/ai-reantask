@@ -16,6 +16,12 @@ export interface GoogleAuthInput {
   device_name?: string
 }
 
+export interface UpdateProfileInput {
+  fullname: string
+  phone: string | null
+  avatar: string | null
+}
+
 export interface RegisterInput {
   fullname: string
   email: string

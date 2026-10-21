@@ -3,7 +3,7 @@ import { authApi } from '@/features/auth/api/auth.api'
 import { authKeys } from '@/features/auth/api/auth.keys'
 import { useSession } from '@/shared/store/authStore'
 
-/** The signed-in user from `GET /auth/me`. */
+/** The signed-in user from `GET /users/me`. */
 export function useMe() {
   const token = useSession()?.token
   return useQuery({

@@ -7,9 +7,8 @@ import { SectionCard } from '@/features/account/components/SectionCard'
 import { TextField } from '@/shared/components/TextField'
 import { validateAvatar, validateName } from '@/features/account/lib/validation'
 import { useProfileStore } from '@/shared/store/profileStore'
-import { useMe, useProfile } from '@/features/auth'
-import { roleLabelKey } from '@/features/auth'
-import { useSession } from '@/shared/store/authStore'
+import { ApiError } from '@/shared/api/http'
+import { useMe, useProfile, useUpdateProfile } from '@/features/auth'
 import { DEFAULT_AVATAR_URL } from '@/shared/lib/currentUser'
 import { useI18n } from '@/shared/i18n'
 import type { TranslationKey } from '@/shared/i18n'
@@ -47,8 +46,9 @@ export function ProfileSection() {
 function ProfileForm() {
   const { t } = useI18n()
   const { notify } = useToast()
+  const me = useMe().data
+  const update = useUpdateProfile()
   const profile = useProfile()
-  const role = useSession()?.role
   const fileInput = useRef<HTMLInputElement>(null)
   const [name, setName] = useState(profile.fullName)
   const [avatar, setAvatar] = useState(profile.avatarUrl)
@@ -74,9 +74,28 @@ function ProfileForm() {
     const error = validateName(name)
     setNameError(error)
     if (error) return
-    useProfileStore.getState().update({ fullName: name.trim(), avatarUrl: avatar })
-    setName(name.trim())
-    notify({ variant: 'info', title: t('acct.profileSaved'), subtitle: t('acct.profileSavedDesc') })
+    if (!me || update.isPending) return
+    const fullname = name.trim()
+    // The API stores a name and an avatar URL, with no photo upload yet: the phone and the avatar URL are sent back
+    // unchanged, and a photo picked here only shows on this device.
+    update.mutate(
+      { fullname, phone: me.phone, avatar: me.avatar },
+      {
+        onSuccess: () => {
+          if (avatar !== profile.avatarUrl) useProfileStore.getState().update({ avatarUrl: avatar })
+          setName(fullname)
+          notify({ variant: 'info', title: t('acct.profileSaved'), subtitle: t('acct.profileSavedDesc') })
+        },
+        onError: (error) => {
+          if (error instanceof ApiError && error.fieldErrors.fullname) setNameError('acct.errName')
+          else notify({
+            variant: 'danger',
+            title: t('acct.saveFailed'),
+            subtitle: t(error instanceof ApiError ? error.messageKey : 'errors.generic'),
+          })
+        },
+      },
+    )
   }
 
   return (
@@ -138,20 +157,10 @@ function ProfileForm() {
             readOnly
             hint={t('acct.emailLocked')}
           />
-          {role && (
-            <TextField
-              label={t('acct.role')}
-              value={t(roleLabelKey[role])}
-              onChange={() => {}}
-              disabled
-              readOnly
-              hint={t('acct.roleLocked')}
-            />
-          )}
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={!dirty}>
+          <Button type="submit" disabled={!dirty || update.isPending}>
             {t('acct.save')}
           </Button>
         </div>

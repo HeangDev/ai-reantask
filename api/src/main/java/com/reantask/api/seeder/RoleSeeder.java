@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,8 +16,12 @@ import lombok.RequiredArgsConstructor;
 
 /** Idempotent: inserts only the roles that are missing. */
 @Component
+@Order(RoleSeeder.ORDER)
 @RequiredArgsConstructor
 public class RoleSeeder implements ApplicationRunner {
+
+    /** Seeders that need roles run after this one. */
+    public static final int ORDER = 0;
 
     private static final Logger log = LoggerFactory.getLogger(RoleSeeder.class);
 

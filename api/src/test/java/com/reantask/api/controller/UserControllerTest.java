@@ -25,8 +25,10 @@ import com.reantask.api.exception.ErrorCode;
 import com.reantask.api.exception.NotFoundException;
 import com.reantask.api.dto.common.PageResponse;
 import com.reantask.api.dto.response.UserResponse;
+import com.reantask.api.dto.response.UserSessionResponse;
 import com.reantask.api.enums.UserStatus;
 import com.reantask.api.service.UserService;
+import com.reantask.api.service.UserSessionService;
 import com.reantask.api.service.UserSettingService;
 
 // Filters are off: authentication and method security belong to the auth feature.
@@ -37,6 +39,7 @@ class UserControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean UserService userService;
     @MockitoBean UserSettingService settingService;
+    @MockitoBean UserSessionService sessionService;
 
     private static UserResponse sample() {
         return new UserResponse(1L, 3L, "student", "Dara", "dara@example.com", "012345678", null,
@@ -94,6 +97,19 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].email").value("dara@example.com"))
                 .andExpect(jsonPath("$.data.totalItems").value(1));
+    }
+
+    @Test
+    void mySessions_returnsPagedEnvelopeWithoutTokenIds() throws Exception {
+        when(sessionService.listMine(any())).thenReturn(new PageResponse<>(
+                List.of(new UserSessionResponse(1L, "10.0.0.1", "Firefox", Instant.parse("2026-01-01T00:00:00Z"),
+                        Instant.parse("2026-01-01T00:15:00Z"), true)), 0, 10, 1, 1));
+
+        mvc.perform(get("/api/v1/users/me/sessions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].ipAddress").value("10.0.0.1"))
+                .andExpect(jsonPath("$.data.items[0].current").value(true))
+                .andExpect(jsonPath("$.data.items[0].jti").doesNotExist());
     }
 
     @Test

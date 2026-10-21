@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -33,7 +34,9 @@ import com.reantask.api.controller.UserController;
 import com.reantask.api.dto.response.UserResponse;
 import com.reantask.api.enums.UserStatus;
 import com.reantask.api.service.RoleService;
+import com.reantask.api.service.TokenRevocationService;
 import com.reantask.api.service.UserService;
+import com.reantask.api.service.UserSessionService;
 import com.reantask.api.service.UserSettingService;
 
 import java.util.List;
@@ -56,6 +59,8 @@ class SecurityPolicyTest {
     @MockitoBean UserService userService;
     @MockitoBean UserSettingService settingService;
     @MockitoBean RoleService roleService;
+    @MockitoBean TokenRevocationService revocationService;
+    @MockitoBean UserSessionService sessionService;
 
     private static UserResponse sampleUser() {
         return new UserResponse(1L, 3L, "student", "Dara", "dara@example.com", null, null,
@@ -74,6 +79,53 @@ class SecurityPolicyTest {
                 .andExpect(header().string("WWW-Authenticate", "Bearer"))
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void changePassword_withoutToken_returns401EvenThoughAuthPathsArePublic() throws Exception {
+        mvc.perform(patch("/api/v1/auth/change-password").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"Old12345\",\"newPassword\":\"New12345\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void mySessions_withoutToken_returns401() throws Exception {
+        mvc.perform(get("/api/v1/users/me/sessions")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void meAndLogout_withoutToken_return401() throws Exception {
+        mvc.perform(get("/api/v1/auth/me")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/auth/logout")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void logout_withValidToken_returns204() throws Exception {
+        String token = jwtService.issueAccessToken(5L, "STUDENT");
+
+        mvc.perform(post("/api/v1/auth/logout").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void revokedToken_isRejectedWith401() throws Exception {
+        String token = jwtService.issueAccessToken(5L, "STUDENT");
+        when(revocationService.isRevoked(any())).thenReturn(true);
+
+        mvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void changePassword_withValidToken_returns204() throws Exception {
+        String token = jwtService.issueAccessToken(5L, "STUDENT");
+
+        mvc.perform(patch("/api/v1/auth/change-password").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"Old12345\",\"newPassword\":\"New12345\"}"))
+                .andExpect(status().isNoContent());
     }
 
     @Test
@@ -153,7 +205,7 @@ class SecurityPolicyTest {
 
     @Test
     void login_isPublic_noTokenNeeded() throws Exception {
-        when(authService.login(any())).thenReturn(TokenResponse.bearer("jwt", 900));
+        when(authService.login(any(), any())).thenReturn(TokenResponse.bearer("jwt", 900));
 
         mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("""
