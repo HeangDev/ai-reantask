@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import { Button } from '@/shared/components/Button'
+import { RequiredMark } from '@/shared/components/RequiredMark'
 import { Checkbox } from '@/shared/components/Checkbox'
 import { DatePicker } from '@/shared/components/DatePicker'
 import { Dropdown } from '@/shared/components/Dropdown'
@@ -9,7 +10,6 @@ import { Modal } from '@/shared/components/Modal'
 import { MultiSelect } from '@/shared/components/MultiSelect'
 import { NumberInput } from '@/shared/components/NumberInput'
 import { phases } from '@/features/assignments/components/PhaseBadge'
-import { useAssignableClassNames } from '@/features/classes'
 import { planRepository } from '@/features/assignments/lib/repoNames'
 import {
   MAX_FILE_SIZE_LIMIT_MB,
@@ -18,7 +18,6 @@ import {
 } from '@/features/assignments/lib/assignValidation'
 import type { AssignFormErrors, AssignFormValues } from '@/features/assignments/lib/assignValidation'
 import type { Assignment, FileType } from '@/features/assignments/types'
-import { sampleStudents } from '@/features/students'
 import { todayIso } from '@/shared/lib/dates'
 import { useI18n } from '@/shared/i18n'
 
@@ -27,6 +26,14 @@ interface Props {
   assignment: Assignment | null
   onSave: (values: AssignFormValues) => void
   onClose: () => void
+  /** The class names to choose from; unused when the class is locked. */
+  classNames?: string[]
+  /** Set when the assignment is made from a class page: the class is fixed and shown read-only. */
+  lockedClass?: string
+  /** Full names the students can be picked from. */
+  studentNames: string[]
+  /** Students already ticked when a new assignment opens. */
+  presetAssignees?: string[]
 }
 
 const fileTypes: FileType[] = ['PDF', 'DOCX', 'Images', 'ZIP']
@@ -34,12 +41,12 @@ const fieldClass =
   'w-full rounded-lg border bg-sunken px-3 py-2 text-sm text-fg focus-visible:outline-2 focus-visible:outline-accent'
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent'
 
-export function AssignForm({ assignment, onSave, onClose }: Props) {
+export function AssignForm({ assignment, onSave, onClose, classNames = [], lockedClass, studentNames, presetAssignees }: Props) {
   const { t } = useI18n()
-  const classOptions = useAssignableClassNames()
+  const classOptions = classNames
   const [values, setValues] = useState<AssignFormValues>({
     title: assignment?.title ?? '',
-    className: assignment?.className ?? '',
+    className: assignment?.className ?? lockedClass ?? '',
     description: assignment?.description ?? '',
     deadline: assignment?.deadline ?? '',
     phase: assignment?.phase ?? 'in-progress',
@@ -47,7 +54,7 @@ export function AssignForm({ assignment, onSave, onClose }: Props) {
     maxFileSizeMb: String(assignment?.maxFileSizeMb ?? 10),
     fileTypes: assignment?.allowedFileTypes ?? ['PDF'],
     tasks: assignment?.tasks?.map((task) => task.title) ?? [''],
-    assignees: assignment?.assignees ?? [],
+    assignees: assignment?.assignees ?? presetAssignees ?? [],
   })
   const [errors, setErrors] = useState<AssignFormErrors>({})
 
@@ -85,7 +92,7 @@ export function AssignForm({ assignment, onSave, onClose }: Props) {
     const error = errors[name]
     return (
       <div className={span ? 'sm:col-span-2' : undefined}>
-        <label htmlFor={`assign-${name}`} className="text-sm font-medium">{label}</label>
+        <label htmlFor={`assign-${name}`} className="text-sm font-medium">{label}{name !== 'phase' && <RequiredMark />}</label>
         <div className="mt-1">
           {input({
             id: `assign-${name}`,
@@ -109,18 +116,22 @@ export function AssignForm({ assignment, onSave, onClose }: Props) {
           {field('title', t('asg.fieldTitle'), (props) => (
             <input {...props} type="text" autoComplete="off" value={values.title} onChange={(e) => set('title', e.target.value)} />
           ), 'full')}
-          {field('className', t('asg.fieldClass'), (props) => (
-            <Dropdown
-              {...props}
-              className="py-2"
-              invalid={Boolean(errors.className)}
-              wrapperClassName="block w-full"
-              value={values.className}
-              placeholder={t('asg.chooseClass')}
-              options={classOptions.map((c) => ({ value: c, label: c }))}
-              onChange={(v) => set('className', v)}
-            />
-          ))}
+          {field('className', t('asg.fieldClass'), (props) =>
+            lockedClass ? (
+              <input {...props} type="text" readOnly value={lockedClass} />
+            ) : (
+              <Dropdown
+                {...props}
+                className="py-2"
+                invalid={Boolean(errors.className)}
+                wrapperClassName="block w-full"
+                value={values.className}
+                placeholder={t('asg.chooseClass')}
+                options={classOptions.map((c) => ({ value: c, label: c }))}
+                onChange={(v) => set('className', v)}
+              />
+            ),
+          )}
           {field('deadline', t('asg.fieldDeadline'), (props) => (
             <DatePicker
               {...props}
@@ -157,7 +168,7 @@ export function AssignForm({ assignment, onSave, onClose }: Props) {
             <textarea {...props} rows={3} value={values.description} onChange={(e) => set('description', e.target.value)} />
           ), 'full')}
           <fieldset>
-            <legend className="text-sm font-medium">{t('asg.fieldTypes')}</legend>
+            <legend className="text-sm font-medium">{t('asg.fieldTypes')}<RequiredMark /></legend>
             <div className="mt-2 flex flex-wrap gap-2">
               {fileTypes.map((type) => (
                 <label
@@ -184,7 +195,7 @@ export function AssignForm({ assignment, onSave, onClose }: Props) {
           ))}
 
           <fieldset className="sm:col-span-2">
-            <legend className="text-sm font-medium">{t('asg.fieldTasks')}</legend>
+            <legend className="text-sm font-medium">{t('asg.fieldTasks')}<RequiredMark /></legend>
             <ul className="mt-2 space-y-2">
               {values.tasks.map((task, i) => (
                 // The inputs are controlled and the list is only appended to or trimmed, so position is identity.
@@ -223,7 +234,7 @@ export function AssignForm({ assignment, onSave, onClose }: Props) {
             <MultiSelect
               label={`${t('asg.fieldStudents')} · ${t('asg.selectedCount', { count: String(values.assignees.length) })}`}
               placeholder={t('asg.chooseStudents')}
-              options={sampleStudents.map((s) => ({ value: s.fullName, label: s.fullName }))}
+              options={studentNames.map((name) => ({ value: name, label: name }))}
               value={values.assignees}
               onChange={(next) => set('assignees', next)}
               emptyText={t('asg.noStudents')}

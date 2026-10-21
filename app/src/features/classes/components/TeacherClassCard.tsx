@@ -1,9 +1,11 @@
 import { motion, useReducedMotion } from 'motion/react'
+import { Link } from 'react-router-dom'
 import { GradientBanner } from '@/shared/components/GradientBanner'
-import { ClassIcon, MailIcon } from '@/shared/components/icons'
+import { ChevronRightIcon, ClassIcon, MailIcon } from '@/shared/components/icons'
 import { StatusBadge } from '@/shared/components/StatusBadge'
 import type { ClassOverview } from '@/features/classes/hooks/useClassOverview'
 import type { SchoolClass } from '@/features/classes/types'
+import { paths } from '@/shared/config/paths'
 import { useI18n } from '@/shared/i18n'
 
 interface Props {
@@ -47,16 +49,26 @@ export function TeacherClassCard({ schoolClass: c, overview, onInvite, index = 0
 
       <div className="flex items-center justify-between gap-2 border-t border-line bg-sunken px-4 py-3">
         <StatusBadge status={c.status} />
-        <button
-          type="button"
-          onClick={onInvite}
-          aria-haspopup="dialog"
-          aria-label={`${t('cls.invite')}: ${c.name}`}
-          className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4"
-        >
-          <MailIcon />
-          {t('cls.invite')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onInvite}
+            aria-haspopup="dialog"
+            aria-label={`${t('cls.invite')}: ${c.name}`}
+            title={t('cls.invite')}
+            className="rounded-lg border border-line bg-surface p-2 text-muted transition-colors hover:bg-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4"
+          >
+            <MailIcon />
+          </button>
+          <Link
+            to={paths.classDetail(c.id)}
+            aria-label={`${t('cdet.open')}: ${c.name}`}
+            className="flex items-center gap-1.5 rounded-lg bg-accent-strong px-3 py-1.5 text-xs font-medium text-white transition-colors hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4"
+          >
+            {t('cdet.open')}
+            <ChevronRightIcon />
+          </Link>
+        </div>
       </div>
     </motion.li>
   )

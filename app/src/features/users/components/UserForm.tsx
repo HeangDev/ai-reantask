@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import type { SubmitEvent } from 'react'
+import type { ReactNode, SubmitEvent } from 'react'
 import { Avatar } from '@/shared/components/Avatar'
 import { Button } from '@/shared/components/Button'
 import { DateField } from '@/shared/components/DateField'
 import { Dropdown } from '@/shared/components/Dropdown'
+import { RequiredMark } from '@/shared/components/RequiredMark'
 import { FormDialog } from '@/shared/components/FormDialog'
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, PhoneIcon, UserIcon } from '@/shared/components/icons'
 import type { Sex } from '@/features/students'
 import { useSubjects } from '@/features/subjects'
 import { pickableSubjectNames } from '@/features/subjects'
@@ -44,6 +46,8 @@ const statusLabel: Record<AccountStatus, TranslationKey> = {
   SUSPENDED: 'usr.suspended',
 }
 
+const sectionHeading = 'text-xs font-semibold uppercase tracking-wide text-muted sm:col-span-2'
+
 const fieldClass =
   'w-full rounded-lg border bg-sunken px-3 py-2 text-sm text-fg focus-visible:outline-2 focus-visible:outline-accent'
 
@@ -63,6 +67,7 @@ export function UserForm({ user, users, onSave, onClose, serverErrors, saving = 
   // A new user also gets a password; an existing user's password is never edited here.
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<UserFormErrors>({})
   // Server errors stay until that field is edited; a new batch of them resets this.
   const [seenServerErrors, setSeenServerErrors] = useState(serverErrors)
@@ -125,18 +130,25 @@ export function UserForm({ user, users, onSave, onClose, serverErrors, saving = 
     label: string,
     input: (props: object) => React.ReactNode,
     span?: 'full',
+    adornments?: { icon?: ReactNode; trailing?: ReactNode },
   ) => {
     const error = errors[name] ?? (edited.has(name) ? undefined : serverErrors?.[name])
     return (
       <div className={span ? 'sm:col-span-2' : undefined}>
-        <label htmlFor={`user-${name}`} className="text-sm font-medium">{label}</label>
-        <div className="mt-1">
+        <label htmlFor={`user-${name}`} className="text-sm font-medium">{label}{name !== 'status' && <RequiredMark />}</label>
+        <div className="relative mt-1">
+          {adornments?.icon && (
+            <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted [&>svg]:h-4 [&>svg]:w-4">
+              {adornments.icon}
+            </span>
+          )}
           {input({
             id: `user-${name}`,
             'aria-invalid': error ? true : undefined,
             'aria-describedby': error ? `user-${name}-error` : undefined,
-            className: `${fieldClass} ${error ? 'border-red-500' : 'border-line'}`,
+            className: `${fieldClass} ${adornments?.icon ? 'pl-9' : ''} ${adornments?.trailing ? 'pr-10' : ''} ${error ? 'border-red-500' : 'border-line'}`,
           })}
+          {adornments?.trailing && <span className="absolute inset-y-0 right-1.5 flex items-center">{adornments.trailing}</span>}
         </div>
         {error && (
           <p id={`user-${name}-error`} className="mt-1 text-xs text-red-600 dark:text-red-400">{t(error)}</p>
@@ -145,11 +157,12 @@ export function UserForm({ user, users, onSave, onClose, serverErrors, saving = 
     )
   }
 
+  const roleError = errors.roleId ?? (edited.has('roleId') ? undefined : serverErrors?.roleId)
   const roleName = roles.find((r) => String(r.id) === values.roleId)?.name
   const preview = (
     <div className="rounded-xl border border-line bg-surface p-4 text-center shadow-sm">
       <div className="flex justify-center">
-        <Avatar name={values.fullName} size="xl" />
+        <Avatar name={values.fullName} src={user?.avatar} size="xl" />
       </div>
       <p className="mt-3 truncate font-semibold">{values.fullName.trim() || t('stu.fieldName')}</p>
       <p className="truncate text-xs text-muted">{values.email.trim() || t('stu.fieldEmail')}</p>
@@ -171,56 +184,96 @@ export function UserForm({ user, users, onSave, onClose, serverErrors, saving = 
       onClose={onClose}
     >
       <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
-        <div className="grid flex-1 content-start gap-4 overflow-y-auto p-6 pt-12 sm:grid-cols-2 md:pt-6">
-          {field('fullName', t('stu.fieldName'), (props) => (
-            <input {...props} type="text" autoComplete="off" value={values.fullName} onChange={(e) => set('fullName', e.target.value)} />
-          ), 'full')}
-          {field('phone', t('stu.fieldPhone'), (props) => (
-            <input {...props} type="tel" autoComplete="off" value={values.phone} onChange={(e) => set('phone', e.target.value)} />
-          ))}
-          {field('email', t('stu.fieldEmail'), (props) => (
-            <input {...props} type="email" autoComplete="off" disabled={Boolean(user)} value={values.email} onChange={(e) => set('email', e.target.value)} />
-          ))}
-          {!lockedRole &&
-            field('roleId', t('usr.role'), (props) => (
-            <Dropdown
-              {...props}
-              className="py-2"
-              invalid={Boolean(errors.roleId ?? serverErrors?.roleId)}
-              wrapperClassName="block w-full"
-              value={values.roleId}
-              placeholder={t('usr.chooseRole')}
-              options={roles.map((r) => ({ value: String(r.id), label: t(roleLabelKey[r.name]) }))}
-              onChange={(v) => set('roleId', v)}
-            />
-          ))}
-          {field('status', t('usr.status'), (props) => (
-            <Dropdown
-              {...props}
-              className="py-2"
-              wrapperClassName="block w-full"
-              value={values.status}
-              placeholder={t('usr.chooseStatus')}
-              options={accountStatuses.map((value) => ({ value, label: t(statusLabel[value]) }))}
-              onChange={(v) => set('status', v as AccountStatus)}
-            />
-          ))}
-          {!user &&
-            field('password', t('login.password'), (props) => (
-              <input {...props} type="password" autoComplete="new-password" value={password} onChange={(e) => { setPassword(e.target.value); setErrors((er) => ({ ...er, password: undefined })); setEdited((f) => new Set(f).add('password')) }} />
+        <div className="flex-1 space-y-6 overflow-y-auto p-6 pt-12 md:pt-6">
+          <section aria-labelledby="user-section-profile" className="grid gap-4 sm:grid-cols-2">
+            <h3 id="user-section-profile" className={sectionHeading}>{t('usr.sectionProfile')}</h3>
+            {field('fullName', t('stu.fieldName'), (props) => (
+              <input {...props} type="text" autoComplete="off" value={values.fullName} onChange={(e) => set('fullName', e.target.value)} />
+            ), 'full', { icon: <UserIcon /> })}
+            {field('email', t('stu.fieldEmail'), (props) => (
+              <input {...props} type="email" autoComplete="off" disabled={Boolean(user)} value={values.email} onChange={(e) => set('email', e.target.value)} />
+            ), undefined, { icon: <MailIcon /> })}
+            {field('phone', t('stu.fieldPhone'), (props) => (
+              <input {...props} type="tel" autoComplete="off" value={values.phone} onChange={(e) => set('phone', e.target.value)} />
+            ), undefined, { icon: <PhoneIcon /> })}
+          </section>
+
+          <section aria-labelledby="user-section-access" className="grid gap-4 sm:grid-cols-2">
+            <h3 id="user-section-access" className={sectionHeading}>{t('usr.sectionAccess')}</h3>
+            {!lockedRole && (
+              <fieldset className="sm:col-span-2" aria-describedby={roleError ? 'user-roleId-error' : undefined}>
+                <legend className="text-sm font-medium">{t('usr.role')}<RequiredMark /></legend>
+                <div className="mt-1 grid grid-cols-3 gap-2">
+                  {roles.map((r) => {
+                    const checked = values.roleId === String(r.id)
+                    return (
+                      <label
+                        key={r.id}
+                        className={`flex cursor-pointer items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent ${
+                          checked ? 'border-accent bg-accent-soft text-fg' : `${roleError ? 'border-red-500' : 'border-line'} bg-sunken text-muted hover:bg-hover`
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="user-role"
+                          className="sr-only"
+                          checked={checked}
+                          onChange={() => set('roleId', String(r.id))}
+                        />
+                        {t(roleLabelKey[r.name])}
+                      </label>
+                    )
+                  })}
+                </div>
+                {roleError && <p id="user-roleId-error" className="mt-1 text-xs text-red-600 dark:text-red-400">{t(roleError)}</p>}
+              </fieldset>
+            )}
+            {field('status', t('usr.status'), (props) => (
+              <Dropdown
+                {...props}
+                className="py-2"
+                wrapperClassName="block w-full"
+                value={values.status}
+                placeholder={t('usr.chooseStatus')}
+                options={accountStatuses.map((value) => ({ value, label: t(statusLabel[value]) }))}
+                onChange={(v) => set('status', v as AccountStatus)}
+              />
             ))}
-          {!user &&
-            field('confirm', t('acct.confirmPassword'), (props) => (
-              <input {...props} type="password" autoComplete="new-password" value={confirm} onChange={(e) => { setConfirm(e.target.value); setErrors((er) => ({ ...er, confirm: undefined })) }} />
-            ))}
+          </section>
+
+          {!user && (
+            <section aria-labelledby="user-section-security" className="grid gap-4 sm:grid-cols-2">
+              <h3 id="user-section-security" className={sectionHeading}>{t('usr.sectionSecurity')}</h3>
+              {field('password', t('login.password'), (props) => (
+                <input {...props} type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={(e) => { setPassword(e.target.value); setErrors((er) => ({ ...er, password: undefined })); setEdited((f) => new Set(f).add('password')) }} />
+              ), undefined, {
+                icon: <LockIcon />,
+                trailing: (
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
+                    aria-pressed={showPassword}
+                    className="rounded-md p-1.5 text-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-accent [&>svg]:h-4 [&>svg]:w-4"
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                ),
+              })}
+              {field('confirm', t('acct.confirmPassword'), (props) => (
+                <input {...props} type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={confirm} onChange={(e) => { setConfirm(e.target.value); setErrors((er) => ({ ...er, confirm: undefined })) }} />
+              ), undefined, { icon: <LockIcon /> })}
+            </section>
+          )}
+
           {asTeacher && (
-            <>
-              <p className="border-t border-line pt-3 text-sm font-semibold sm:col-span-2">
+            <section aria-labelledby="user-section-teacher" className="grid gap-4 sm:grid-cols-2">
+              <h3 id="user-section-teacher" className={sectionHeading}>
                 {t('usr.teacherDetails')}
-                <span className="mt-0.5 block text-xs font-normal text-muted">{t('usr.teacherHint')}</span>
-              </p>
+                <span className="mt-0.5 block text-xs font-normal normal-case tracking-normal text-muted">{t('usr.teacherHint')}</span>
+              </h3>
               <div>
-                <label htmlFor="teacher-sex" className="text-sm font-medium">{t('stu.fieldSex')}</label>
+                <label htmlFor="teacher-sex" className="text-sm font-medium">{t('stu.fieldSex')}<RequiredMark /></label>
                 <div className="mt-1">
                   <Dropdown
                     id="teacher-sex"
@@ -240,13 +293,14 @@ export function UserForm({ user, users, onSave, onClose, serverErrors, saving = 
               </div>
               <DateField
                 label={t('stu.fieldDob')}
+                required
                 max={todayIso()}
                 value={teacher.dateOfBirth}
                 onChange={(v) => setTeacherField('dateOfBirth', v)}
                 error={teacherErrors.dateOfBirth}
               />
               <div className="sm:col-span-2">
-                <label htmlFor="teacher-subject" className="text-sm font-medium">{t('tch.subject')}</label>
+                <label htmlFor="teacher-subject" className="text-sm font-medium">{t('tch.subject')}<RequiredMark /></label>
                 <div className="mt-1">
                   <Dropdown
                     id="teacher-subject"
@@ -263,7 +317,7 @@ export function UserForm({ user, users, onSave, onClose, serverErrors, saving = 
                   <p className="mt-1 text-xs text-red-600 dark:text-red-400">{t(teacherErrors.subject)}</p>
                 )}
               </div>
-            </>
+            </section>
           )}
         </div>
         <div className="flex justify-end gap-2 border-t border-line px-6 py-4">

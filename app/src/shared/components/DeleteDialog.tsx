@@ -8,7 +8,7 @@ interface Props {
   message: string
   confirmLabel: string
   /** Shown in a preview card when deleting a single person. */
-  person?: { fullName: string; email: string }
+  person?: { fullName: string; email: string; avatar?: string | null }
   onConfirm: () => void
   onCancel: () => void
 }
@@ -54,7 +54,7 @@ export function DeleteDialog({ title, message, confirmLabel, person, onConfirm, 
 
         {person && (
           <div className="mt-5 flex w-full items-center gap-3 rounded-xl border border-line bg-sunken p-3 text-left">
-            <Avatar name={person.fullName} />
+            <Avatar name={person.fullName} src={person.avatar} />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{person.fullName}</p>
               <p className="truncate text-xs text-muted">{person.email}</p>

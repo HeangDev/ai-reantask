@@ -5,7 +5,8 @@ import type { AssignmentPhase } from '@/features/assignments'
 import { sampleStudents } from '@/features/students'
 import { useOwnStudentFilter } from '@/features/students'
 import { useClassNameScope, useVisibleClasses } from '@/features/classes'
-import { membersOfClass, useJoinRequests } from '@/features/classes'
+import { membersOfClass, teachingOf, useJoinRequests } from '@/features/classes'
+import { useTeachers } from '@/features/teachers'
 import type { ProgressRow, TeacherDashboardData } from '@/features/dashboard/types'
 
 /**
@@ -16,6 +17,7 @@ export function useTeacherDashboard(): TeacherDashboardData {
   const everyAssignment = useAssignments()
   const classes = useVisibleClasses()
   const requests = useJoinRequests()
+  const teachers = useTeachers()
   const names = useClassNameScope()
   const isOwn = useOwnStudentFilter()
   // Only the assignments of the classes this teacher teaches.
@@ -68,14 +70,25 @@ export function useTeacherDashboard(): TeacherDashboardData {
       reviews,
       classes: classes.map((c) => {
         const own = assignments.filter((a) => a.className === c.name)
+        const ahead = own
+          .filter((a) => a.phase !== 'completed' && daysUntil(a.deadline) >= 0)
+          .map((a) => a.deadline)
+          .sort()
         return {
           id: c.id,
           name: c.name,
           status: c.status,
+          subject: teachingOf(c, teachers).subjects.join(', '),
           students: new Set([...own.flatMap((a) => a.assignees ?? []), ...membersOfClass(requests, c.id).map((m) => m.student)]).size,
           assignments: own.length,
+          completed: own.filter((a) => a.phase === 'completed').length,
+          nextDeadline: ahead[0] ?? null,
         }
       }),
+      upcoming: assignments
+        .filter((a) => a.phase !== 'completed')
+        .sort((a, b) => a.deadline.localeCompare(b.deadline))
+        .map((a) => ({ id: a.id, title: a.title, className: a.className, deadline: a.deadline, assignees: a.assignees?.length ?? 0 })),
     }
-  }, [assignments, classes, requests, isOwn])
+  }, [assignments, classes, requests, isOwn, teachers])
 }

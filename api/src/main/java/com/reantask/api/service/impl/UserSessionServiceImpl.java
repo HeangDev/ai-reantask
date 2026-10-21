@@ -19,6 +19,7 @@ import com.reantask.api.security.CurrentUser;
 import com.reantask.api.security.JwtService;
 import com.reantask.api.service.TokenRevocationService;
 import com.reantask.api.service.UserSessionService;
+import com.reantask.api.util.UserAgentParser;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,7 +40,7 @@ public class UserSessionServiceImpl implements UserSessionService {
     public void record(Long userId, JwtService.AccessToken token, ClientInfo client) {
         repository.deleteExpired(Instant.now(clock));
         repository.save(new UserSession(userId, token.id(), truncate(client.ipAddress(), UserSession.MAX_IP_LENGTH),
-                truncate(client.userAgent(), UserSession.MAX_USER_AGENT_LENGTH), token.expiresAt()));
+                truncate(client.userAgent(), UserSession.MAX_USER_AGENT_LENGTH), null, token.expiresAt()));
     }
 
     @Override
@@ -49,8 +50,7 @@ public class UserSessionServiceImpl implements UserSessionService {
         // Order is fixed by the query (newest first), so a client-supplied sort is ignored on purpose.
         Pageable page = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
         return PageResponse.from(repository.findActive(userId, Instant.now(clock), page)
-                .map(s -> new UserSessionResponse(s.getId(), s.getIpAddress(), s.getUserAgent(), s.getCreatedAt(),
-                        s.getExpiresAt(), s.getJti().equals(currentJti))));
+                .map(s -> toResponse(s, currentJti)));
     }
 
     @Override
@@ -66,6 +66,12 @@ public class UserSessionServiceImpl implements UserSessionService {
     public void revokeAllMine() {
         repository.findAllActive(currentUser.requireId(), Instant.now(clock))
                 .forEach(session -> revocations.revoke(session.getJti(), session.getExpiresAt()));
+    }
+
+    private static UserSessionResponse toResponse(UserSession s, String currentJti) {
+        UserAgentParser.Device device = UserAgentParser.parse(s.getUserAgent());
+        return new UserSessionResponse(s.getId(), s.getIpAddress(), s.getUserAgent(), device.os(), device.browser(),
+                s.getLocation(), s.getCreatedAt(), s.getExpiresAt(), s.getJti().equals(currentJti));
     }
 
     private static String truncate(String value, int max) {

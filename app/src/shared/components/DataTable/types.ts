@@ -66,6 +66,12 @@ export interface DataTableProps<T extends { id: string }> {
   minWidthClass?: string
   /** Show an initials avatar in the primary column. */
   showAvatar?: boolean
+  /** A photo address for the avatar in the primary column; the initials show when it is empty or does not load. */
+  getAvatar?: (row: T) => string | null | undefined
   /** Extra buttons shown before Edit and Delete in each row. */
   renderActions?: (row: T) => ReactNode
+  /** Buttons that take the place of Edit and Delete (always visible) for the rows where it returns something. */
+  replaceActions?: (row: T) => ReactNode
+  /** Rows where this returns false do not open on click (the name is plain text). Defaults to every row. */
+  canOpen?: (row: T) => boolean
 }

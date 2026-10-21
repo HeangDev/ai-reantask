@@ -7,6 +7,8 @@ export const paths = {
   forbidden: '/403',
   dashboard: '/dashboard',
   classes: '/classes',
+  /** A teacher's page for one class: its students, subject and assignments. */
+  classDetail: (id: string) => `/classes/${id}`,
   /** A student's assignments live under Classes (R-ST1). */
   classAssignments: '/classes/assignments',
   assign: '/assign',
@@ -17,7 +19,6 @@ export const paths = {
   teachers: '/teachers',
   subjects: '/subjects',
   users: '/users',
-  scoreReport: '/reports/scores',
   integration: '/integration',
   notifications: '/notifications',
   account: '/account',

@@ -1,5 +1,6 @@
 import type { z } from 'zod'
 import { env } from '@/shared/config/env'
+import { isMockToken } from '@/shared/config/mockMode'
 import { ApiError } from '@/shared/api/errors'
 import { toFieldErrors } from '@/shared/api/errors'
 import type { ErrorBody } from '@/shared/api/errors'
@@ -73,7 +74,8 @@ export async function apiRequest(path: string, options: RequestOptions<z.ZodType
   if (!response.ok) {
     const errorBody = (data ?? {}) as ErrorBody
     // A rejected token ends the session; a failed login attempt (no token sent) is a normal error.
-    if (response.status === 401 && token) authActions.signOut()
+    // A mock sign-in has no real token, so the API rejecting it must not end the session.
+    if (response.status === 401 && token && !isMockToken(token)) authActions.signOut()
     throw new ApiError(response.status, {
       message: errorBody.message,
       code: errorBody.code,

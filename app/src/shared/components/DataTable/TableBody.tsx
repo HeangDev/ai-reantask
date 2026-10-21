@@ -20,6 +20,9 @@ interface Props<T extends { id: string }> {
   getName: (row: T) => string
   getSubtitle: (row: T) => string
   renderActions?: (row: T) => ReactNode
+  getAvatar?: (row: T) => string | null | undefined
+  replaceActions?: (row: T) => ReactNode
+  canOpen?: (row: T) => boolean
   onToggle: (id: string) => void
   onOpen: (id: string) => void
   onEdit: (id: string) => void
@@ -38,7 +41,10 @@ export function TableBody<T extends { id: string }>({
   emptyMessage,
   getName,
   getSubtitle,
+  getAvatar,
   renderActions,
+  replaceActions,
+  canOpen,
   onToggle,
   onOpen,
   onEdit,
@@ -52,12 +58,13 @@ export function TableBody<T extends { id: string }>({
           {rows.map((row) => {
             const isSelected = selected.has(row.id)
             const name = getName(row)
+            const openable = !readOnly && (canOpen?.(row) ?? true)
             return (
               <tr
                 key={row.id}
-                onClick={readOnly ? undefined : () => onOpen(row.id)}
+                onClick={openable ? () => onOpen(row.id) : undefined}
                 aria-selected={isSelected}
-                className={`group ${readOnly ? '' : 'cursor-pointer'} border-b border-line/60 transition-colors last:border-b-0 ${isSelected ? 'bg-accent-soft' : 'hover:bg-hover'}`}
+                className={`group ${openable ? 'cursor-pointer' : ''} border-b border-line/60 transition-colors last:border-b-0 ${isSelected ? 'bg-accent-soft' : 'hover:bg-hover'}`}
               >
                 {!readOnly && (
                   <td className="py-3 pl-4 pr-0" onClick={(e) => e.stopPropagation()}>
@@ -71,7 +78,8 @@ export function TableBody<T extends { id: string }>({
                       name={name}
                       subtitle={getSubtitle(row)}
                       showAvatar={showAvatar}
-                      readOnly={readOnly}
+                      avatarSrc={getAvatar?.(row)}
+                      readOnly={!openable}
                       onOpen={() => onOpen(row.id)}
                     />
                   ) : (
@@ -86,6 +94,7 @@ export function TableBody<T extends { id: string }>({
                     labels={labels}
                     readOnly={readOnly}
                     extra={renderActions?.(row)}
+                    replacement={replaceActions?.(row)}
                     onEdit={() => onEdit(row.id)}
                     onDelete={() => onDelete(row.id)}
                   />

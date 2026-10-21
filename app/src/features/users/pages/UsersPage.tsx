@@ -4,9 +4,9 @@ import { DeleteDialog } from '@/shared/components/DeleteDialog'
 import { Dropdown } from '@/shared/components/Dropdown'
 import { PlusIcon, SearchIcon, TrashIcon } from '@/shared/components/icons'
 import { useToast } from '@/shared/components/Toast'
-import { PendingStudentsPanel } from '@/features/users/components/PendingStudentsPanel'
 import { UserDetail } from '@/features/users/components/UserDetail'
 import { UserForm } from '@/features/users/components/UserForm'
+import { UserWizard } from '@/features/users/components/UserWizard'
 import { UsersTable } from '@/features/users/components/UsersTable'
 import { roleLabelKey } from '@/features/auth'
 import { roles } from '@/features/auth'
@@ -129,8 +129,6 @@ export function UsersPage() {
         </Button>
       </div>
 
-      <PendingStudentsPanel />
-
       <div className="mt-4 overflow-hidden rounded-xl border border-line bg-surface">
         <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center">
           {selected.size > 0 ? (
@@ -247,7 +245,7 @@ export function UsersPage() {
       </div>
 
       {dialog.type === 'create' && (
-        <UserForm user={null} users={users} onSave={save} onClose={close} serverErrors={serverErrors} saving={saving} />
+        <UserWizard users={users} onSave={save} onClose={close} serverErrors={serverErrors} saving={saving} />
       )}
       {dialog.type === 'edit' && target && (
         <UserForm user={target} users={users} onSave={save} onClose={close} serverErrors={serverErrors} saving={saving} />

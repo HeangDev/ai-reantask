@@ -102,6 +102,9 @@ export async function fetchPendingStudents(signal?: AbortSignal): Promise<User[]
   return data.items.map(toUser)
 }
 
+/** Declines a registration: the account is suspended (not deleted), so it can still be reactivated from the list. */
+export const rejectUser = (id: string): Promise<User> => setStatus(id, 'SUSPENDED')
+
 /** Makes a PENDING student ACTIVE, so they can sign in. */
 export const approveUser = async (id: string): Promise<User> => {
   const { data } = await apiRequest(`/users/${id}/approve`, { method: 'PATCH', schema: userEnvelope })

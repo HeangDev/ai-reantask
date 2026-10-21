@@ -9,11 +9,20 @@ interface Props {
   readOnly: boolean
   /** Extra buttons shown before Edit and Delete. */
   extra?: ReactNode
+  /** Shown instead of Edit and Delete. */
+  replacement?: ReactNode
   onEdit: () => void
   onDelete: () => void
 }
 
-export function RowActions({ name, labels, readOnly, extra, onEdit, onDelete }: Props) {
+export function RowActions({ name, labels, readOnly, extra, replacement, onEdit, onDelete }: Props) {
+  if (replacement) {
+    return (
+      <td className="py-3 pl-3 pr-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-end gap-1">{replacement}</div>
+      </td>
+    )
+  }
   return (
     <td className="py-3 pl-3 pr-4" onClick={(e) => e.stopPropagation()}>
       <div className={`flex justify-end gap-0.5 transition-opacity ${readOnly ? '' : 'md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100'}`}>

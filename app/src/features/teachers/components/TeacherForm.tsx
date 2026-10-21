@@ -4,6 +4,7 @@ import { Avatar } from '@/shared/components/Avatar'
 import { Button } from '@/shared/components/Button'
 import { DatePicker } from '@/shared/components/DatePicker'
 import { Dropdown } from '@/shared/components/Dropdown'
+import { RequiredMark } from '@/shared/components/RequiredMark'
 import { FormDialog } from '@/shared/components/FormDialog'
 import { MultiSelect } from '@/shared/components/MultiSelect'
 import { useClasses } from '@/features/classes'
@@ -66,7 +67,7 @@ export function TeacherForm({ teacher, teachers, onSave, onClose }: Props) {
     const error = errors[name]
     return (
       <div className={span ? 'sm:col-span-2' : undefined}>
-        <label htmlFor={`teacher-${name}`} className="text-sm font-medium">{label}</label>
+        <label htmlFor={`teacher-${name}`} className="text-sm font-medium">{label}<RequiredMark /></label>
         <div className="mt-1">
           {input({
             id: `teacher-${name}`,

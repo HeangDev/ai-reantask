@@ -26,9 +26,15 @@ import com.reantask.api.dto.common.PageResponse;
 import com.reantask.api.dto.response.ClassResponse;
 import com.reantask.api.enums.ClassStatus;
 import com.reantask.api.exception.BusinessRuleException;
+import com.reantask.api.exception.ConflictException;
 import com.reantask.api.exception.ErrorCode;
 import com.reantask.api.exception.NotFoundException;
 import com.reantask.api.service.ClassService;
+import com.reantask.api.service.ClassSubjectService;
+import com.reantask.api.dto.response.ClassSubjectResponse;
+import com.reantask.api.dto.response.SubjectResponse;
+import com.reantask.api.enums.ClassSubjectStatus;
+import com.reantask.api.enums.SubjectStatus;
 
 // Filters are off: authentication and method security are covered by SecurityPolicyTest.
 @WebMvcTest(ClassController.class)
@@ -41,6 +47,7 @@ class ClassControllerTest {
 
     @Autowired MockMvc mvc;
     @MockitoBean ClassService classService;
+    @MockitoBean ClassSubjectService classSubjectService;
 
     private static ClassResponse sample() {
         return new ClassResponse(1L, "Web 101", "ABC123", "Intro", ClassStatus.ACTIVE,
@@ -156,5 +163,63 @@ class ClassControllerTest {
     @Test
     void delete_returns204() throws Exception {
         mvc.perform(delete("/api/v1/classes/1")).andExpect(status().isNoContent());
+    }
+
+    private static ClassSubjectResponse sampleClassSubject() {
+        Instant now = Instant.parse("2026-01-01T00:00:00Z");
+        return new ClassSubjectResponse(5L, sample(),
+                new SubjectResponse(2L, "Java", null, SubjectStatus.ACTIVE, now, now),
+                7L, ClassSubjectStatus.ACTIVE, now, now);
+    }
+
+    @Test
+    void myTeaching_returnsPagedEnvelope() throws Exception {
+        when(classSubjectService.listMyTeaching(any(), any()))
+                .thenReturn(new PageResponse<>(List.of(sampleClassSubject()), 0, 10, 1, 1));
+
+        mvc.perform(get("/api/v1/classes/me/teaching").param("status", "ACTIVE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].classRoom.code").value("ABC123"))
+                .andExpect(jsonPath("$.data.items[0].subject.name").value("Java"))
+                .andExpect(jsonPath("$.data.items[0].teacherId").value(7));
+    }
+
+    @Test
+    void myTeaching_invalidStatus_returns400() throws Exception {
+        mvc.perform(get("/api/v1/classes/me/teaching").param("status", "BOGUS"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"));
+    }
+
+    @Test
+    void assignSubject_valid_returns201WithLocation() throws Exception {
+        when(classSubjectService.assign(any(), any())).thenReturn(sampleClassSubject());
+
+        mvc.perform(post("/api/v1/classes/1/subjects").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subjectId\":2,\"teacherId\":7}"))
+                .andExpect(status().isCreated())
+                .andExpect(header().exists("Location"))
+                .andExpect(jsonPath("$.data.id").value(5))
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"));
+    }
+
+    @Test
+    void assignSubject_missingFields_returns400WithFieldErrors() throws Exception {
+        mvc.perform(post("/api/v1/classes/1/subjects").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.errors[?(@.field == 'subjectId')]").exists())
+                .andExpect(jsonPath("$.errors[?(@.field == 'teacherId')]").exists());
+    }
+
+    @Test
+    void assignSubject_alreadyAssigned_returns409() throws Exception {
+        when(classSubjectService.assign(any(), any()))
+                .thenThrow(new ConflictException(ErrorCode.ALREADY_IN_CLASS, "dup"));
+
+        mvc.perform(post("/api/v1/classes/1/subjects").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subjectId\":2,\"teacherId\":7}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ALREADY_IN_CLASS"));
     }
 }

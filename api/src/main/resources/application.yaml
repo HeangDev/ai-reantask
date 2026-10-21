@@ -8,7 +8,7 @@ app:
       issuer: ${JWT_ISSUER:reantask-api}
       access-token-ttl: 15m
     cors:
-      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
     google:
       client-id: ${GOOGLE_CLIENT_ID:274379845668-3406s9aucfumtecdbe4apo80lgfcotsp.apps.googleusercontent.com}
   storage:
@@ -17,8 +17,8 @@ app:
       max-size: 2MB
   seed:
     admin:   # dev defaults: override with env vars outside local development
-      fullname: ${SEED_ADMIN_FULLNAME:Sim Kimheang}
-      email: ${SEED_ADMIN_EMAIL:simkimheang4@gmail.com}
+      fullname: ${SEED_ADMIN_FULLNAME:Administrator}
+      email: ${SEED_ADMIN_EMAIL:admin@reantask.com}
       phone: ${SEED_ADMIN_PHONE:+85511263262}
       password: ${SEED_ADMIN_PASSWORD:password}
       scope:

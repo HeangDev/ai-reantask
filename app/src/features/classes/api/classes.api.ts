@@ -1,7 +1,9 @@
 import type { ClassInput, SchoolClass } from '@/features/classes/types'
 import { classEnvelope, classesPageSchema } from '@/features/classes/schemas/class.schemas'
 import type { ApiClass } from '@/features/classes/schemas/class.schemas'
+import { sampleClasses } from '@/features/classes/data/sampleClasses'
 import { apiRequest } from '@/shared/api/http'
+import { usesSampleClasses } from '@/shared/config/mockMode'
 
 const PAGE_SIZE = 100
 
@@ -22,6 +24,8 @@ const toApiStatus = (status: SchoolClass['status']) => (status === 'active' ? 'A
  * (the API allows at most 100 per page).
  */
 export async function fetchClasses(signal?: AbortSignal): Promise<SchoolClass[]> {
+  // Sample classes for a teacher (and in mock mode): read-only, no API call.
+  if (usesSampleClasses()) return sampleClasses
   const classes: SchoolClass[] = []
   let page = 0 // the API's pages start at 0
   let totalPages = 1

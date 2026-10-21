@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import type { ComponentPropsWithRef, ReactNode } from 'react'
+import { RequiredMark } from '@/shared/components/RequiredMark'
 import { useI18n } from '@/shared/i18n'
 import type { TranslationKey } from '@/shared/i18n'
 
@@ -23,6 +24,7 @@ export function TextField({ label, value, onChange, error, hint, trailing, disab
     <div>
       <label htmlFor={id} className="text-sm font-medium">
         {label}
+        {input.required && <RequiredMark />}
       </label>
       <div className="relative mt-1">
         <input

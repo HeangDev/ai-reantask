@@ -22,9 +22,26 @@ export const ME = 'me'
 // A student joins a class only after the teacher approves their request, so membership is simply the approved
 // requests. A mock resource until a join API is documented. It starts with the student already in
 // "Web Development", and another student waiting for approval to join "Web Development II".
+// Other students are already in the classes their sample assignments belong to (ids match the students list).
+const seededMembers: [classId: string, studentId: string, student: string][] = [
+  ['1', '1', 'Sokha Chan'], ['1', '2', 'Dara Kim'], ['1', '7', 'Piseth Sok'],
+  ['2', '2', 'Dara Kim'], ['2', '5', 'Rithy Heng'], ['2', '10', 'Bopha Sen'],
+  ['3', '1', 'Sokha Chan'], ['3', '3', 'Vanna Pich'], ['3', '9', 'Veasna Tep'],
+  ['4', '1', 'Sokha Chan'], ['4', '2', 'Dara Kim'], ['4', '4', 'Sreyneang Lim'], ['4', '6', 'Malis Ouk'], ['4', '7', 'Piseth Sok'],
+  ['5', '5', 'Rithy Heng'], ['5', '8', 'Chanthy Roeun'],
+]
+
 const requests = createMockResource<JoinRequest[]>('join-requests', [
   { id: 'req-1', classId: '4', studentId: ME, student: currentUser.fullName, status: 'approved', createdAt: Date.now() - 6 * 24 * 3_600_000 },
   { id: 'req-2', classId: '7', studentId: 'sokha', student: 'Sokha Chan', status: 'pending', createdAt: Date.now() - 25 * 60_000 },
+  ...seededMembers.map(([classId, studentId, student]): JoinRequest => ({
+    id: `seed-${classId}-${studentId}`,
+    classId,
+    studentId,
+    student,
+    status: 'approved',
+    createdAt: Date.now() - 30 * 24 * 3_600_000,
+  })),
 ])
 
 export const useJoinRequests = requests.useValue

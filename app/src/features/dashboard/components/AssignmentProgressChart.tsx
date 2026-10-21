@@ -29,7 +29,7 @@ export function AssignmentProgressChart({ totals, rows }: Props) {
   const phaseLabel = (key: TranslationKey) => t(key)
 
   return (
-    <section className="mt-4 rounded-xl border border-line bg-surface p-4" aria-labelledby="progress-title">
+    <section className="rounded-xl border border-line bg-surface p-4" aria-labelledby="progress-title">
       <h2 id="progress-title" className="text-sm font-semibold">
         {t('tdash.progressTitle')}
       </h2>

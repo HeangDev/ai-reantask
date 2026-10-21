@@ -86,6 +86,7 @@ export function ClassForm({ schoolClass, classes, onSave, onClose, serverErrors,
         <div className="grid flex-1 content-start gap-4 overflow-y-auto p-6 pt-12 md:pt-6">
           <TextField
             label={t('cls.fieldName')}
+            required
             autoComplete="off"
             value={values.name}
             onChange={(v) => set('name', v)}
@@ -101,12 +102,14 @@ export function ClassForm({ schoolClass, classes, onSave, onClose, serverErrors,
           <div className="grid gap-4 sm:grid-cols-2">
             <DateField
               label={t('cls.startDate')}
+              required
               value={values.startDate}
               onChange={(v) => set('startDate', v)}
               error={fieldError('startDate')}
             />
             <DateField
               label={t('cls.endDate')}
+              required
               min={values.startDate || undefined}
               value={values.endDate}
               onChange={(v) => set('endDate', v)}

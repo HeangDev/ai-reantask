@@ -12,6 +12,11 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((value) => value?.trim() || undefined),
+  /** Serves sample classes instead of calling the classes API, so teacher screens can be seen without real data. */
+  VITE_USE_MOCKS: z
+    .string()
+    .optional()
+    .transform((value) => value?.trim() === 'true'),
 })
 
 // The only place that reads import.meta.env (architecture.md §8); validated once at startup.

@@ -40,14 +40,19 @@ public class UserSession extends TimestampedEntity {
     @Column(name = "user_agent", length = MAX_USER_AGENT_LENGTH)
     private String userAgent;
 
+    @Column(name = "location")
+    private String location;
+
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
-    public UserSession(Long userId, String jti, String ipAddress, String userAgent, Instant expiresAt) {
+    public UserSession(Long userId, String jti, String ipAddress, String userAgent, String location,
+            Instant expiresAt) {
         this.userId = userId;
         this.jti = jti;
         this.ipAddress = ipAddress;
         this.userAgent = userAgent;
+        this.location = location;
         this.expiresAt = expiresAt;
     }
 

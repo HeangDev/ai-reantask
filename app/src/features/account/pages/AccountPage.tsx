@@ -5,7 +5,6 @@ import { DeleteAccountSection } from '@/features/account/components/DeleteAccoun
 import { PasswordSection } from '@/features/account/components/PasswordSection'
 import { ProfileSection } from '@/features/account/components/ProfileSection'
 import { SessionsSection } from '@/features/account/components/SessionsSection'
-import { TwoFactorSection } from '@/features/account/components/TwoFactorSection'
 import { useProfile } from '@/features/auth'
 import { roleLabelKey } from '@/features/auth'
 import { useSession } from '@/shared/store/authStore'
@@ -72,14 +71,9 @@ export function AccountPage() {
           })}
         </nav>
 
-        <div className="max-w-2xl space-y-5">
+        <div className={`space-y-5 ${tab === 'sessions' ? '' : 'max-w-2xl'}`}>
           {tab === 'profile' && <ProfileSection />}
-          {tab === 'security' && (
-            <>
-              <PasswordSection />
-              <TwoFactorSection />
-            </>
-          )}
+          {tab === 'security' && <PasswordSection />}
           {tab === 'sessions' && <SessionsSection />}
           {tab === 'delete' && <DeleteAccountSection />}
         </div>

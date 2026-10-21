@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import { DatePicker } from '@/shared/components/DatePicker'
+import { RequiredMark } from '@/shared/components/RequiredMark'
 import { useI18n } from '@/shared/i18n'
 import type { TranslationKey } from '@/shared/i18n'
 
@@ -10,10 +11,12 @@ interface Props {
   min?: string
   max?: string
   error?: TranslationKey
+  /** Marks the field as required with a red asterisk. */
+  required?: boolean
 }
 
 /** Labelled date picker with a field-level error, the counterpart of TextField for dates. */
-export function DateField({ label, value, onChange, min, max, error }: Props) {
+export function DateField({ label, value, onChange, min, max, error, required = false }: Props) {
   const { t } = useI18n()
   const id = useId()
 
@@ -21,6 +24,7 @@ export function DateField({ label, value, onChange, min, max, error }: Props) {
     <div>
       <label htmlFor={id} className="text-sm font-medium">
         {label}
+        {required && <RequiredMark />}
       </label>
       <DatePicker
         id={id}

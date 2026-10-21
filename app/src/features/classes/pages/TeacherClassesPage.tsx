@@ -9,6 +9,8 @@ import { TeacherClassCard } from '@/features/classes/components/TeacherClassCard
 import { TeacherClassesTable } from '@/features/classes/components/TeacherClassesTable'
 import { useClassOverview } from '@/features/classes/hooks/useClassOverview'
 import { useClassesQuery } from '@/features/classes/api/useClasses'
+import { inScope } from '@/features/classes/hooks/useVisibleClasses'
+import { useTeacherClassScope } from '@/features/teachers'
 import { useViewMode } from '@/shared/hooks/useViewMode'
 import { useI18n } from '@/shared/i18n'
 
@@ -19,9 +21,10 @@ const PAGE_SIZE = 6
 /** The teacher's classes, as cards or a table: class name, subject and total students, with a way to invite students. */
 export function TeacherClassesPage() {
   const { t } = useI18n()
-  // The API only returns the classes this teacher teaches.
+  // The API returns every class, so keep only the ones this teacher teaches.
   const classesQuery = useClassesQuery()
-  const classes = useMemo(() => classesQuery.data ?? [], [classesQuery.data])
+  const scope = useTeacherClassScope()
+  const classes = useMemo(() => inScope(classesQuery.data ?? [], scope), [classesQuery.data, scope])
   const overviews = useClassOverview(classes)
   const [view, setView] = useViewMode('teacher-classes-view')
   const [query, setQuery] = useState('')

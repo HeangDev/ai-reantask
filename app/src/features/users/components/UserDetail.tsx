@@ -23,7 +23,7 @@ export function UserDetail({ user, onEdit, onDelete, onClose }: Props) {
     <Modal title={t('usr.details')} onClose={onClose}>
       <div className="p-5">
         <div className="flex items-center gap-3">
-          <Avatar name={user.fullName} size="lg" />
+          <Avatar name={user.fullName} src={user.avatar} size="lg" />
           <div className="min-w-0">
             <p className="truncate text-base font-semibold">{user.fullName}</p>
             <p className="truncate text-sm text-muted">{user.email}</p>

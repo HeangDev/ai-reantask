@@ -5,16 +5,17 @@ interface Props {
   name: string
   subtitle: string
   showAvatar: boolean
+  avatarSrc?: string | null
   readOnly: boolean
   onOpen: () => void
 }
 
 /** The person column: avatar, name (a button that opens the row) and a subtitle line. */
-export function PrimaryCell({ name, subtitle, showAvatar, readOnly, onOpen }: Props) {
+export function PrimaryCell({ name, subtitle, showAvatar, avatarSrc, readOnly, onOpen }: Props) {
   return (
     <td className="px-3 py-3">
       <div className="flex items-center gap-3">
-        {showAvatar && <Avatar name={name} />}
+        {showAvatar && <Avatar name={name} src={avatarSrc} />}
         <div className="min-w-0">
           {readOnly ? (
             <p className="truncate font-medium">{name}</p>

@@ -148,7 +148,7 @@ class UserSessionServiceImplTest {
     }
 
     private UserSession session(Long id, String jti) {
-        UserSession s = new UserSession(7L, jti, "10.0.0.1", "Firefox", NOW.plusSeconds(600));
+        UserSession s = new UserSession(7L, jti, "10.0.0.1", "Firefox", null, NOW.plusSeconds(600));
         ReflectionTestUtils.setField(s, "id", id);
         return s;
     }

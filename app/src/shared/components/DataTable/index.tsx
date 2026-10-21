@@ -19,6 +19,7 @@ export function DataTable<T extends { id: string }>({
   columns: allColumns,
   getName,
   getSubtitle,
+  getAvatar,
   initialSort,
   labels,
   selected = NO_SELECTION,
@@ -33,6 +34,8 @@ export function DataTable<T extends { id: string }>({
   minWidthClass,
   showAvatar = true,
   renderActions,
+  replaceActions,
+  canOpen,
   serverPaging,
 }: DataTableProps<T>) {
   const showActions = !readOnly || Boolean(renderActions)
@@ -79,7 +82,10 @@ export function DataTable<T extends { id: string }>({
             emptyMessage={emptyMessage}
             getName={getName}
             getSubtitle={getSubtitle}
+            getAvatar={getAvatar}
             renderActions={renderActions}
+            replaceActions={replaceActions}
+            canOpen={canOpen}
             onToggle={selection.toggle}
             onOpen={onOpen}
             onEdit={onEdit}

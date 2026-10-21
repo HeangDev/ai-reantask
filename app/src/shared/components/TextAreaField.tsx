@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { RequiredMark } from '@/shared/components/RequiredMark'
 import { useI18n } from '@/shared/i18n'
 import type { TranslationKey } from '@/shared/i18n'
 
@@ -10,10 +11,12 @@ interface Props {
   /** Shows a "length/max" counter. */
   maxLength: number
   rows?: number
+  /** Marks the field as required with a red asterisk. */
+  required?: boolean
 }
 
 /** Labelled multi-line input with a character counter and a field-level error. */
-export function TextAreaField({ label, value, onChange, error, maxLength, rows = 3 }: Props) {
+export function TextAreaField({ label, value, onChange, error, maxLength, rows = 3, required = false }: Props) {
   const { t } = useI18n()
   const id = useId()
 
@@ -21,10 +24,12 @@ export function TextAreaField({ label, value, onChange, error, maxLength, rows =
     <div>
       <label htmlFor={id} className="text-sm font-medium">
         {label}
+        {required && <RequiredMark />}
       </label>
       <textarea
         id={id}
         rows={rows}
+        aria-required={required || undefined}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={error ? true : undefined}

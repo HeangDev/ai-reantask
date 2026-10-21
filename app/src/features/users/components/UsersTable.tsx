@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { DataTable } from '@/shared/components/DataTable'
 import type { Column, ServerPaging } from '@/shared/components/DataTable'
 import { roleLabelKey } from '@/features/auth'
+import { PendingDecisionButtons } from '@/features/users/components/PendingDecisionButtons'
 import { AccountStatusBadge } from '@/features/users/components/AccountStatusBadge'
 import type { User } from '@/features/users/types'
 import { useI18n } from '@/shared/i18n'
@@ -24,6 +25,8 @@ interface Props {
 
 export function UsersTable({ users, showRole = true, ...handlers }: Props) {
   const { t } = useI18n()
+  // Someone waiting for approval gets Approve and Reject instead of Edit and Delete.
+  const replaceActions = (u: User) => (u.status === 'PENDING' ? <PendingDecisionButtons user={u} /> : null)
 
   const columns = useMemo<Column<User>[]>(
     () => [
@@ -65,9 +68,12 @@ export function UsersTable({ users, showRole = true, ...handlers }: Props) {
       columns={columns}
       getName={(u) => u.fullName}
       getSubtitle={(u) => u.email}
+      getAvatar={(u) => u.avatar}
       initialSort="fullName"
       labels={labels}
       minWidth="44rem"
+      replaceActions={replaceActions}
+      canOpen={(u) => u.status !== 'PENDING'}
       {...handlers}
     />
   )

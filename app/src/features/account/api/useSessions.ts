@@ -17,3 +17,16 @@ export function useRevokeSession() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: userKeys.all }),
   })
 }
+
+/** Logs out every device except this one; the ones that fail are reported by throwing after the rest were revoked. */
+export function useRevokeOtherSessions() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (ids: number[]) => {
+      const results = await Promise.allSettled(ids.map(revokeSession))
+      const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+      if (failed) throw failed.reason
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: userKeys.all }),
+  })
+}

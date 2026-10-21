@@ -1,9 +1,11 @@
 // Public API of the users feature. Other features and the app import only from here.
-export { useDeleteUsers, useUpdateUser, useUsersList } from '@/features/users/api/useUsers'
+export { useDeleteUsers, usePendingStudents, useUpdateUser, useUsersList } from '@/features/users/api/useUsers'
 export { fetchPendingStudents } from '@/features/users/api/users.api'
 export { userKeys } from '@/features/users/api/users.keys'
+export { PendingDecisionButtons } from '@/features/users/components/PendingDecisionButtons'
 export { PendingStudentsPanel } from '@/features/users/components/PendingStudentsPanel'
 export { UserDetail } from '@/features/users/components/UserDetail'
+export { UserWizard } from '@/features/users/components/UserWizard'
 export { UserForm } from '@/features/users/components/UserForm'
 export { UsersTable } from '@/features/users/components/UsersTable'
 export { serverFieldErrors } from '@/features/users/lib/validation'

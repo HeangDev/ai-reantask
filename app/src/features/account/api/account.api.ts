@@ -1,7 +1,9 @@
-import { describeDevice, isPhone } from '@/features/account/lib/device'
+import { describeDevice, isPhone, parseUserAgent } from '@/features/account/lib/device'
 import { sessionsSchema } from '@/features/account/schemas/session.schemas'
 import type { LoginSession } from '@/features/account/types'
 import { apiRequest } from '@/shared/api/http'
+import { isMockToken } from '@/shared/config/mockMode'
+import { getSession } from '@/shared/store/authStore'
 
 /**
  * Account operations that need a server: changing the password, two-factor authentication
@@ -28,6 +30,23 @@ export const simulatedAccountService: AccountService = {
 
 /** The signed-in user's active sessions, newest first. */
 export async function fetchSessions(signal?: AbortSignal): Promise<LoginSession[]> {
+  // A mock sign-in has no server session, so the list is just this browser.
+  if (isMockToken(getSession()?.token)) {
+    const { os, browser } = parseUserAgent(navigator.userAgent)
+    return [
+      {
+        id: 0,
+        device: describeDevice(navigator.userAgent, ''),
+        lastActiveAt: Date.now(),
+        isCurrent: true,
+        kind: isPhone(navigator.userAgent) ? 'phone' : 'desktop',
+        os,
+        browser,
+        ipAddress: '',
+        location: null,
+      },
+    ]
+  }
   const { data } = await apiRequest('/users/me/sessions', { params: { size: 50 }, signal, schema: sessionsSchema })
   return data.items.map((s) => ({
     id: s.id,
@@ -35,6 +54,10 @@ export async function fetchSessions(signal?: AbortSignal): Promise<LoginSession[
     lastActiveAt: Date.parse(s.signedInAt),
     isCurrent: s.current,
     kind: isPhone(s.userAgent) ? 'phone' : 'desktop',
+    os: s.os ?? parseUserAgent(s.userAgent).os,
+    browser: s.browser ?? parseUserAgent(s.userAgent).browser,
+    ipAddress: s.ipAddress,
+    location: s.location ?? null,
   }))
 }
 

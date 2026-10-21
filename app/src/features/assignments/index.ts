@@ -1,5 +1,8 @@
 // Public API of the assignments feature. Other features and the app import only from here.
+export { AssignForm } from '@/features/assignments/components/AssignForm'
 export { DueLabel } from '@/features/assignments/components/DueLabel'
+export { PhaseBadge } from '@/features/assignments/components/PhaseBadge'
+export { useCreateAssignment } from '@/features/assignments/hooks/useCreateAssignment'
 export { statusStyles } from '@/features/assignments/components/StatusBadge'
 export { assignmentClasses } from '@/features/assignments/data/sampleAssignments'
 export { daysUntil, formatDate } from '@/features/assignments/lib/dates'

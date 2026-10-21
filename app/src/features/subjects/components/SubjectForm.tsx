@@ -84,6 +84,7 @@ export function SubjectForm({ subject, subjects, onSave, onClose, serverErrors, 
         <div className="grid flex-1 content-start gap-4 overflow-y-auto p-6 pt-12 md:pt-6">
           <TextField
             label={t('sub.fieldName')}
+            required
             autoComplete="off"
             value={values.name}
             onChange={(v) => set('name', v)}

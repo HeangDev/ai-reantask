@@ -20,11 +20,15 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.reantask.api.dto.common.ApiResponse;
 import com.reantask.api.dto.common.PageResponse;
+import com.reantask.api.dto.request.AssignClassSubjectRequest;
 import com.reantask.api.dto.request.CreateClassRequest;
 import com.reantask.api.dto.request.UpdateClassRequest;
 import com.reantask.api.dto.response.ClassResponse;
+import com.reantask.api.dto.response.ClassSubjectResponse;
 import com.reantask.api.enums.ClassStatus;
+import com.reantask.api.enums.ClassSubjectStatus;
 import com.reantask.api.service.ClassService;
+import com.reantask.api.service.ClassSubjectService;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -37,6 +41,7 @@ import lombok.RequiredArgsConstructor;
 public class ClassController {
 
     private final ClassService classService;
+    private final ClassSubjectService classSubjectService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
@@ -74,5 +79,23 @@ public class ClassController {
     public ResponseEntity<Void> delete(@PathVariable @Positive Long id) {
         classService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me/teaching")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<PageResponse<ClassSubjectResponse>> myTeaching(
+            @RequestParam(required = false) ClassSubjectStatus status,
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ApiResponse.ok(classSubjectService.listMyTeaching(status, pageable));
+    }
+
+    @PostMapping("/{id}/subjects")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<ClassSubjectResponse>> assignSubject(
+            @PathVariable @Positive Long id, @Valid @RequestBody AssignClassSubjectRequest request) {
+        ClassSubjectResponse created = classSubjectService.assign(id, request);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{classSubjectId}").buildAndExpand(created.id()).toUri();
+        return ResponseEntity.created(location).body(ApiResponse.ok("Created", created));
     }
 }

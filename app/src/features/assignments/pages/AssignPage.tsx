@@ -9,11 +9,13 @@ import { AssignForm } from '@/features/assignments/components/AssignForm'
 import { AssignTable } from '@/features/assignments/components/AssignTable'
 import { useAssignableClassNames } from '@/features/classes'
 import { useClassNameScope } from '@/features/classes'
+import { useCreateAssignment } from '@/features/assignments/hooks/useCreateAssignment'
+import { fromForm } from '@/features/assignments/lib/assignForm'
 import type { AssignFormValues } from '@/features/assignments/lib/assignValidation'
 import { planRepository } from '@/features/assignments/lib/repoNames'
 import { setUpRepository } from '@/features/assignments/services/setUpRepository'
 import { assignmentsActions, useAssignments } from '@/features/assignments/store/assignmentsStore'
-import type { Assignment, AssignmentTask } from '@/features/assignments/types'
+import { sampleStudents } from '@/features/students'
 import { TableEmpty } from '@/shared/components/TableEmpty'
 import { useI18n } from '@/shared/i18n'
 
@@ -24,36 +26,14 @@ type Dialog =
   | { type: 'edit' | 'delete'; id: string }
 
 const NO_DIALOG: Dialog = { type: 'none' }
+const studentNames = sampleStudents.map((s) => s.fullName)
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-accent'
-
-/** Turns the form into the fields an assignment stores. Tasks keep the teacher's verdict if their title is unchanged. */
-function fromForm(values: AssignFormValues, previous?: Assignment) {
-  const tasks: AssignmentTask[] = values.tasks
-    .map((title) => title.trim())
-    .filter(Boolean)
-    .map((title) => {
-      const existing = previous?.tasks?.find((task) => task.title === title)
-      return existing ?? { id: crypto.randomUUID(), title }
-    })
-
-  return {
-    title: values.title.trim(),
-    className: values.className,
-    description: values.description.trim(),
-    deadline: values.deadline,
-    phase: values.phase,
-    maxScore: Number(values.maxScore),
-    maxFileSizeMb: Number(values.maxFileSizeMb),
-    allowedFileTypes: values.fileTypes,
-    assignees: values.assignees,
-    tasks,
-  }
-}
 
 /** The teacher's side: create assignments and choose which students receive them. */
 export function AssignPage() {
   const { t } = useI18n()
   const { notify } = useToast()
+  const createAssignment = useCreateAssignment()
   const everyAssignment = useAssignments()
   const scope = useClassNameScope()
   const classOptions = useAssignableClassNames()
@@ -83,12 +63,7 @@ export function AssignPage() {
       if (target.repo) void setUpRepository(target.id, planRepository(fields.className, fields.title, fields.assignees, target.repo))
       notify({ variant: 'info', title: t('asg.updated'), subtitle: t('toast.saved', { name: fields.title }) })
     } else {
-      const id = crypto.randomUUID()
-      const fields = fromForm(values)
-      assignmentsActions.add({ id, status: 'pending', ...fields })
-      const plan = planRepository(fields.className, fields.title, fields.assignees)
-      void setUpRepository(id, plan)
-      notify({ title: t('asg.added'), subtitle: t('asg.repoSetup', { name: plan.name, count: String(plan.branches.length) }) })
+      createAssignment(values)
     }
     close()
   }
@@ -184,8 +159,12 @@ export function AssignPage() {
         />
       </div>
 
-      {dialog.type === 'create' && <AssignForm assignment={null} onSave={save} onClose={close} />}
-      {dialog.type === 'edit' && target && <AssignForm assignment={target} onSave={save} onClose={close} />}
+      {dialog.type === 'create' && (
+        <AssignForm assignment={null} classNames={classOptions} studentNames={studentNames} onSave={save} onClose={close} />
+      )}
+      {dialog.type === 'edit' && target && (
+        <AssignForm assignment={target} classNames={classOptions} studentNames={studentNames} onSave={save} onClose={close} />
+      )}
       {dialog.type === 'delete' && target && (
         <DeleteDialog
           title={t('asg.deleteTitle')}

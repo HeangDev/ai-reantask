@@ -111,7 +111,7 @@ class UserControllerTest {
     @Test
     void mySessions_returnsPagedEnvelopeWithoutTokenIds() throws Exception {
         when(sessionService.listMine(any())).thenReturn(new PageResponse<>(
-                List.of(new UserSessionResponse(1L, "10.0.0.1", "Firefox", Instant.parse("2026-01-01T00:00:00Z"),
+                List.of(new UserSessionResponse(1L, "10.0.0.1", "Firefox", "Windows", "Firefox", null, Instant.parse("2026-01-01T00:00:00Z"),
                         Instant.parse("2026-01-01T00:15:00Z"), true)), 0, 10, 1, 1));
 
         mvc.perform(get("/api/v1/users/me/sessions"))

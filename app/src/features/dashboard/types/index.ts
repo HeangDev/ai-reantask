@@ -43,8 +43,25 @@ export interface ClassSummary {
   id: string
   name: string
   status: ActiveStatus
+  /** What the class's teachers teach in it; empty when unknown. */
+  subject: string
   students: number
   assignments: number
+  /** Of those assignments, how many are completed. */
+  completed: number
+  /** ISO date of the soonest deadline that is still ahead, or null when nothing is due. */
+  nextDeadline: string | null
+}
+
+/** An unfinished assignment, for the deadline list. Overdue ones are included. */
+export interface UpcomingItem {
+  id: string
+  title: string
+  className: string
+  /** ISO date. */
+  deadline: string
+  /** How many students it was given to. */
+  assignees: number
 }
 
 /** How one class's assignments split across the phases. */
@@ -70,4 +87,6 @@ export interface TeacherDashboardData {
   /** Oldest waiting first. */
   reviews: PendingReview[]
   classes: ClassSummary[]
+  /** Unfinished assignments, soonest deadline first. */
+  upcoming: UpcomingItem[]
 }

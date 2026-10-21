@@ -23,3 +23,12 @@ export function describeDevice(userAgent: string | null, ipAddress: string | nul
 }
 
 export const isPhone = (userAgent: string | null) => /iphone|android.+mobile|mobile/i.test(userAgent ?? '')
+
+/** The browser and operating system named in a User-Agent; an empty string for each one that cannot be read. */
+export function parseUserAgent(userAgent: string | null): { browser: string; os: string } {
+  const ua = userAgent ?? ''
+  return {
+    browser: BROWSERS.find(([pattern]) => pattern.test(ua))?.[1] ?? '',
+    os: SYSTEMS.find(([pattern]) => pattern.test(ua))?.[1] ?? '',
+  }
+}

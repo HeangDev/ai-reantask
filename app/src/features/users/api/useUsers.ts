@@ -7,6 +7,7 @@ import {
   fetchPendingStudents,
   fetchRoles,
   fetchUsers,
+  rejectUser,
   updateUser,
 } from '@/features/users/api/users.api'
 import type { UserFilters } from '@/features/users/types'
@@ -52,6 +53,15 @@ export function useDeleteUsers() {
 
 export const usePendingStudents = (enabled: boolean) =>
   useQuery({ queryKey: userKeys.pending(), queryFn: ({ signal }) => fetchPendingStudents(signal), enabled })
+
+/** Rejecting suspends a PENDING student, so they leave the pending list but keep their account. */
+export function useRejectUser() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: rejectUser,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: userKeys.all }),
+  })
+}
 
 /** Approving moves a student out of the pending list and into the users list. */
 export function useApproveUser() {

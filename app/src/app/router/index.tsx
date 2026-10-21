@@ -99,6 +99,11 @@ export const routes: RouteObject[] = [
             element: <RequireRole roles={['teacher']} />,
             children: [
               {
+                path: `${paths.classes}/:classId`,
+                lazy: page(() => import('@/features/classes/pages/ClassDetailPage'), 'ClassDetailPage'),
+                ...titled('nav.classes'),
+              },
+              {
                 path: paths.assign,
                 lazy: page(() => import('@/features/assignments/pages/AssignPage'), 'AssignPage'),
                 ...titled('nav.assign'),
@@ -112,11 +117,6 @@ export const routes: RouteObject[] = [
                 path: `${paths.assign}/:id/code`,
                 lazy: page(() => import('@/features/assignments/pages/CodeEditorPage'), 'CodeEditorPage'),
                 ...titled('nav.assign'),
-              },
-              {
-                path: paths.scoreReport,
-                lazy: page(() => import('@/features/reports/pages/ScoreReportPage'), 'ScoreReportPage'),
-                ...titled('nav.scoreReport'),
               },
               {
                 path: paths.integration,
