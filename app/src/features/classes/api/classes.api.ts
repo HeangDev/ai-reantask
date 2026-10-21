@@ -3,55 +3,83 @@ import { classEnvelope, classesPageSchema } from '@/features/classes/schemas/cla
 import type { ApiClass } from '@/features/classes/schemas/class.schemas'
 import { apiRequest } from '@/shared/api/http'
 
-const PER_PAGE = 100
+const PAGE_SIZE = 100
 
 const toClass = (c: ApiClass): SchoolClass => ({
   id: String(c.id),
   name: c.name,
   description: c.description ?? '',
-  startDate: c.start_at,
-  endDate: c.end_date,
+  startDate: c.startAt,
+  endDate: c.endDate,
   status: c.status === 'ACTIVE' ? 'active' : 'inactive',
   code: c.code,
 })
 
-const toBody = (input: Partial<ClassInput>) => ({
-  ...(input.name !== undefined && { name: input.name }),
-  ...(input.description !== undefined && { description: input.description }),
-  ...(input.startDate !== undefined && { start_at: input.startDate }),
-  ...(input.endDate !== undefined && { end_date: input.endDate }),
-  ...(input.status !== undefined && { status: input.status === 'active' ? 'ACTIVE' : 'INACTIVE' }),
-})
+const toApiStatus = (status: SchoolClass['status']) => (status === 'active' ? 'ACTIVE' : 'INACTIVE')
 
 /**
- * Every class the user may see, by name. The API already limits non-admins to their own classes. The page and
- * the class pickers filter locally, so all pages are loaded (the API allows at most 100 per page).
+ * Every class the user may see, by name. The page and the class pickers filter locally, so all pages are loaded
+ * (the API allows at most 100 per page).
  */
 export async function fetchClasses(signal?: AbortSignal): Promise<SchoolClass[]> {
   const classes: SchoolClass[] = []
-  let page = 1
-  let lastPage = 1
+  let page = 0 // the API's pages start at 0
+  let totalPages = 1
   do {
-    const result = await apiRequest('/classes', {
-      params: { per_page: PER_PAGE, page, sort: 'name' },
+    const { data } = await apiRequest('/classes', {
+      params: { size: PAGE_SIZE, page, sort: 'name,asc' },
       signal,
       schema: classesPageSchema,
     })
-    classes.push(...result.data.map(toClass))
-    lastPage = result.meta.last_page
+    classes.push(...data.items.map(toClass))
+    totalPages = data.totalPages
     page += 1
-  } while (page <= lastPage)
+  } while (page < totalPages)
   return classes
 }
 
-export async function createClass(input: ClassInput): Promise<SchoolClass> {
-  const { data } = await apiRequest('/classes', { method: 'POST', body: toBody(input), schema: classEnvelope })
+/** Create and update take no status, so it is set through its own endpoint. */
+const setStatus = async (id: string, status: SchoolClass['status']): Promise<SchoolClass> => {
+  const { data } = await apiRequest(`/classes/${id}/status`, {
+    method: 'PATCH',
+    body: { status: toApiStatus(status) },
+    schema: classEnvelope,
+  })
   return toClass(data)
 }
 
+const toBody = (input: Omit<ClassInput, 'status'>) => ({
+  name: input.name,
+  description: input.description,
+  startAt: input.startDate,
+  endDate: input.endDate,
+})
+
+/** The API generates the join code and creates every class as ACTIVE; an inactive one is switched right after. */
+export async function createClass(input: ClassInput): Promise<SchoolClass> {
+  const { data } = await apiRequest('/classes', { method: 'POST', body: toBody(input), schema: classEnvelope })
+  const created = toClass(data)
+  return input.status === 'inactive' ? setStatus(created.id, input.status) : created
+}
+
+/**
+ * Edits the details (one call, needs all four fields) and the status (another call); either may be left out of
+ * `changes`, as the active toggle on a card sends only the status.
+ */
 export async function updateClass({ id, changes }: { id: string; changes: Partial<ClassInput> }): Promise<SchoolClass> {
-  const { data } = await apiRequest(`/classes/${id}`, { method: 'PATCH', body: toBody(changes), schema: classEnvelope })
-  return toClass(data)
+  let schoolClass: SchoolClass | undefined
+  const { name, description, startDate, endDate, status } = changes
+  if (name !== undefined && startDate !== undefined && endDate !== undefined) {
+    const { data } = await apiRequest(`/classes/${id}`, {
+      method: 'PUT',
+      body: toBody({ name, description: description ?? '', startDate, endDate }),
+      schema: classEnvelope,
+    })
+    schoolClass = toClass(data)
+  }
+  if (status !== undefined) schoolClass = await setStatus(id, status)
+  if (!schoolClass) throw new Error('updateClass needs the class details or a status')
+  return schoolClass
 }
 
 export const deleteClass = (id: string) => apiRequest(`/classes/${id}`, { method: 'DELETE' })

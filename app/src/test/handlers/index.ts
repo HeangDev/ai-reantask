@@ -22,9 +22,9 @@ export const handlers = [
   http.get(`${API}/users/me`, () => HttpResponse.json({ data: toApiShape(buildApiUser()) })),
   http.post(`${API}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
   http.get(`${API}/classes`, () =>
-    HttpResponse.json({ data: [], meta: { last_page: 1 } }),
+    HttpResponse.json({ data: { items: [], page: 0, size: 100, totalItems: 0, totalPages: 1 } }),
   ),
   http.get(`${API}/subjects`, () =>
-    HttpResponse.json({ data: [], meta: { last_page: 1 } }),
+    HttpResponse.json({ data: { items: [], page: 0, size: 100, totalItems: 0, totalPages: 1 } }),
   ),
 ]

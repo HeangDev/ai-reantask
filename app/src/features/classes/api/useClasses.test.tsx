@@ -11,8 +11,8 @@ const apiClass = (id: number, overrides: Record<string, unknown> = {}) => ({
   code: `CODE${id}X`,
   description: null,
   status: 'ACTIVE',
-  start_at: '2026-01-01',
-  end_date: '2026-06-30',
+  startAt: '2026-01-01',
+  endDate: '2026-06-30',
   ...overrides,
 })
 
@@ -22,8 +22,10 @@ describe('useClassesQuery', () => {
       http.get(`${API}/classes`, ({ request }) => {
         const page = Number(new URL(request.url).searchParams.get('page'))
         return HttpResponse.json({
-          data: page === 1 ? [apiClass(1, { status: 'INACTIVE', description: 'Intro' })] : [apiClass(2)],
-          meta: { last_page: 2 },
+          data: {
+            items: page === 0 ? [apiClass(1, { status: 'INACTIVE', description: 'Intro' })] : [apiClass(2)],
+            totalPages: 2,
+          },
         })
       }),
     )
@@ -45,7 +47,7 @@ describe('useClassesQuery', () => {
   })
 
   it('a response that breaks the contract is an INVALID_RESPONSE error, not bad data', async () => {
-    server.use(http.get(`${API}/classes`, () => HttpResponse.json({ data: [{ id: 'x' }], meta: { last_page: 1 } })))
+    server.use(http.get(`${API}/classes`, () => HttpResponse.json({ data: { items: [{ id: 'x' }], totalPages: 1 } })))
     const { result } = renderHookWithQuery(() => useClassesQuery())
 
     await waitFor(() => expect(result.current.isError).toBe(true))
@@ -68,7 +70,7 @@ describe('class mutations', () => {
     server.use(
       http.get(`${API}/classes`, () => {
         listCalls += 1
-        return HttpResponse.json({ data: [], meta: { last_page: 1 } })
+        return HttpResponse.json({ data: { items: [], totalPages: 1 } })
       }),
       http.post(`${API}/classes`, async ({ request }) => {
         body = await request.json()
@@ -91,17 +93,19 @@ describe('class mutations', () => {
     expect(body).toEqual({
       name: 'Math',
       description: 'Algebra',
-      start_at: '2026-02-01',
-      end_date: '2026-07-01',
-      status: 'ACTIVE',
+      startAt: '2026-02-01',
+      endDate: '2026-07-01',
     })
     await waitFor(() => expect(listCalls).toBe(2))
   })
 
-  it('a 422 on create keeps the field errors for the form', async () => {
+  it('a 400 on create keeps the field errors for the form', async () => {
     server.use(
       http.post(`${API}/classes`, () =>
-        HttpResponse.json({ message: 'The name has already been taken.', errors: { name: ['taken'] } }, { status: 422 }),
+        HttpResponse.json(
+          { code: 'VALIDATION_ERROR', message: 'Validation failed', errors: [{ field: 'name', message: 'taken' }] },
+          { status: 400 },
+        ),
       ),
     )
     const { result } = renderHookWithQuery(() => useCreateClass())
@@ -113,7 +117,7 @@ describe('class mutations', () => {
     })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
-    expect(result.current.error).toMatchObject({ status: 422, fieldErrors: { name: ['taken'] } })
+    expect(result.current.error).toMatchObject({ status: 400, fieldErrors: { name: ['taken'] } })
   })
 
   it('deleting several classes still deletes the rest when one fails, then reports the failure', async () => {

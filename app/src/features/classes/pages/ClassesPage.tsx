@@ -66,11 +66,12 @@ export function ClassesPage() {
   const resetPaging = () => setLimit(PAGE_SIZE)
 
   const showSaveError = (error: unknown) => {
-    const fields = error instanceof ApiError && error.status === 422 ? error.fieldErrors : {}
+    const apiError = error instanceof ApiError ? error : undefined
+    const fields = apiError?.fieldErrors ?? {}
     const found: ClassFormErrors = {}
-    if (fields.name) found.name = 'cls.errNameTaken'
-    if (fields.start_at) found.startDate = 'cls.errStartDate'
-    if (fields.end_date) found.endDate = 'cls.errEndDate'
+    if (apiError?.status === 409 || fields.name) found.name = 'cls.errNameTaken'
+    if (fields.startAt) found.startDate = 'cls.errStartDate'
+    if (fields.endDate || apiError?.code === 'INVALID_DATE_RANGE') found.endDate = 'cls.errEndDate'
     if (Object.keys(found).length > 0) setServerErrors(found)
     else notify({ variant: 'danger', title: t('cls.saveFailed'), subtitle: t('usr.tryAgain') })
   }

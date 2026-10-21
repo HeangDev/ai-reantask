@@ -8,14 +8,14 @@ export const apiClassSchema = z.object({
   code: z.string(),
   description: z.string().nullable(),
   status: activeStatusSchema,
-  start_at: z.string(),
-  end_date: z.string(),
+  startAt: z.string(),
+  endDate: z.string(),
 })
 
 export const classEnvelope = z.object({ data: apiClassSchema })
+/** A page as the API sends it: `{ items, page, size, totalItems, totalPages }`. */
 export const classesPageSchema = z.object({
-  data: z.array(apiClassSchema),
-  meta: z.object({ last_page: z.number() }),
+  data: z.object({ items: z.array(apiClassSchema), totalPages: z.number() }),
 })
 
 export type ApiClass = z.infer<typeof apiClassSchema>
